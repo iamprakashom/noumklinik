@@ -120,6 +120,47 @@
   --sidebar-ring: oklch(0.704 0.04 256.788);
 }
 
+/* Scoped dark theme for the Trend Intelligence experience */
+.trend-scope {
+  --radius: 0.75rem;
+  --background: oklch(0.168 0.006 285);
+  --foreground: oklch(0.955 0 0);
+  --card: oklch(0.208 0.006 285);
+  --card-foreground: oklch(0.955 0 0);
+  --popover: oklch(0.208 0.006 285);
+  --popover-foreground: oklch(0.955 0 0);
+  --primary: oklch(0.72 0.15 292);
+  --primary-foreground: oklch(0.17 0.02 292);
+  --secondary: oklch(0.245 0.006 285);
+  --secondary-foreground: oklch(0.955 0 0);
+  --muted: oklch(0.245 0.006 285);
+  --muted-foreground: oklch(0.68 0.006 285);
+  --accent: oklch(0.27 0.02 292);
+  --accent-foreground: oklch(0.86 0.1 292);
+  --destructive: oklch(0.65 0.2 25);
+  --destructive-foreground: oklch(0.98 0 0);
+  --border: oklch(1 0 0 / 9%);
+  --input: oklch(1 0 0 / 12%);
+  --ring: oklch(0.72 0.15 292);
+  --ai: oklch(0.72 0.15 292);
+  --ai-soft: oklch(0.72 0.15 292 / 0.14);
+  --metric: oklch(0.79 0.13 180);
+  --metric-soft: oklch(0.79 0.13 180 / 0.14);
+  --shadow-hover: 0 1px 2px oklch(0 0 0 / 0.5), 0 12px 32px oklch(0 0 0 / 0.45);
+  background-color: var(--background);
+  color: var(--foreground);
+}
+
+@keyframes trend-aurora {
+  0% { transform: translate3d(-6%, -4%, 0) scale(1); }
+  50% { transform: translate3d(6%, 4%, 0) scale(1.12); }
+  100% { transform: translate3d(-6%, -4%, 0) scale(1); }
+}
+
+@utility trend-aurora {
+  animation: trend-aurora 18s ease-in-out infinite;
+}
+
 .dark {
   --background: oklch(0.129 0.042 264.695);
   --foreground: oklch(0.984 0.003 247.858);
