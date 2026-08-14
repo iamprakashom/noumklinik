@@ -32,9 +32,11 @@ const days = (values: number[]) =>
 export function buildReport(keyword: string): TrendReport {
   const seed = keyword.length;
   const values = spark(seed, 14);
-  const direction: TrendDirection = values[13] >= values[0] ? "up" : "down";
+  const first = values[0] ?? 0;
+  const last = values[values.length - 1] ?? 0;
+  const direction: TrendDirection = last >= first ? "up" : "down";
   const change = `${direction === "up" ? "+" : "-"}${Math.round(
-    Math.abs((values[13] - values[0]) / Math.max(values[0], 1)) * 100,
+    Math.abs((last - first) / Math.max(first, 1)) * 100,
   )}%`;
 
   return {
