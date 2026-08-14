@@ -55,6 +55,10 @@
   --color-status-overdue-soft: var(--status-overdue-soft);
   --color-status-idle: var(--status-idle);
   --color-status-idle-soft: var(--status-idle-soft);
+  --color-ai: var(--ai);
+  --color-ai-soft: var(--ai-soft);
+  --color-metric: var(--metric);
+  --color-metric-soft: var(--metric-soft);
   --font-sans:
     Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --color-chart-2: var(--chart-2);
