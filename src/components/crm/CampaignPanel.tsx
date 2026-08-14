@@ -63,7 +63,7 @@ export function CampaignPanel({
                   />
                   <span
                     className={cn(
-                      "w-14 text-center text-[10px] leading-tight",
+                      "w-12 text-center text-[9px] leading-tight",
                       i === stageIndex
                         ? "font-medium text-foreground"
                         : "text-muted-foreground",
