@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
+import { ExternalLink } from "lucide-react";
+import type { Source } from "@/data/trends";
 
 export function Sparkline({ values, className }: { values: number[]; className?: string }) {
   const max = Math.max(...values);
@@ -102,5 +104,54 @@ export function Chip({ children }: { children: ReactNode }) {
     <span className="inline-flex items-center rounded-md border border-border bg-secondary px-2.5 py-1 text-xs text-foreground">
       {children}
     </span>
+  );
+}
+
+export function SourceList({
+  sources,
+  method,
+  accent = "metric",
+}: {
+  sources: Source[];
+  method: string;
+  accent?: "ai" | "metric";
+}) {
+  return (
+    <div className="mt-5 border-t border-border pt-4">
+      <p className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">Sources</p>
+      <ol className="mt-3 space-y-2.5">
+        {sources.map((s) => (
+          <li key={s.id} className="flex gap-2.5">
+            <span
+              className={cn(
+                "mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-[4px] text-[10px] font-semibold",
+                accent === "ai" ? "bg-ai-soft text-ai" : "bg-metric-soft text-metric",
+              )}
+            >
+              {s.id}
+            </span>
+            <div className="min-w-0">
+              <a
+                href={s.url}
+                target="_blank"
+                rel="noreferrer noopener"
+                className={cn(
+                  "inline-flex items-center gap-1 text-[13px] font-medium underline-offset-4 hover:underline",
+                  accent === "ai" ? "text-ai" : "text-metric",
+                )}
+              >
+                {s.title}
+                <ExternalLink className="size-3 shrink-0" />
+              </a>
+              <p className="text-[12px] text-muted-foreground">{s.note}</p>
+              <p className="text-[11px] text-muted-foreground/70">
+                {s.publisher} · {s.retrieved}
+              </p>
+            </div>
+          </li>
+        ))}
+      </ol>
+      <p className="mt-3 text-[11px] leading-relaxed text-muted-foreground/70">{method}</p>
+    </div>
   );
 }
