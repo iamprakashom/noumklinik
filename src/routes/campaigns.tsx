@@ -3,11 +3,11 @@ import { Plus } from "lucide-react";
 import { useMemo, useState } from "react";
 import { AppShell } from "@/components/crm/AppShell";
 import { CampaignPanel } from "@/components/crm/CampaignPanel";
+import { NewCampaignDialog } from "@/components/crm/NewCampaignDialog";
 import { AvatarCircle, Chip, ProgressBar } from "@/components/crm/bits";
 import { Button } from "@/components/ui/button";
 import {
   CAMPAIGNS,
-  CLIENTS,
   PEOPLE,
   STAGES,
   type Campaign,
@@ -38,19 +38,26 @@ export const Route = createFileRoute("/campaigns")({
 });
 
 function Board() {
+  const [campaigns, setCampaigns] = useState<Campaign[]>(CAMPAIGNS);
   const [pm, setPm] = useState("all");
   const [client, setClient] = useState("all");
   const [openId, setOpenId] = useState<string | null>(null);
+  const [creating, setCreating] = useState(false);
+
+  const clients = useMemo(
+    () => Array.from(new Set(campaigns.map((c) => c.client))).sort(),
+    [campaigns],
+  );
 
   const filtered = useMemo(
     () =>
-      CAMPAIGNS.filter(
+      campaigns.filter(
         (c) => (pm === "all" || c.pm === pm) && (client === "all" || c.client === client),
       ),
-    [pm, client],
+    [campaigns, pm, client],
   );
 
-  const open = CAMPAIGNS.find((c) => c.id === openId) ?? null;
+  const open = campaigns.find((c) => c.id === openId) ?? null;
   const pms = PEOPLE.filter((p) => p.role === "PM");
 
   return (
@@ -58,7 +65,7 @@ function Board() {
       title="Campaigns"
       subtitle={`${filtered.length} campaigns in flight`}
       actions={
-        <Button size="sm" className="gap-1.5">
+        <Button size="sm" className="gap-1.5" onClick={() => setCreating(true)}>
           <Plus className="size-4" /> New Campaign
         </Button>
       }
@@ -69,7 +76,7 @@ function Board() {
         <Select
           value={client}
           onChange={setClient}
-          options={[["all", "All clients"], ...CLIENTS.map((c) => [c, c] as [string, string])]}
+          options={[["all", "All clients"], ...clients.map((c) => [c, c] as [string, string])]}
         />
         {(pm !== "all" || client !== "all") && (
           <button
@@ -111,6 +118,15 @@ function Board() {
       </div>
 
       <CampaignPanel campaign={open} onClose={() => setOpenId(null)} />
+
+      <NewCampaignDialog
+        open={creating}
+        onOpenChange={setCreating}
+        onCreate={(c) => {
+          setCampaigns((prev) => [c, ...prev]);
+          setOpenId(c.id);
+        }}
+      />
     </AppShell>
   );
 }
