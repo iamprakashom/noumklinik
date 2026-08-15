@@ -5,10 +5,14 @@ import {
   ArrowUpRight,
   Bookmark,
   BookmarkCheck,
+  KanbanSquare,
+  LayoutDashboard,
   PanelLeft,
   Plus,
   Search,
+  Settings,
   Sparkles,
+  Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -25,6 +29,13 @@ import {
   Sparkline,
   VolumeChart,
 } from "@/components/trends/parts";
+
+const MAIN_MENU = [
+  { to: "/", label: "Dashboard", icon: LayoutDashboard },
+  { to: "/campaigns", label: "Campaigns", icon: KanbanSquare },
+  { to: "/people", label: "People", icon: Users },
+  { to: "/settings", label: "Settings", icon: Settings },
+] as const;
 
 export const Route = createFileRoute("/trends")({
   head: () => ({
