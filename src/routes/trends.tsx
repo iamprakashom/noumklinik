@@ -21,6 +21,7 @@ import {
   AiBadge,
   Chip,
   FlowCard,
+  SourceList,
   Sparkline,
   VolumeChart,
 } from "@/components/trends/parts";
@@ -279,14 +280,23 @@ function Results({ report }: { report: ReturnType<typeof buildReport> }) {
           {report.data.excerpts.map((e) => (
             <li key={e.text} className="border-l-2 border-border pl-3">
               <p className="text-[13px] italic text-muted-foreground">“{e.text}”</p>
-              <p className="mt-1 text-[11px] text-muted-foreground/70">{e.source}</p>
+              <a
+                href={e.url}
+                target="_blank"
+                rel="noreferrer noopener"
+                className="mt-1 inline-block text-[11px] text-muted-foreground/70 underline-offset-4 hover:text-metric hover:underline"
+              >
+                {e.source}
+              </a>
             </li>
           ))}
         </ul>
+        <SourceList sources={report.data.sources} method={report.data.method} />
       </FlowCard>
 
       <FlowCard label="Insight" accent="ai" aside={<AiBadge />}>
         <p className="text-[15px] leading-relaxed text-foreground">{report.insight}</p>
+        <SourceList sources={report.insightSources} method={report.insightMethod} accent="ai" />
       </FlowCard>
 
       <FlowCard label="Opportunity" accent="ai" aside={<AiBadge />}>
