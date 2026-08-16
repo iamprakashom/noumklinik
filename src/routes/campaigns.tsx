@@ -14,7 +14,6 @@ import {
   type Stage,
   daysUntil,
   deadlineTone,
-  formatDate,
   formatFullDate,
   personById,
 } from "@/data/crm";
