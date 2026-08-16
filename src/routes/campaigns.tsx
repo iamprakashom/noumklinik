@@ -15,7 +15,6 @@ import {
   daysUntil,
   deadlineTone,
   formatDate,
-  personById,
 } from "@/data/crm";
 import { cn } from "@/lib/utils";
 
