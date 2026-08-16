@@ -12,13 +12,13 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/people")({
   head: () => ({
     meta: [
-      { title: "People & Workload — Amplify CRM" },
+      { title: "Team & Workload — Amplify CRM" },
       {
         name: "description",
         content:
           "Workload table for project managers, editors and executors with active campaigns and pending deliverables.",
       },
-      { property: "og:title", content: "People & Workload — Amplify CRM" },
+      { property: "og:title", content: "Team & Workload — Amplify CRM" },
       {
         property: "og:description",
         content: "Spot overloaded teammates at a glance across active campaigns and pending deliverables.",
@@ -71,7 +71,7 @@ function People() {
 
   return (
     <AppShell
-      title="People"
+      title="Team"
       subtitle="Workload across the delivery team"
       actions={
         <Button size="sm" onClick={() => setInviteOpen(true)}>
