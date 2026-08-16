@@ -67,7 +67,7 @@ export function CampaignPanel({
         onClick={onClose}
         aria-hidden
       />
-      <aside className="relative flex h-full w-[520px] flex-col overflow-y-auto border-l border-border bg-card shadow-[0_0_40px_oklch(0_0_0/0.12)]">
+      <aside className="relative flex h-full w-full max-w-[420px] shrink-0 basis-[38%] flex-col overflow-y-auto border-l border-border bg-card shadow-[0_0_40px_oklch(0_0_0/0.12)]">
         <div className="flex items-start justify-between gap-4 border-b border-border px-6 py-5">
           {editing ? (
             <div className="grid flex-1 gap-2">
