@@ -33,7 +33,7 @@ import {
 const MAIN_MENU = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard },
   { to: "/campaigns", label: "Campaigns", icon: KanbanSquare },
-  { to: "/people", label: "People", icon: Users },
+  { to: "/people", label: "Team", icon: Users },
   { to: "/settings", label: "Settings", icon: Settings },
 ] as const;
 
