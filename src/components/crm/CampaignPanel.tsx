@@ -1,5 +1,6 @@
 import { Pencil, X } from "lucide-react";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { AvatarCircle, Chip, ProgressBar } from "@/components/crm/bits";
 import { Button } from "@/components/ui/button";
 import {
@@ -40,6 +41,7 @@ export function CampaignPanel({
   const days = daysUntil(view.deadline);
   const pms = PEOPLE.filter((p) => p.role === "PM");
   const executors = PEOPLE.filter((p) => p.role === "Executor");
+  const nextStage = STAGES[stageIndex + 1] as Stage | undefined;
 
   function patch(p: Partial<Campaign>) {
     setDraft((prev) => (prev ? { ...prev, ...p } : prev));
@@ -275,9 +277,10 @@ export function CampaignPanel({
               variant="outline"
               size="sm"
               className="border-status-overdue text-status-overdue hover:bg-status-overdue-soft hover:text-status-overdue"
-              onClick={() =>
-                onSave?.({ ...campaign, stage: "Editing/Sampling" })
-              }
+              onClick={() => {
+                onSave?.({ ...campaign, stage: "Editing/Sampling" });
+                toast.error(`${campaign.song} sent back to Editing/Sampling`);
+              }}
             >
               Reject to Editor
             </Button>
@@ -285,12 +288,14 @@ export function CampaignPanel({
           <Button
             size="sm"
             className="ml-auto"
-            disabled={stageIndex >= STAGES.length - 1}
-            onClick={() =>
-              onSave?.({ ...campaign, stage: STAGES[stageIndex + 1] as Stage })
-            }
+            disabled={!nextStage}
+            onClick={() => {
+              if (!nextStage) return;
+              onSave?.({ ...campaign, stage: nextStage });
+              toast.success(`${campaign.song} moved to ${nextStage}`);
+            }}
           >
-            Advance stage
+            {nextStage ? `Advance to ${nextStage}` : "Completed"}
           </Button>
             </>
           )}
