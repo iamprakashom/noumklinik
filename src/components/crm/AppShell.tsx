@@ -26,14 +26,14 @@ export function AppShell({
 
   return (
     <div className="flex min-h-screen w-full bg-background">
-      <aside className="sticky top-0 flex h-screen w-56 shrink-0 flex-col border-r border-border bg-card/60">
-        <div className="flex items-center gap-2 px-4 py-4">
+      <aside className="sticky top-0 flex h-screen w-44 shrink-0 flex-col border-r border-border bg-card/60">
+        <div className="flex items-center gap-2 px-3 py-4">
           <span className="flex size-7 items-center justify-center rounded-md bg-primary text-primary-foreground">
             <Disc3 className="size-4" />
           </span>
           <span className="text-sm font-semibold tracking-tight">Amplify</span>
         </div>
-        <nav className="flex flex-col gap-0.5 px-2">
+        <nav className="flex flex-col gap-0.5 px-1.5">
           {NAV.map((item) => {
             const active = pathname === item.to;
             return (
@@ -41,7 +41,7 @@ export function AppShell({
                 key={item.to}
                 to={item.to}
                 className={cn(
-                  "flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm transition-colors",
+                  "flex items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors",
                   active
                     ? "bg-accent font-medium text-accent-foreground"
                     : "text-muted-foreground hover:bg-secondary hover:text-foreground",
@@ -53,7 +53,7 @@ export function AppShell({
             );
           })}
         </nav>
-        <div className="mt-auto border-t border-border px-4 py-3 text-xs text-muted-foreground">
+        <div className="mt-auto border-t border-border px-3 py-3 text-xs text-muted-foreground">
           Music Marketing Ops
         </div>
       </aside>
