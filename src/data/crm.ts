@@ -118,4 +118,14 @@ export function formatDate(iso: string) {
   });
 }
 
+export function formatFullDate(iso: string) {
+  return new Date(iso + "T00:00:00Z").toLocaleDateString("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    timeZone: "UTC",
+  });
+}
+
 export const CLIENTS = Array.from(new Set(CAMPAIGNS.map((c) => c.client))).sort();
