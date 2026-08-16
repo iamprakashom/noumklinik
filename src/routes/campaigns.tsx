@@ -191,7 +191,13 @@ function Board() {
         })}
       </div>
 
-      <CampaignPanel campaign={open} onClose={() => setOpenId(null)} />
+      <CampaignPanel
+        campaign={open}
+        onClose={() => setOpenId(null)}
+        onSave={(updated) =>
+          setCampaigns((prev) => prev.map((c) => (c.id === updated.id ? updated : c)))
+        }
+      />
 
       <NewCampaignDialog
         open={creating}
