@@ -1,10 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Plus } from "lucide-react";
+import { Eye, EyeOff, Plus } from "lucide-react";
 import { useMemo, useState } from "react";
 import { AppShell } from "@/components/crm/AppShell";
 import { CampaignPanel } from "@/components/crm/CampaignPanel";
 import { NewCampaignDialog } from "@/components/crm/NewCampaignDialog";
-import { AvatarCircle, Chip, ProgressBar } from "@/components/crm/bits";
+import { Chip, ProgressBar } from "@/components/crm/bits";
 import { Button } from "@/components/ui/button";
 import {
   CAMPAIGNS,
@@ -52,6 +52,8 @@ function Board() {
   const [client, setClient] = useState("all");
   const [openId, setOpenId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
+  const [hidden, setHidden] = useState<Stage[]>([]);
+  const [showStagePicker, setShowStagePicker] = useState(false);
 
   const clients = useMemo(
     () => Array.from(new Set(campaigns.map((c) => c.client))).sort(),
@@ -69,7 +71,13 @@ function Board() {
     [campaigns, pm, client, stageFilter],
   );
 
-  const visibleStages = stageFilter ? [stageFilter] : STAGES;
+  const visibleStages = stageFilter
+    ? [stageFilter]
+    : STAGES.filter((s) => !hidden.includes(s));
+
+  function toggleStage(s: Stage) {
+    setHidden((prev) => (prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s]));
+  }
 
   const open = campaigns.find((c) => c.id === openId) ?? null;
   const pms = PEOPLE.filter((p) => p.role === "PM");
@@ -116,7 +124,47 @@ function Board() {
             Clear
           </button>
         )}
+        {!stageFilter && (
+          <button
+            onClick={() => setShowStagePicker((v) => !v)}
+            className="ml-auto inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-2 py-1.5 text-xs font-medium hover:bg-accent"
+          >
+            <EyeOff className="size-3.5" />
+            Stages
+            {hidden.length > 0 && (
+              <span className="tabular-nums text-muted-foreground">{hidden.length} hidden</span>
+            )}
+          </button>
+        )}
       </div>
+
+      {showStagePicker && !stageFilter && (
+        <div className="mt-3 flex flex-wrap items-center gap-2 rounded-lg border border-border bg-card p-3">
+          {STAGES.map((s) => {
+            const isHidden = hidden.includes(s);
+            return (
+              <button
+                key={s}
+                onClick={() => toggleStage(s)}
+                className={cn(
+                  "inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs font-medium",
+                  isHidden
+                    ? "border-border text-muted-foreground hover:bg-accent"
+                    : "border-primary/30 bg-primary/10 text-primary",
+                )}
+              >
+                {isHidden ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
+                {s}
+              </button>
+            );
+          })}
+          {hidden.length > 0 && (
+            <button onClick={() => setHidden([])} className="text-xs text-primary hover:underline">
+              Show all
+            </button>
+          )}
+        </div>
+      )}
 
       <div className="mt-6 flex gap-4 overflow-x-auto pb-4">
         {visibleStages.map((stage) => {
@@ -197,7 +245,6 @@ function CampaignCard({ campaign, onClick }: { campaign: Campaign; onClick: () =
       <p className="text-xs text-muted-foreground">{campaign.client}</p>
       <p className="mt-0.5 truncate text-sm font-medium">{campaign.song}</p>
       <div className="mt-3 flex items-center gap-2">
-        <AvatarCircle name={personById(campaign.pm).name} />
         <Chip tone={tone}>
           {tone === "overdue" ? `${Math.abs(days)}d late` : formatDate(campaign.deadline)}
         </Chip>

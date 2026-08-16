@@ -10,7 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { PEOPLE, STAGES, type Campaign, type Stage } from "@/data/crm";
+import { PEOPLE, type Campaign } from "@/data/crm";
 
 const DELIVERABLE_LABELS = [
   "Creative brief signed off",
@@ -35,7 +35,6 @@ export function NewCampaignDialog({
 
   const [client, setClient] = useState("");
   const [song, setSong] = useState("");
-  const [stage, setStage] = useState<Stage>("Created");
   const [pm, setPm] = useState(pms[0]?.id ?? "");
   const [executor, setExecutor] = useState(executors[0]?.id ?? "");
   const [deadline, setDeadline] = useState("");
@@ -49,7 +48,7 @@ export function NewCampaignDialog({
       id: `c-${Date.now()}`,
       client: client.trim(),
       song: song.trim(),
-      stage,
+      stage: "Created",
       pm,
       executor,
       deadline,
@@ -61,7 +60,6 @@ export function NewCampaignDialog({
     });
     setClient("");
     setSong("");
-    setStage("Created");
     setDeadline("");
     onOpenChange(false);
   }
@@ -99,20 +97,9 @@ export function NewCampaignDialog({
               />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="grid gap-1.5">
-              <Label htmlFor="stage">Stage</Label>
-              <NativeSelect
-                id="stage"
-                value={stage}
-                onChange={(v) => setStage(v as Stage)}
-                options={STAGES.map((s) => [s, s])}
-              />
-            </div>
-            <div className="grid gap-1.5">
-              <Label htmlFor="deadline">Deadline</Label>
-              <Input id="deadline" type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)} />
-            </div>
+          <div className="grid gap-1.5">
+            <Label htmlFor="deadline">Deadline</Label>
+            <Input id="deadline" type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)} />
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" size="sm" onClick={() => onOpenChange(false)}>
