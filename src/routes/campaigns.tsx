@@ -11,6 +11,7 @@ import {
   PEOPLE,
   STAGES,
   type Campaign,
+  type Stage,
   daysUntil,
   deadlineTone,
   formatDate,
@@ -19,6 +20,12 @@ import {
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/campaigns")({
+  validateSearch: (search: Record<string, unknown>): { stage?: Stage } => {
+    const s = search['stage'];
+    return typeof s === "string" && (STAGES as readonly string[]).includes(s)
+      ? { stage: s as Stage }
+      : {};
+  },
   head: () => ({
     meta: [
       { title: "Campaign Board — Amplify CRM" },
@@ -38,6 +45,8 @@ export const Route = createFileRoute("/campaigns")({
 });
 
 function Board() {
+  const { stage: stageFilter } = Route.useSearch();
+  const navigate = Route.useNavigate();
   const [campaigns, setCampaigns] = useState<Campaign[]>(CAMPAIGNS);
   const [pm, setPm] = useState("all");
   const [client, setClient] = useState("all");
@@ -52,10 +61,15 @@ function Board() {
   const filtered = useMemo(
     () =>
       campaigns.filter(
-        (c) => (pm === "all" || c.pm === pm) && (client === "all" || c.client === client),
+        (c) =>
+          (pm === "all" || c.pm === pm) &&
+          (client === "all" || c.client === client) &&
+          (!stageFilter || c.stage === stageFilter),
       ),
-    [campaigns, pm, client],
+    [campaigns, pm, client, stageFilter],
   );
+
+  const visibleStages = stageFilter ? [stageFilter] : STAGES;
 
   const open = campaigns.find((c) => c.id === openId) ?? null;
   const pms = PEOPLE.filter((p) => p.role === "PM");
@@ -78,11 +92,24 @@ function Board() {
           onChange={setClient}
           options={[["all", "All clients"], ...clients.map((c) => [c, c] as [string, string])]}
         />
-        {(pm !== "all" || client !== "all") && (
+        {stageFilter && (
+          <span className="inline-flex items-center gap-1.5 rounded-md bg-accent px-2 py-1 text-xs font-medium text-accent-foreground">
+            Stage: {stageFilter}
+            <button
+              onClick={() => navigate({ search: {} })}
+              className="text-muted-foreground hover:text-foreground"
+              aria-label="Clear stage filter"
+            >
+              ×
+            </button>
+          </span>
+        )}
+        {(pm !== "all" || client !== "all" || stageFilter) && (
           <button
             onClick={() => {
               setPm("all");
               setClient("all");
+              navigate({ search: {} });
             }}
             className="text-xs text-primary hover:underline"
           >
@@ -92,7 +119,7 @@ function Board() {
       </div>
 
       <div className="mt-6 flex gap-4 overflow-x-auto pb-4">
-        {STAGES.map((stage) => {
+        {visibleStages.map((stage) => {
           const cards = filtered.filter((c) => c.stage === stage);
           return (
             <div key={stage} className="flex w-64 shrink-0 flex-col">
