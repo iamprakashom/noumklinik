@@ -14,7 +14,6 @@ import {
   type Stage,
   daysUntil,
   deadlineTone,
-  formatDate,
   formatFullDate,
   personById,
 } from "@/data/crm";
@@ -342,7 +341,8 @@ function CampaignCard({ campaign, onClick }: { campaign: Campaign; onClick: () =
       <p className="mt-0.5 truncate text-sm font-medium">{campaign.song}</p>
       <div className="mt-3 flex items-center gap-2">
         <Chip tone={tone}>
-          {tone === "overdue" ? `${Math.abs(days)}d late` : formatDate(campaign.deadline)}
+          {formatFullDate(campaign.deadline)}
+          {tone === "overdue" ? ` · ${Math.abs(days)}d late` : ""}
         </Chip>
       </div>
       <div className="mt-3 flex items-center gap-2">
