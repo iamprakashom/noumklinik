@@ -18,6 +18,7 @@ export type Person = {
   activeCampaigns: number;
   deliverablesPending: number;
   upcomingDeadline: string;
+  active: boolean;
 };
 
 export type Deliverable = { id: string; label: string; done: boolean };
@@ -34,14 +35,14 @@ export type Campaign = {
 };
 
 export const PEOPLE: Person[] = [
-  { id: "p1", name: "Aditi Rao", role: "PM", activeCampaigns: 7, deliverablesPending: 12, upcomingDeadline: "2026-08-18" },
-  { id: "p2", name: "Marcus Bell", role: "PM", activeCampaigns: 4, deliverablesPending: 5, upcomingDeadline: "2026-08-16" },
-  { id: "p3", name: "Nina Kovač", role: "Editor", activeCampaigns: 6, deliverablesPending: 9, upcomingDeadline: "2026-08-15" },
-  { id: "p4", name: "Yuki Tanaka", role: "Editor", activeCampaigns: 3, deliverablesPending: 2, upcomingDeadline: "2026-08-22" },
-  { id: "p5", name: "Diego Alvarez", role: "Executor", activeCampaigns: 5, deliverablesPending: 6, upcomingDeadline: "2026-08-19" },
-  { id: "p6", name: "Sara Lindqvist", role: "Executor", activeCampaigns: 8, deliverablesPending: 14, upcomingDeadline: "2026-08-14" },
-  { id: "p7", name: "Tom Okafor", role: "PM", activeCampaigns: 2, deliverablesPending: 1, upcomingDeadline: "2026-08-27" },
-  { id: "p8", name: "Elena Rossi", role: "Editor", activeCampaigns: 5, deliverablesPending: 4, upcomingDeadline: "2026-08-20" },
+  { id: "p1", name: "Aditi Rao", role: "PM", activeCampaigns: 7, deliverablesPending: 12, upcomingDeadline: "2026-08-18", active: true },
+  { id: "p2", name: "Marcus Bell", role: "PM", activeCampaigns: 4, deliverablesPending: 5, upcomingDeadline: "2026-08-16", active: true },
+  { id: "p3", name: "Nina Kovač", role: "Editor", activeCampaigns: 6, deliverablesPending: 9, upcomingDeadline: "2026-08-15", active: true },
+  { id: "p4", name: "Yuki Tanaka", role: "Editor", activeCampaigns: 3, deliverablesPending: 2, upcomingDeadline: "2026-08-22", active: false },
+  { id: "p5", name: "Diego Alvarez", role: "Executor", activeCampaigns: 5, deliverablesPending: 6, upcomingDeadline: "2026-08-19", active: true },
+  { id: "p6", name: "Sara Lindqvist", role: "Executor", activeCampaigns: 8, deliverablesPending: 14, upcomingDeadline: "2026-08-14", active: true },
+  { id: "p7", name: "Tom Okafor", role: "PM", activeCampaigns: 2, deliverablesPending: 1, upcomingDeadline: "2026-08-27", active: true },
+  { id: "p8", name: "Elena Rossi", role: "Editor", activeCampaigns: 5, deliverablesPending: 4, upcomingDeadline: "2026-08-20", active: true },
 ];
 
 const d = (label: string, done: boolean): Deliverable => ({
