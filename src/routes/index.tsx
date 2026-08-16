@@ -38,9 +38,9 @@ function Dashboard() {
 
   const stats = [
     { label: "Total Campaigns", value: total, meta: "Across 6 clients" },
-    { label: "Active", value: active, meta: `${overdue} overdue` },
+    { label: "Active", value: active, meta: `${notStarted} awaiting PM` },
     { label: "Completed", value: completed, meta: "Last 30 days" },
-    { label: "Pending", value: notStarted, meta: "Awaiting PM assignment" },
+    { label: "Overdue", value: overdue, meta: "Past deadline" },
   ];
 
   return (
@@ -71,7 +71,7 @@ function Dashboard() {
             <Link
               key={c.stage}
               to="/campaigns"
-              search={{ stage: c.stage }}
+              search={{ stage: c.stage, view: "table" }}
               className="card-hover flex items-center gap-2 rounded-lg border border-border px-3 py-2.5 hover:border-primary"
             >
               <span className="text-xs text-muted-foreground">{c.stage}</span>

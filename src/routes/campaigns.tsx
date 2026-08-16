@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Eye, EyeOff, Plus } from "lucide-react";
+import { ArrowDown, ArrowUp, Eye, EyeOff, LayoutGrid, Plus, Table2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { AppShell } from "@/components/crm/AppShell";
 import { CampaignPanel } from "@/components/crm/CampaignPanel";
@@ -15,15 +15,23 @@ import {
   daysUntil,
   deadlineTone,
   formatDate,
+  formatFullDate,
+  personById,
 } from "@/data/crm";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/campaigns")({
-  validateSearch: (search: Record<string, unknown>): { stage?: Stage } => {
+  validateSearch: (
+    search: Record<string, unknown>,
+  ): { stage?: Stage; view?: "board" | "table" } => {
     const s = search['stage'];
-    return typeof s === "string" && (STAGES as readonly string[]).includes(s)
-      ? { stage: s as Stage }
-      : {};
+    const v = search['view'];
+    return {
+      ...(typeof s === "string" && (STAGES as readonly string[]).includes(s)
+        ? { stage: s as Stage }
+        : {}),
+      ...(v === "table" || v === "board" ? { view: v } : {}),
+    };
   },
   head: () => ({
     meta: [
@@ -44,7 +52,7 @@ export const Route = createFileRoute("/campaigns")({
 });
 
 function Board() {
-  const { stage: stageFilter } = Route.useSearch();
+  const { stage: stageFilter, view = "board" } = Route.useSearch();
   const navigate = Route.useNavigate();
   const [campaigns, setCampaigns] = useState<Campaign[]>(CAMPAIGNS);
   const [pm, setPm] = useState("all");
@@ -53,6 +61,7 @@ function Board() {
   const [creating, setCreating] = useState(false);
   const [hidden, setHidden] = useState<Stage[]>([]);
   const [showStagePicker, setShowStagePicker] = useState(false);
+  const [deadlineDir, setDeadlineDir] = useState<1 | -1>(1);
 
   const clients = useMemo(
     () => Array.from(new Set(campaigns.map((c) => c.client))).sort(),
@@ -74,6 +83,14 @@ function Board() {
     ? [stageFilter]
     : STAGES.filter((s) => !hidden.includes(s));
 
+  const tableRows = useMemo(
+    () =>
+      [...filtered].sort(
+        (a, b) => (a.deadline > b.deadline ? 1 : a.deadline < b.deadline ? -1 : 0) * deadlineDir,
+      ),
+    [filtered, deadlineDir],
+  );
+
   function toggleStage(s: Stage) {
     setHidden((prev) => (prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s]));
   }
@@ -86,9 +103,31 @@ function Board() {
       title="Campaigns"
       subtitle={`${filtered.length} campaigns in flight`}
       actions={
-        <Button size="sm" className="gap-1.5" onClick={() => setCreating(true)}>
-          <Plus className="size-4" /> New Campaign
-        </Button>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center rounded-md border border-border bg-card p-0.5">
+            {([
+              ["board", "Cards", LayoutGrid],
+              ["table", "Sheet", Table2],
+            ] as const).map(([v, label, Icon]) => (
+              <button
+                key={v}
+                onClick={() => navigate({ search: (prev) => ({ ...prev, view: v }) })}
+                className={cn(
+                  "inline-flex items-center gap-1.5 rounded px-2 py-1 text-xs font-medium",
+                  view === v
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:bg-accent",
+                )}
+              >
+                <Icon className="size-3.5" />
+                {label}
+              </button>
+            ))}
+          </div>
+          <Button size="sm" className="gap-1.5" onClick={() => setCreating(true)}>
+            <Plus className="size-4" /> New Campaign
+          </Button>
+        </div>
       }
     >
       <div className="flex items-center gap-2">
@@ -123,7 +162,7 @@ function Board() {
             Clear
           </button>
         )}
-        {!stageFilter && (
+        {!stageFilter && view === "board" && (
           <button
             onClick={() => setShowStagePicker((v) => !v)}
             className="ml-auto inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-2 py-1.5 text-xs font-medium hover:bg-accent"
@@ -137,7 +176,7 @@ function Board() {
         )}
       </div>
 
-      {showStagePicker && !stageFilter && (
+      {showStagePicker && !stageFilter && view === "board" && (
         <div className="mt-3 flex flex-wrap items-center gap-2 rounded-lg border border-border bg-card p-3">
           {STAGES.map((s) => {
             const isHidden = hidden.includes(s);
@@ -165,6 +204,57 @@ function Board() {
         </div>
       )}
 
+      {view === "table" ? (
+        <div className="mt-6 overflow-hidden rounded-lg border border-border bg-card">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-border bg-secondary/40 text-left text-xs text-muted-foreground">
+                <th className="px-4 py-2.5 font-medium">Project</th>
+                <th className="px-4 py-2.5 font-medium">Client</th>
+                <th className="px-4 py-2.5 font-medium">PM</th>
+                <th className="px-4 py-2.5 font-medium">Stage</th>
+                <th className="px-4 py-2.5 font-medium">
+                  <button
+                    onClick={() => setDeadlineDir((d) => (d === 1 ? -1 : 1))}
+                    className="inline-flex items-center gap-1 hover:text-foreground"
+                  >
+                    Deadline
+                    {deadlineDir === 1 ? (
+                      <ArrowUp className="size-3" />
+                    ) : (
+                      <ArrowDown className="size-3" />
+                    )}
+                  </button>
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {tableRows.map((c) => (
+                <tr
+                  key={c.id}
+                  onClick={() => setOpenId(c.id)}
+                  className="cursor-pointer hover:bg-accent/50"
+                >
+                  <td className="px-4 py-2.5 font-medium">{c.song}</td>
+                  <td className="px-4 py-2.5 text-muted-foreground">{c.client}</td>
+                  <td className="px-4 py-2.5 text-muted-foreground">{personById(c.pm).name}</td>
+                  <td className="px-4 py-2.5 text-xs text-muted-foreground">{c.stage}</td>
+                  <td className="px-4 py-2.5">
+                    <Chip tone={deadlineTone(c.deadline, c.stage)}>{formatFullDate(c.deadline)}</Chip>
+                  </td>
+                </tr>
+              ))}
+              {tableRows.length === 0 && (
+                <tr>
+                  <td colSpan={5} className="px-4 py-10 text-center text-xs text-muted-foreground">
+                    No campaigns match these filters
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      ) : (
       <div className="mt-6 flex gap-4 overflow-x-auto pb-4">
         {visibleStages.map((stage) => {
           const cards = filtered.filter((c) => c.stage === stage);
@@ -190,6 +280,7 @@ function Board() {
           );
         })}
       </div>
+      )}
 
       <CampaignPanel
         campaign={open}
