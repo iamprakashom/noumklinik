@@ -1,8 +1,7 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppShell } from "@/components/crm/AppShell";
 import { Chip, ProgressBar } from "@/components/crm/bits";
 import { CAMPAIGNS, STAGES, daysUntil } from "@/data/crm";
-import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -22,17 +21,6 @@ export const Route = createFileRoute("/")({
   }),
   component: Dashboard,
 });
-
-const STAGE_FILL = [
-  "bg-status-idle/40",
-  "bg-status-idle/60",
-  "bg-primary/30",
-  "bg-primary/50",
-  "bg-primary/70",
-  "bg-primary",
-  "bg-status-progress",
-  "bg-status-completed",
-];
 
 function Dashboard() {
   const total = CAMPAIGNS.length;
@@ -78,24 +66,17 @@ function Dashboard() {
           <span className="text-xs text-muted-foreground">{total} campaigns</span>
         </div>
 
-        <div className="mt-5 flex h-3 w-full overflow-hidden rounded-full bg-secondary">
-          {counts.map((c, i) => (
-            <div
+        <div className="mt-5 grid grid-cols-4 gap-3">
+          {counts.map((c) => (
+            <Link
               key={c.stage}
-              className={cn(STAGE_FILL[i], "h-full")}
-              style={{ width: `${(c.count / total) * 100}%` }}
-              title={`${c.stage}: ${c.count}`}
-            />
-          ))}
-        </div>
-
-        <div className="mt-5 grid grid-cols-4 gap-x-8 gap-y-3">
-          {counts.map((c, i) => (
-            <div key={c.stage} className="flex items-center gap-2">
-              <span className={cn("size-2 rounded-sm", STAGE_FILL[i])} />
+              to="/campaigns"
+              search={{ stage: c.stage }}
+              className="card-hover flex items-center gap-2 rounded-lg border border-border px-3 py-2.5 hover:border-primary"
+            >
               <span className="text-xs text-muted-foreground">{c.stage}</span>
               <span className="ml-auto text-xs font-medium tabular-nums">{c.count}</span>
-            </div>
+            </Link>
           ))}
         </div>
       </section>
