@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -10,28 +10,22 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { PEOPLE, type Campaign } from "@/data/crm";
-
-const DELIVERABLE_LABELS = [
-  "Creative brief signed off",
-  "Reference playlist curated",
-  "30s edit master",
-  "Vertical cutdowns (9:16)",
-  "Creator seeding list",
-  "Performance report",
-];
+import type { Person } from "@/data/crm";
+import type { NewCampaignInput } from "@/lib/crm-data";
 
 export function NewCampaignDialog({
   open,
+  people,
   onOpenChange,
   onCreate,
 }: {
   open: boolean;
+  people: Person[];
   onOpenChange: (v: boolean) => void;
-  onCreate: (c: Campaign) => void;
+  onCreate: (c: NewCampaignInput) => void;
 }) {
-  const pms = PEOPLE.filter((p) => p.role === "PM");
-  const executors = PEOPLE.filter((p) => p.role === "Executor");
+  const pms = people.filter((p) => p.role === "PM");
+  const executors = people.filter((p) => p.role === "Executor");
 
   const [client, setClient] = useState("");
   const [song, setSong] = useState("");
@@ -39,24 +33,22 @@ export function NewCampaignDialog({
   const [executor, setExecutor] = useState(executors[0]?.id ?? "");
   const [deadline, setDeadline] = useState("");
 
+  useEffect(() => {
+    if (!pm && pms[0]) setPm(pms[0].id);
+    if (!executor && executors[0]) setExecutor(executors[0].id);
+  }, [pm, executor, pms, executors]);
+
   const valid = client.trim() && song.trim() && deadline;
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!valid) return;
     onCreate({
-      id: `c-${Date.now()}`,
       client: client.trim(),
       song: song.trim(),
-      stage: "Created",
-      pm,
-      executor,
+      pm: pm || (pms[0]?.id ?? ""),
+      executor: executor || (executors[0]?.id ?? ""),
       deadline,
-      deliverables: DELIVERABLE_LABELS.map((label) => ({
-        id: label.toLowerCase().replace(/\W+/g, "-"),
-        label,
-        done: false,
-      })),
     });
     setClient("");
     setSong("");
