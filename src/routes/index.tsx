@@ -71,7 +71,7 @@ function Dashboard() {
             <Link
               key={c.stage}
               to="/campaigns"
-              search={{ stage: c.stage, view: "table" }}
+              search={{ stage: c.stage }}
               className="card-hover flex items-center gap-2 rounded-lg border border-border px-3 py-2.5 hover:border-primary"
             >
               <span className="text-xs text-muted-foreground">{c.stage}</span>
