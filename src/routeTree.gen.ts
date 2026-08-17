@@ -10,73 +10,118 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as CampaignsRouteImport } from './routes/campaigns'
-import { Route as PeopleRouteImport } from './routes/people'
-import { Route as SettingsRouteImport } from './routes/settings'
-import { Route as TrendsRouteImport } from './routes/trends'
+import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AuthenticatedCampaignsRouteImport } from './routes/_authenticated/campaigns'
+import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedPeopleRouteImport } from './routes/_authenticated/people'
+import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
+import { Route as AuthenticatedTrendsRouteImport } from './routes/_authenticated/trends'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const CampaignsRoute = CampaignsRouteImport.update({
+const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
+  id: '/_authenticated',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedCampaignsRoute = AuthenticatedCampaignsRouteImport.update({
   id: '/campaigns',
   path: '/campaigns',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const PeopleRoute = PeopleRouteImport.update({
+const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedPeopleRoute = AuthenticatedPeopleRouteImport.update({
   id: '/people',
   path: '/people',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const SettingsRoute = SettingsRouteImport.update({
+const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const TrendsRoute = TrendsRouteImport.update({
+const AuthenticatedTrendsRoute = AuthenticatedTrendsRouteImport.update({
   id: '/trends',
   path: '/trends',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/campaigns': typeof CampaignsRoute
-  '/people': typeof PeopleRoute
-  '/settings': typeof SettingsRoute
-  '/trends': typeof TrendsRoute
+  '/auth': typeof AuthRoute
+  '/campaigns': typeof AuthenticatedCampaignsRoute
+  '/dashboard': typeof AuthenticatedDashboardRoute
+  '/people': typeof AuthenticatedPeopleRoute
+  '/settings': typeof AuthenticatedSettingsRoute
+  '/trends': typeof AuthenticatedTrendsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/campaigns': typeof CampaignsRoute
-  '/people': typeof PeopleRoute
-  '/settings': typeof SettingsRoute
-  '/trends': typeof TrendsRoute
+  '/auth': typeof AuthRoute
+  '/campaigns': typeof AuthenticatedCampaignsRoute
+  '/dashboard': typeof AuthenticatedDashboardRoute
+  '/people': typeof AuthenticatedPeopleRoute
+  '/settings': typeof AuthenticatedSettingsRoute
+  '/trends': typeof AuthenticatedTrendsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/campaigns': typeof CampaignsRoute
-  '/people': typeof PeopleRoute
-  '/settings': typeof SettingsRoute
-  '/trends': typeof TrendsRoute
+  '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
+  '/auth': typeof AuthRoute
+  '/_authenticated/campaigns': typeof AuthenticatedCampaignsRoute
+  '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/people': typeof AuthenticatedPeopleRoute
+  '/_authenticated/settings': typeof AuthenticatedSettingsRoute
+  '/_authenticated/trends': typeof AuthenticatedTrendsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/campaigns' | '/people' | '/settings' | '/trends'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/campaigns'
+    | '/dashboard'
+    | '/people'
+    | '/settings'
+    | '/trends'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/campaigns' | '/people' | '/settings' | '/trends'
-  id: '__root__' | '/' | '/campaigns' | '/people' | '/settings' | '/trends'
+  to:
+    | '/'
+    | '/auth'
+    | '/campaigns'
+    | '/dashboard'
+    | '/people'
+    | '/settings'
+    | '/trends'
+  id:
+    | '__root__'
+    | '/'
+    | '/_authenticated'
+    | '/auth'
+    | '/_authenticated/campaigns'
+    | '/_authenticated/dashboard'
+    | '/_authenticated/people'
+    | '/_authenticated/settings'
+    | '/_authenticated/trends'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  CampaignsRoute: typeof CampaignsRoute
-  PeopleRoute: typeof PeopleRoute
-  SettingsRoute: typeof SettingsRoute
-  TrendsRoute: typeof TrendsRoute
+  AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
+  AuthRoute: typeof AuthRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -88,43 +133,81 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/campaigns': {
-      id: '/campaigns'
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/campaigns': {
+      id: '/_authenticated/campaigns'
       path: '/campaigns'
       fullPath: '/campaigns'
-      preLoaderRoute: typeof CampaignsRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AuthenticatedCampaignsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/people': {
-      id: '/people'
+    '/_authenticated/dashboard': {
+      id: '/_authenticated/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof AuthenticatedDashboardRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/people': {
+      id: '/_authenticated/people'
       path: '/people'
       fullPath: '/people'
-      preLoaderRoute: typeof PeopleRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AuthenticatedPeopleRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/settings': {
-      id: '/settings'
+    '/_authenticated/settings': {
+      id: '/_authenticated/settings'
       path: '/settings'
       fullPath: '/settings'
-      preLoaderRoute: typeof SettingsRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AuthenticatedSettingsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/trends': {
-      id: '/trends'
+    '/_authenticated/trends': {
+      id: '/_authenticated/trends'
       path: '/trends'
       fullPath: '/trends'
-      preLoaderRoute: typeof TrendsRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AuthenticatedTrendsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
   }
 }
 
+interface AuthenticatedRouteRouteChildren {
+  AuthenticatedCampaignsRoute: typeof AuthenticatedCampaignsRoute
+  AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedPeopleRoute: typeof AuthenticatedPeopleRoute
+  AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
+  AuthenticatedTrendsRoute: typeof AuthenticatedTrendsRoute
+}
+
+const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedCampaignsRoute: AuthenticatedCampaignsRoute,
+  AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedPeopleRoute: AuthenticatedPeopleRoute,
+  AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
+  AuthenticatedTrendsRoute: AuthenticatedTrendsRoute,
+}
+
+const AuthenticatedRouteRouteWithChildren =
+  AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  CampaignsRoute: CampaignsRoute,
-  PeopleRoute: PeopleRoute,
-  SettingsRoute: SettingsRoute,
-  TrendsRoute: TrendsRoute,
+  AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
+  AuthRoute: AuthRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

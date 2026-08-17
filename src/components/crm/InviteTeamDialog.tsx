@@ -21,7 +21,7 @@ export function InviteTeamDialog({
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
-  onInvite: (p: Person & { email: string }) => void;
+  onInvite: (p: { name: string; email: string; role: Person["role"] }) => void;
 }) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -32,16 +32,7 @@ export function InviteTeamDialog({
   function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!valid) return;
-    onInvite({
-      id: `p-${Date.now()}`,
-      name: name.trim(),
-      email: email.trim(),
-      role,
-      activeCampaigns: 0,
-      deliverablesPending: 0,
-      upcomingDeadline: "",
-      active: true,
-    });
+    onInvite({ name: name.trim(), email: email.trim(), role });
     setName("");
     setEmail("");
     setRole("PM");

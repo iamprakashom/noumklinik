@@ -37,7 +37,7 @@ const MAIN_MENU = [
   { to: "/settings", label: "Settings", icon: Settings },
 ] as const;
 
-export const Route = createFileRoute("/trends")({
+export const Route = createFileRoute("/_authenticated/trends")({
   head: () => ({
     meta: [
       { title: "Trend Intelligence — AI Music Trend Search" },

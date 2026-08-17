@@ -14,7 +14,116 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      campaigns: {
+        Row: {
+          client: string
+          created_at: string
+          deadline: string
+          executor_id: string | null
+          id: string
+          pm_id: string | null
+          song: string
+          stage: string
+        }
+        Insert: {
+          client: string
+          created_at?: string
+          deadline: string
+          executor_id?: string | null
+          id?: string
+          pm_id?: string | null
+          song: string
+          stage?: string
+        }
+        Update: {
+          client?: string
+          created_at?: string
+          deadline?: string
+          executor_id?: string | null
+          id?: string
+          pm_id?: string | null
+          song?: string
+          stage?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaigns_executor_id_fkey"
+            columns: ["executor_id"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaigns_pm_id_fkey"
+            columns: ["pm_id"]
+            isOneToOne: false
+            referencedRelation: "people"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      deliverables: {
+        Row: {
+          campaign_id: string
+          created_at: string
+          done: boolean
+          id: string
+          label: string
+          position: number
+        }
+        Insert: {
+          campaign_id: string
+          created_at?: string
+          done?: boolean
+          id?: string
+          label: string
+          position?: number
+        }
+        Update: {
+          campaign_id?: string
+          created_at?: string
+          done?: boolean
+          id?: string
+          label?: string
+          position?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deliverables_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      people: {
+        Row: {
+          active: boolean
+          created_at: string
+          email: string | null
+          id: string
+          name: string
+          role: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          email?: string | null
+          id?: string
+          name: string
+          role: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string
+          role?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

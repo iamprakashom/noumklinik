@@ -6,18 +6,17 @@ import { CampaignPanel } from "@/components/crm/CampaignPanel";
 import { NewCampaignDialog } from "@/components/crm/NewCampaignDialog";
 import { Chip } from "@/components/crm/bits";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 import {
-  CAMPAIGNS,
-  PEOPLE,
   STAGES,
-  type Campaign,
   type Stage,
   deadlineTone,
   formatFullDate,
   personById,
 } from "@/data/crm";
+import { useCreateCampaign, useCrm, useSaveCampaign } from "@/lib/crm-data";
 
-export const Route = createFileRoute("/campaigns")({
+export const Route = createFileRoute("/_authenticated/campaigns")({
   validateSearch: (
     search: Record<string, unknown>,
   ): { stage?: Stage } => {
@@ -49,7 +48,11 @@ export const Route = createFileRoute("/campaigns")({
 function Board() {
   const { stage: stageFilter } = Route.useSearch();
   const navigate = Route.useNavigate();
-  const [campaigns, setCampaigns] = useState<Campaign[]>(CAMPAIGNS);
+  const { data, isLoading, error } = useCrm();
+  const campaigns = data?.campaigns ?? [];
+  const people = data?.people ?? [];
+  const createCampaign = useCreateCampaign();
+  const saveCampaign = useSaveCampaign();
   const [pm, setPm] = useState("all");
   const [client, setClient] = useState("all");
   const [openId, setOpenId] = useState<string | null>(null);
@@ -81,7 +84,7 @@ function Board() {
   );
 
   const open = campaigns.find((c) => c.id === openId) ?? null;
-  const pms = PEOPLE.filter((p) => p.role === "PM");
+  const pms = people.filter((p) => p.role === "PM");
 
   return (
     <AppShell
@@ -129,6 +132,11 @@ function Board() {
         )}
       </div>
 
+      {error ? (
+        <p className="mt-6 text-sm text-status-overdue">Couldn't load campaigns. Try refreshing.</p>
+      ) : isLoading ? (
+        <p className="mt-6 text-sm text-muted-foreground">Loading campaigns…</p>
+      ) : (
       <div className="mt-6 overflow-hidden rounded-lg border border-border bg-card">
           <table className="w-full text-sm">
             <thead>
@@ -161,7 +169,7 @@ function Board() {
                 >
                   <td className="px-4 py-2.5 font-medium">{c.song}</td>
                   <td className="px-4 py-2.5 text-muted-foreground">{c.client}</td>
-                  <td className="px-4 py-2.5 text-muted-foreground">{personById(c.pm).name}</td>
+                  <td className="px-4 py-2.5 text-muted-foreground">{personById(people, c.pm)?.name ?? "Unassigned"}</td>
                   <td className="px-4 py-2.5 text-xs text-muted-foreground">{c.stage}</td>
                   <td className="px-4 py-2.5">
                     <Chip tone={deadlineTone(c.deadline, c.stage)}>{formatFullDate(c.deadline)}</Chip>
@@ -178,22 +186,32 @@ function Board() {
             </tbody>
           </table>
       </div>
+      )}
 
       <CampaignPanel
         campaign={open}
+        people={people}
         onClose={() => setOpenId(null)}
         onSave={(updated) =>
-          setCampaigns((prev) => prev.map((c) => (c.id === updated.id ? updated : c)))
+          saveCampaign.mutate(updated, {
+            onError: () => toast.error("Couldn't save changes"),
+          })
         }
       />
 
       <NewCampaignDialog
         open={creating}
+        people={people}
         onOpenChange={setCreating}
-        onCreate={(c) => {
-          setCampaigns((prev) => [c, ...prev]);
-          setOpenId(c.id);
-        }}
+        onCreate={(input) =>
+          createCampaign.mutate(input, {
+            onSuccess: (id) => {
+              setOpenId(id);
+              toast.success(`${input.song} added`);
+            },
+            onError: () => toast.error("Couldn't create campaign"),
+          })
+        }
       />
     </AppShell>
   );

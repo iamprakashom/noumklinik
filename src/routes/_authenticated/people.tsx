@@ -6,10 +6,15 @@ import { AppShell } from "@/components/crm/AppShell";
 import { AvatarCircle, Chip } from "@/components/crm/bits";
 import { InviteTeamDialog } from "@/components/crm/InviteTeamDialog";
 import { Button } from "@/components/ui/button";
-import { PEOPLE, type Person } from "@/data/crm";
+import {
+  activeCampaignCount,
+  pendingDeliverableCount,
+  type Person,
+} from "@/data/crm";
+import { useCrm, useInvitePerson, useUpdatePerson } from "@/lib/crm-data";
 import { cn } from "@/lib/utils";
 
-export const Route = createFileRoute("/people")({
+export const Route = createFileRoute("/_authenticated/people")({
   head: () => ({
     meta: [
       { title: "Team & Workload — Amplify CRM" },
@@ -30,7 +35,9 @@ export const Route = createFileRoute("/people")({
   component: People,
 });
 
-type Key = keyof Pick<Person, "name" | "role" | "activeCampaigns" | "deliverablesPending">;
+type Row = Person & { activeCampaigns: number; deliverablesPending: number };
+
+type Key = keyof Pick<Row, "name" | "role" | "activeCampaigns" | "deliverablesPending">;
 
 const COLUMNS: { key: Key; label: string; numeric?: boolean }[] = [
   { key: "name", label: "Name" },
@@ -40,7 +47,14 @@ const COLUMNS: { key: Key; label: string; numeric?: boolean }[] = [
 ];
 
 function People() {
-  const [people, setPeople] = useState<Person[]>(PEOPLE);
+  const { data, isLoading, error } = useCrm();
+  const invitePerson = useInvitePerson();
+  const updatePerson = useUpdatePerson();
+  const people: Row[] = (data?.people ?? []).map((p) => ({
+    ...p,
+    activeCampaigns: activeCampaignCount(data?.campaigns ?? [], p.id),
+    deliverablesPending: pendingDeliverableCount(data?.campaigns ?? [], p.id),
+  }));
   const [inviteOpen, setInviteOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draftActive, setDraftActive] = useState(true);
@@ -58,15 +72,21 @@ function People() {
   const toggle = (key: Key) =>
     setSort((s) => (s.key === key ? { key, dir: s.dir === 1 ? -1 : 1 } : { key, dir: 1 }));
 
-  function startEdit(p: Person) {
+  function startEdit(p: Row) {
     setEditingId(p.id);
     setDraftActive(p.active);
   }
 
-  function save(p: Person) {
-    setPeople((prev) => prev.map((x) => (x.id === p.id ? { ...x, active: draftActive } : x)));
+  function save(p: Row) {
+    updatePerson.mutate(
+      { id: p.id, active: draftActive },
+      {
+        onSuccess: () =>
+          toast.success(`${p.name} ${draftActive ? "activated" : "deactivated"}`),
+        onError: () => toast.error("Couldn't update team member"),
+      },
+    );
     setEditingId(null);
-    toast.success(`${p.name} ${draftActive ? "activated" : "deactivated"}`);
   }
 
   return (
@@ -80,6 +100,11 @@ function People() {
         </Button>
       }
     >
+      {error ? (
+        <p className="text-sm text-status-overdue">Couldn't load the team. Try refreshing.</p>
+      ) : isLoading ? (
+        <p className="text-sm text-muted-foreground">Loading team…</p>
+      ) : (
       <div className="overflow-hidden rounded-lg border border-border bg-card">
         <table className="w-full text-sm">
           <thead>
@@ -189,6 +214,7 @@ function People() {
           </tbody>
         </table>
       </div>
+      )}
       <p className="mt-3 text-xs text-muted-foreground">
         Rows tinted amber carry more than 5 active campaigns. Deactivated members are muted.
       </p>
@@ -196,10 +222,12 @@ function People() {
       <InviteTeamDialog
         open={inviteOpen}
         onOpenChange={setInviteOpen}
-        onInvite={({ email, ...person }) => {
-          setPeople((prev) => [...prev, person]);
-          toast.success(`Invite sent to ${email}`);
-        }}
+        onInvite={(person) =>
+          invitePerson.mutate(person, {
+            onSuccess: () => toast.success(`${person.name} added to the team`),
+            onError: () => toast.error("Couldn't add team member"),
+          })
+        }
       />
     </AppShell>
   );

@@ -4,9 +4,9 @@ import { toast } from "sonner";
 import { AvatarCircle, Chip, ProgressBar } from "@/components/crm/bits";
 import { Button } from "@/components/ui/button";
 import {
-  PEOPLE,
   STAGES,
   type Campaign,
+  type Person,
   type Stage,
   daysUntil,
   deadlineTone,
@@ -17,10 +17,12 @@ import { cn } from "@/lib/utils";
 
 export function CampaignPanel({
   campaign,
+  people,
   onClose,
   onSave,
 }: {
   campaign: Campaign | null;
+  people: Person[];
   onClose: () => void;
   onSave?: (c: Campaign) => void;
 }) {
@@ -39,8 +41,8 @@ export function CampaignPanel({
   const done = view.deliverables.filter((d) => d.done).length;
   const tone = deadlineTone(view.deadline, view.stage);
   const days = daysUntil(view.deadline);
-  const pms = PEOPLE.filter((p) => p.role === "PM");
-  const executors = PEOPLE.filter((p) => p.role === "Executor");
+  const pms = people.filter((p) => p.role === "PM");
+  const executors = people.filter((p) => p.role === "Executor");
   const nextStage = STAGES[stageIndex + 1] as Stage | undefined;
 
   function patch(p: Partial<Campaign>) {
@@ -155,8 +157,8 @@ export function CampaignPanel({
               </select>
             ) : (
               <span className="flex items-center gap-2 text-sm">
-                <AvatarCircle name={personById(view.pm).name} />
-                {personById(view.pm).name}
+                <AvatarCircle name={personName(people, view.pm)} />
+                {personName(people, view.pm)}
               </span>
             )}
           </Field>
@@ -176,8 +178,8 @@ export function CampaignPanel({
               </select>
             ) : (
               <span className="flex items-center gap-2 text-sm">
-                <AvatarCircle name={personById(view.executor).name} />
-                {personById(view.executor).name}
+                <AvatarCircle name={personName(people, view.executor)} />
+                {personName(people, view.executor)}
               </span>
             )}
           </Field>
@@ -200,7 +202,7 @@ export function CampaignPanel({
           <Field label="Deliverables">
             <div className="flex items-center gap-2">
               <ProgressBar
-                value={(done / view.deliverables.length) * 100}
+                value={view.deliverables.length ? (done / view.deliverables.length) * 100 : 0}
                 tone={view.stage === "Completed" ? "completed" : "progress"}
               />
               <span className="text-xs tabular-nums text-muted-foreground">
@@ -303,6 +305,10 @@ export function CampaignPanel({
       </aside>
     </div>
   );
+}
+
+function personName(people: Person[], id: string) {
+  return personById(people, id)?.name ?? "Unassigned";
 }
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {

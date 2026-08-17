@@ -1,10 +1,12 @@
-import { Link, useRouterState } from "@tanstack/react-router";
-import { LayoutDashboard, KanbanSquare, Users, Settings, Disc3, Sparkles } from "lucide-react";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
+import { useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { LayoutDashboard, KanbanSquare, Users, Settings, Disc3, Sparkles, LogOut } from "lucide-react";
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
 const NAV = [
-  { to: "/", label: "Dashboard", icon: LayoutDashboard },
+  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/campaigns", label: "Campaigns", icon: KanbanSquare },
   { to: "/people", label: "Team", icon: Users },
   { to: "/trends", label: "Trend AI", icon: Sparkles },
@@ -23,6 +25,15 @@ export function AppShell({
   children: ReactNode;
 }) {
   const pathname = useRouterState({ select: (r) => r.location.pathname });
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+
+  async function signOut() {
+    await queryClient.cancelQueries();
+    queryClient.clear();
+    await supabase.auth.signOut();
+    navigate({ to: "/auth", replace: true });
+  }
 
   return (
     <div className="flex min-h-screen w-full bg-background">
@@ -53,8 +64,14 @@ export function AppShell({
             );
           })}
         </nav>
-        <div className="mt-auto border-t border-border px-2 py-3 text-[11px] leading-tight text-muted-foreground">
-          Music Marketing Ops
+        <div className="mt-auto border-t border-border px-1.5 py-3">
+          <button
+            onClick={signOut}
+            className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+          >
+            <LogOut className="size-4" />
+            Sign out
+          </button>
         </div>
       </aside>
 
