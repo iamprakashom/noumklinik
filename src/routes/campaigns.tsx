@@ -12,13 +12,10 @@ import {
   STAGES,
   type Campaign,
   type Stage,
-  daysUntil,
   deadlineTone,
-  formatDate,
   formatFullDate,
   personById,
 } from "@/data/crm";
-import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/campaigns")({
   validateSearch: (
