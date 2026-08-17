@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { PEOPLE, type Person } from "@/data/crm";
 import { cn } from "@/lib/utils";
 
-export const Route = createFileRoute("/people")({
+export const Route = createFileRoute("/_authenticated/people")({
   head: () => ({
     meta: [
       { title: "Team & Workload — Amplify CRM" },

@@ -17,7 +17,7 @@ import {
   personById,
 } from "@/data/crm";
 
-export const Route = createFileRoute("/campaigns")({
+export const Route = createFileRoute("/_authenticated/campaigns")({
   validateSearch: (
     search: Record<string, unknown>,
   ): { stage?: Stage } => {
