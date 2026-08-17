@@ -1,10 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { ArrowDown, ArrowUp, Eye, EyeOff, LayoutGrid, Plus, Table2 } from "lucide-react";
+import { ArrowDown, ArrowUp, Plus } from "lucide-react";
 import { useMemo, useState } from "react";
 import { AppShell } from "@/components/crm/AppShell";
 import { CampaignPanel } from "@/components/crm/CampaignPanel";
 import { NewCampaignDialog } from "@/components/crm/NewCampaignDialog";
-import { Chip, ProgressBar } from "@/components/crm/bits";
+import { Chip } from "@/components/crm/bits";
 import { Button } from "@/components/ui/button";
 import {
   CAMPAIGNS,
@@ -23,14 +23,12 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/campaigns")({
   validateSearch: (
     search: Record<string, unknown>,
-  ): { stage?: Stage; view?: "board" | "table" } => {
+  ): { stage?: Stage } => {
     const s = search['stage'];
-    const v = search['view'];
     return {
       ...(typeof s === "string" && (STAGES as readonly string[]).includes(s)
         ? { stage: s as Stage }
         : {}),
-      ...(v === "table" || v === "board" ? { view: v } : {}),
     };
   },
   head: () => ({
@@ -39,12 +37,12 @@ export const Route = createFileRoute("/campaigns")({
       {
         name: "description",
         content:
-          "Kanban board of every music marketing campaign from creation through reporting, filterable by project manager and client.",
+          "Sortable sheet of every music marketing campaign from creation through reporting, filterable by project manager and client.",
       },
       { property: "og:title", content: "Campaign Board — Amplify CRM" },
       {
         property: "og:description",
-        content: "Kanban board across eight workflow stages with deadlines and deliverable progress.",
+        content: "Campaign sheet across eight workflow stages with deadlines and deliverable progress.",
       },
     ],
   }),
@@ -52,15 +50,13 @@ export const Route = createFileRoute("/campaigns")({
 });
 
 function Board() {
-  const { stage: stageFilter, view = "board" } = Route.useSearch();
+  const { stage: stageFilter } = Route.useSearch();
   const navigate = Route.useNavigate();
   const [campaigns, setCampaigns] = useState<Campaign[]>(CAMPAIGNS);
   const [pm, setPm] = useState("all");
   const [client, setClient] = useState("all");
   const [openId, setOpenId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
-  const [hidden, setHidden] = useState<Stage[]>([]);
-  const [showStagePicker, setShowStagePicker] = useState(false);
   const [deadlineDir, setDeadlineDir] = useState<1 | -1>(1);
 
   const clients = useMemo(
@@ -79,10 +75,6 @@ function Board() {
     [campaigns, pm, client, stageFilter],
   );
 
-  const visibleStages = stageFilter
-    ? [stageFilter]
-    : STAGES.filter((s) => !hidden.includes(s));
-
   const tableRows = useMemo(
     () =>
       [...filtered].sort(
@@ -90,10 +82,6 @@ function Board() {
       ),
     [filtered, deadlineDir],
   );
-
-  function toggleStage(s: Stage) {
-    setHidden((prev) => (prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s]));
-  }
 
   const open = campaigns.find((c) => c.id === openId) ?? null;
   const pms = PEOPLE.filter((p) => p.role === "PM");
@@ -104,26 +92,6 @@ function Board() {
       subtitle={`${filtered.length} campaigns in flight`}
       actions={
         <div className="flex items-center gap-2">
-          <div className="flex items-center rounded-md border border-border bg-card p-0.5">
-            {([
-              ["board", "Cards", LayoutGrid],
-              ["table", "Sheet", Table2],
-            ] as const).map(([v, label, Icon]) => (
-              <button
-                key={v}
-                onClick={() => navigate({ search: (prev) => ({ ...prev, view: v }) })}
-                className={cn(
-                  "inline-flex items-center gap-1.5 rounded px-2 py-1 text-xs font-medium",
-                  view === v
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:bg-accent",
-                )}
-              >
-                <Icon className="size-3.5" />
-                {label}
-              </button>
-            ))}
-          </div>
           <Button size="sm" className="gap-1.5" onClick={() => setCreating(true)}>
             <Plus className="size-4" /> New Campaign
           </Button>
@@ -162,50 +130,9 @@ function Board() {
             Clear
           </button>
         )}
-        {!stageFilter && view === "board" && (
-          <button
-            onClick={() => setShowStagePicker((v) => !v)}
-            className="ml-auto inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-2 py-1.5 text-xs font-medium hover:bg-accent"
-          >
-            <EyeOff className="size-3.5" />
-            Stages
-            {hidden.length > 0 && (
-              <span className="tabular-nums text-muted-foreground">{hidden.length} hidden</span>
-            )}
-          </button>
-        )}
       </div>
 
-      {showStagePicker && !stageFilter && view === "board" && (
-        <div className="mt-3 flex flex-wrap items-center gap-2 rounded-lg border border-border bg-card p-3">
-          {STAGES.map((s) => {
-            const isHidden = hidden.includes(s);
-            return (
-              <button
-                key={s}
-                onClick={() => toggleStage(s)}
-                className={cn(
-                  "inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs font-medium",
-                  isHidden
-                    ? "border-border text-muted-foreground hover:bg-accent"
-                    : "border-primary/30 bg-primary/10 text-primary",
-                )}
-              >
-                {isHidden ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
-                {s}
-              </button>
-            );
-          })}
-          {hidden.length > 0 && (
-            <button onClick={() => setHidden([])} className="text-xs text-primary hover:underline">
-              Show all
-            </button>
-          )}
-        </div>
-      )}
-
-      {view === "table" ? (
-        <div className="mt-6 overflow-hidden rounded-lg border border-border bg-card">
+      <div className="mt-6 overflow-hidden rounded-lg border border-border bg-card">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border bg-secondary/40 text-left text-xs text-muted-foreground">
@@ -253,34 +180,7 @@ function Board() {
               )}
             </tbody>
           </table>
-        </div>
-      ) : (
-      <div className="mt-6 flex gap-4 overflow-x-auto pb-4">
-        {visibleStages.map((stage) => {
-          const cards = filtered.filter((c) => c.stage === stage);
-          return (
-            <div key={stage} className="flex w-64 shrink-0 flex-col">
-              <div className="flex items-center justify-between px-1 pb-3">
-                <span className="text-xs font-semibold">{stage}</span>
-                <span className="text-xs tabular-nums text-muted-foreground">
-                  {cards.length}
-                </span>
-              </div>
-              <div className="flex flex-col gap-2 rounded-lg bg-secondary/50 p-2">
-                {cards.map((c) => (
-                  <CampaignCard key={c.id} campaign={c} onClick={() => setOpenId(c.id)} />
-                ))}
-                {cards.length === 0 && (
-                  <p className="px-2 py-6 text-center text-xs text-muted-foreground">
-                    Empty
-                  </p>
-                )}
-              </div>
-            </div>
-          );
-        })}
       </div>
-      )}
 
       <CampaignPanel
         campaign={open}
@@ -323,37 +223,5 @@ function Select({
         </option>
       ))}
     </select>
-  );
-}
-
-function CampaignCard({ campaign, onClick }: { campaign: Campaign; onClick: () => void }) {
-  const done = campaign.deliverables.filter((d) => d.done).length;
-  const tone = deadlineTone(campaign.deadline, campaign.stage);
-  const days = daysUntil(campaign.deadline);
-
-  return (
-    <button
-      onClick={onClick}
-      className={cn(
-        "card-hover w-full rounded-lg border border-border bg-card p-3 text-left",
-      )}
-    >
-      <p className="text-xs text-muted-foreground">{campaign.client}</p>
-      <p className="mt-0.5 truncate text-sm font-medium">{campaign.song}</p>
-      <div className="mt-3 flex items-center gap-2">
-        <Chip tone={tone}>
-          {tone === "overdue" ? `${Math.abs(days)}d late` : formatDate(campaign.deadline)}
-        </Chip>
-      </div>
-      <div className="mt-3 flex items-center gap-2">
-        <ProgressBar
-          value={(done / campaign.deliverables.length) * 100}
-          tone={campaign.stage === "Completed" ? "completed" : "progress"}
-        />
-        <span className="text-[10px] tabular-nums text-muted-foreground">
-          {done}/{campaign.deliverables.length}
-        </span>
-      </div>
-    </button>
   );
 }
