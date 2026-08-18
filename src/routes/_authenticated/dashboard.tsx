@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { ChevronRight } from "lucide-react";
 import { AppShell } from "@/components/crm/AppShell";
 import { Chip, ProgressBar } from "@/components/crm/bits";
 import { STAGES, daysUntil } from "@/data/crm";
@@ -81,16 +82,26 @@ function Dashboard() {
               <span className="text-xs text-muted-foreground">{total} campaigns</span>
             </div>
 
-            <div className="mt-5 grid grid-cols-4 gap-3">
+            <div className="mt-4 -mx-2 divide-y divide-border">
               {counts.map((c) => (
                 <Link
                   key={c.stage}
                   to="/campaigns"
                   search={{ stage: c.stage }}
-                  className="card-hover flex items-center gap-2 rounded-lg border border-border px-3 py-2.5 hover:border-primary"
+                  className="group flex items-center gap-3 rounded-md px-2 py-2.5 transition-colors hover:bg-accent/40"
                 >
-                  <span className="text-xs text-muted-foreground">{c.stage}</span>
-                  <span className="ml-auto text-xs font-medium tabular-nums">{c.count}</span>
+                  <span className="text-sm text-foreground transition-colors group-hover:text-primary">
+                    {c.stage}
+                  </span>
+                  <span
+                    className={cn(
+                      "ml-auto text-sm tabular-nums",
+                      c.count === 0 ? "text-muted-foreground/50" : "text-muted-foreground",
+                    )}
+                  >
+                    {c.count}
+                  </span>
+                  <ChevronRight className="size-3.5 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
                 </Link>
               ))}
             </div>
