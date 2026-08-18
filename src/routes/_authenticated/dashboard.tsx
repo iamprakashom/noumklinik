@@ -4,6 +4,7 @@ import { AppShell } from "@/components/crm/AppShell";
 import { Chip, ProgressBar } from "@/components/crm/bits";
 import { STAGES, daysUntil } from "@/data/crm";
 import { useCrm } from "@/lib/crm-data";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
