@@ -16,6 +16,7 @@ import { Route as AuthenticatedAppointmentsRouteImport } from './routes/_authent
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedPatientsIndexRouteImport } from './routes/_authenticated/patients/index'
+import { Route as AuthenticatedPatientsPatientIdRouteImport } from './routes/_authenticated/patients/$patientId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -53,6 +54,12 @@ const AuthenticatedPatientsIndexRoute =
     path: '/patients/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedPatientsPatientIdRoute =
+  AuthenticatedPatientsPatientIdRouteImport.update({
+    id: '/patients/$patientId',
+    path: '/patients/$patientId',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -60,6 +67,7 @@ export interface FileRoutesByFullPath {
   '/appointments': typeof AuthenticatedAppointmentsRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/settings': typeof AuthenticatedSettingsRoute
+  '/patients/$patientId': typeof AuthenticatedPatientsPatientIdRoute
   '/patients/': typeof AuthenticatedPatientsIndexRoute
 }
 export interface FileRoutesByTo {
@@ -68,6 +76,7 @@ export interface FileRoutesByTo {
   '/appointments': typeof AuthenticatedAppointmentsRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/settings': typeof AuthenticatedSettingsRoute
+  '/patients/$patientId': typeof AuthenticatedPatientsPatientIdRoute
   '/patients': typeof AuthenticatedPatientsIndexRoute
 }
 export interface FileRoutesById {
@@ -78,14 +87,28 @@ export interface FileRoutesById {
   '/_authenticated/appointments': typeof AuthenticatedAppointmentsRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
+  '/_authenticated/patients/$patientId': typeof AuthenticatedPatientsPatientIdRoute
   '/_authenticated/patients/': typeof AuthenticatedPatientsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/auth' | '/appointments' | '/dashboard' | '/settings' | '/patients/'
+    | '/'
+    | '/auth'
+    | '/appointments'
+    | '/dashboard'
+    | '/settings'
+    | '/patients/$patientId'
+    | '/patients/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/appointments' | '/dashboard' | '/settings' | '/patients'
+  to:
+    | '/'
+    | '/auth'
+    | '/appointments'
+    | '/dashboard'
+    | '/settings'
+    | '/patients/$patientId'
+    | '/patients'
   id:
     | '__root__'
     | '/'
@@ -94,6 +117,7 @@ export interface FileRouteTypes {
     | '/_authenticated/appointments'
     | '/_authenticated/dashboard'
     | '/_authenticated/settings'
+    | '/_authenticated/patients/$patientId'
     | '/_authenticated/patients/'
   fileRoutesById: FileRoutesById
 }
@@ -154,6 +178,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPatientsIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/patients/$patientId': {
+      id: '/_authenticated/patients/$patientId'
+      path: '/patients/$patientId'
+      fullPath: '/patients/$patientId'
+      preLoaderRoute: typeof AuthenticatedPatientsPatientIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
@@ -161,6 +192,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAppointmentsRoute: typeof AuthenticatedAppointmentsRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
+  AuthenticatedPatientsPatientIdRoute: typeof AuthenticatedPatientsPatientIdRoute
   AuthenticatedPatientsIndexRoute: typeof AuthenticatedPatientsIndexRoute
 }
 
@@ -168,6 +200,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAppointmentsRoute: AuthenticatedAppointmentsRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
+  AuthenticatedPatientsPatientIdRoute: AuthenticatedPatientsPatientIdRoute,
   AuthenticatedPatientsIndexRoute: AuthenticatedPatientsIndexRoute,
 }
 
