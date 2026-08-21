@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedAppointmentsRouteImport } from './routes/_authenticated/appointments'
+import { Route as AuthenticatedBillingRouteImport } from './routes/_authenticated/billing'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedLeadsRouteImport } from './routes/_authenticated/leads'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
@@ -39,6 +40,11 @@ const AuthenticatedAppointmentsRoute =
     path: '/appointments',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedBillingRoute = AuthenticatedBillingRouteImport.update({
+  id: '/billing',
+  path: '/billing',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -71,6 +77,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/appointments': typeof AuthenticatedAppointmentsRoute
+  '/billing': typeof AuthenticatedBillingRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/leads': typeof AuthenticatedLeadsRoute
   '/settings': typeof AuthenticatedSettingsRoute
@@ -81,6 +88,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/appointments': typeof AuthenticatedAppointmentsRoute
+  '/billing': typeof AuthenticatedBillingRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/leads': typeof AuthenticatedLeadsRoute
   '/settings': typeof AuthenticatedSettingsRoute
@@ -93,6 +101,7 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/_authenticated/appointments': typeof AuthenticatedAppointmentsRoute
+  '/_authenticated/billing': typeof AuthenticatedBillingRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/leads': typeof AuthenticatedLeadsRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
@@ -105,6 +114,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/appointments'
+    | '/billing'
     | '/dashboard'
     | '/leads'
     | '/settings'
@@ -115,6 +125,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/appointments'
+    | '/billing'
     | '/dashboard'
     | '/leads'
     | '/settings'
@@ -126,6 +137,7 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/auth'
     | '/_authenticated/appointments'
+    | '/_authenticated/billing'
     | '/_authenticated/dashboard'
     | '/_authenticated/leads'
     | '/_authenticated/settings'
@@ -169,6 +181,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAppointmentsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/billing': {
+      id: '/_authenticated/billing'
+      path: '/billing'
+      fullPath: '/billing'
+      preLoaderRoute: typeof AuthenticatedBillingRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/dashboard': {
       id: '/_authenticated/dashboard'
       path: '/dashboard'
@@ -209,6 +228,7 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAppointmentsRoute: typeof AuthenticatedAppointmentsRoute
+  AuthenticatedBillingRoute: typeof AuthenticatedBillingRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedLeadsRoute: typeof AuthenticatedLeadsRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
@@ -218,6 +238,7 @@ interface AuthenticatedRouteRouteChildren {
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAppointmentsRoute: AuthenticatedAppointmentsRoute,
+  AuthenticatedBillingRoute: AuthenticatedBillingRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedLeadsRoute: AuthenticatedLeadsRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
