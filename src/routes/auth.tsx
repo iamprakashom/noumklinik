@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Disc3 } from "lucide-react";
+import { Stethoscope } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -12,13 +12,13 @@ export const Route = createFileRoute("/auth")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "Sign in — Amplify CRM" },
+      { title: "Sign in — Luma Aesthetics Clinic CRM" },
       {
         name: "description",
-        content: "Sign in to Amplify to manage music marketing campaigns, deliverables and team workload.",
+        content: "Sign in to Luma to manage appointments, patient charts, billing and clinic follow-ups.",
       },
-      { property: "og:title", content: "Sign in — Amplify CRM" },
-      { property: "og:description", content: "Access your agency's campaign workspace." },
+      { property: "og:title", content: "Sign in — Luma Aesthetics Clinic CRM" },
+      { property: "og:description", content: "Access your clinic workspace." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -81,15 +81,15 @@ function AuthPage() {
       <div className="w-full max-w-sm rounded-lg border border-border bg-card p-6">
         <div className="flex items-center gap-2">
           <span className="flex size-8 items-center justify-center rounded-md bg-primary text-primary-foreground">
-            <Disc3 className="size-4" />
+            <Stethoscope className="size-4" />
           </span>
-          <span className="text-sm font-semibold tracking-tight">Amplify</span>
+          <span className="text-sm font-semibold tracking-tight">Luma Aesthetics</span>
         </div>
         <h1 className="mt-5 text-xl font-semibold tracking-tight">
           {mode === "signin" ? "Sign in" : "Create your account"}
         </h1>
         <p className="mt-1 text-xs text-muted-foreground">
-          Campaign data is private to your team.
+          Patient data is private to your clinic team.
         </p>
 
         <form onSubmit={submit} className="mt-6 grid gap-4">
@@ -101,7 +101,7 @@ function AuthPage() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@agency.com"
+              placeholder="you@clinic.com"
             />
           </div>
           <div className="grid gap-1.5">
