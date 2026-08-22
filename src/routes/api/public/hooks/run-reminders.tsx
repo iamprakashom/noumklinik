@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import type { TablesInsert } from "@/integrations/supabase/types";
 
 type Rule = {
   id: string;
@@ -39,7 +40,7 @@ async function run() {
 
   const now = Date.now();
   const horizon = now + 14 * 86_400_000;
-  const rows: Record<string, unknown>[] = [];
+  const rows: TablesInsert<"messages_outbox">[] = [];
 
   for (const rule of rules) {
     const template = templates.find((t) => t.id === rule.template_id);
