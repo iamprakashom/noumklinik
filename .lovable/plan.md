@@ -8,7 +8,7 @@ A single build covering five areas: richer Leads views, an Appointments rework, 
 - Table columns: Name, Source, Treatment interest, Status (stage), Doctor, Created (ageing in days), Next follow-up.
 - Filters: status, treatment, lead source, doctor. Sort by ageing (created date), newest/oldest.
 - Lead sources normalised into groups: Meta Ads (Instagram / WhatsApp / Facebook), Google Ads, Organic, Referral, Walk-in.
-- Temperature tags: Hot / Warm / Cold, editable inline and shown as coloured chips.
+- Interest strength tags (how keen the lead is — highly interested vs just exploring): Hot / Warm / Cold, editable inline and shown as coloured chips.
 - Follow-ups: each lead can carry a next-follow-up date and owner. A "Follow-ups" section lists **Overdue** and **Scheduled** follow-ups, auto-built from lead data (no manual list to maintain).
 
 ## 2. Appointments (nav item renamed from "Schedule")
