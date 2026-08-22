@@ -26,7 +26,7 @@ A single build covering five areas: richer Leads views, an Appointments rework, 
 
 ## 4. Payments (Razorpay + Cashfree)
 
-- Settings screen where the clinic connects its own merchant account per provider (key id + secret, mode test/live). Secrets are stored server-side, never exposed to the browser.
+- Settings screen where the clinic connects its single merchant account, choosing one gateway (Razorpay or Cashfree) that all payment collection runs through (key id + secret, mode test/live). Secrets are stored server-side, never exposed to the browser.
 - From an invoice: "Collect payment" creates a real payment link/order with the connected provider, supporting **UPI** and **EMI** methods, and shares the link (copy / send to patient).
 - Provider webhooks mark the invoice paid and record the payment automatically; payment status is visible on the invoice.
 - Manual cash/card recording stays available.
