@@ -16,6 +16,9 @@ export type Lead = Tables<"leads">;
 export type MessageTemplate = Tables<"message_templates">;
 export type AutomationRule = Tables<"automation_rules">;
 export type OutboxMessage = Tables<"messages_outbox">;
+export type ServiceAddon = Tables<"service_addons">;
+export type AddonDiscountRule = Tables<"addon_discount_rules">;
+export type PaymentLink = Tables<"payment_links">;
 
 export const APPOINTMENT_STATUSES = [
   "Booked",
