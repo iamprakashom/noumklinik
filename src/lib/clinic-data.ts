@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type {
+  AddonDiscountRule,
   Appointment,
   AutomationRule,
   ConsentTemplate,
@@ -11,10 +12,12 @@ import type {
   OutboxMessage,
   Patient,
   PatientConsent,
+  PaymentLink,
   Payment,
   Provider,
   Room,
   Service,
+  ServiceAddon,
   TreatmentRecord,
 } from "@/data/clinic";
 
