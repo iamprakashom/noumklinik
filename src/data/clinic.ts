@@ -58,6 +58,52 @@ export const TRIGGER_TYPES = [
 
 export const INVOICE_STATUSES = ["Draft", "Open", "Paid", "Void"] as const;
 
+export const TEMPERATURES = ["Hot", "Warm", "Cold"] as const;
+export type Temperature = (typeof TEMPERATURES)[number];
+
+export const TEMPERATURE_HINT: Record<string, string> = {
+  Hot: "Highly interested",
+  Warm: "Considering",
+  Cold: "Just exploring",
+};
+
+export const LEAD_SOURCE_GROUPS = ["Meta Ads", "Google Ads", "Organic", "Referral", "Walk-in"] as const;
+
+export const SOURCE_GROUP_BY_SOURCE: Record<string, string> = {
+  "Meta Lead Ads": "Meta Ads",
+  Instagram: "Meta Ads",
+  Facebook: "Meta Ads",
+  WhatsApp: "Meta Ads",
+  Google: "Google Ads",
+  "Google Ads": "Google Ads",
+  Website: "Organic",
+  Manual: "Organic",
+  Referral: "Referral",
+  "Walk-in": "Walk-in",
+};
+
+export const APPOINTMENT_SOURCES = [
+  "WhatsApp",
+  "Instagram",
+  "Facebook",
+  "Walk-in",
+  "Google",
+  "Referral",
+  "Phone",
+] as const;
+
+export function temperatureTone(t: string): StatusTone {
+  if (t === "Hot") return "overdue";
+  if (t === "Warm") return "progress";
+  return "idle";
+}
+
+export function daysSince(iso: string) {
+  return Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000));
+}
+
+
+
 export type StatusTone = "completed" | "progress" | "overdue" | "idle";
 
 export function appointmentTone(status: string): StatusTone {
