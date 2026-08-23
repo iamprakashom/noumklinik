@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type {
+  AddonDiscountRule,
   Appointment,
   AutomationRule,
   ConsentTemplate,
@@ -11,10 +12,12 @@ import type {
   OutboxMessage,
   Patient,
   PatientConsent,
+  PaymentLink,
   Payment,
   Provider,
   Room,
   Service,
+  ServiceAddon,
   TreatmentRecord,
 } from "@/data/clinic";
 
@@ -54,6 +57,12 @@ export const useAutomationRules = () =>
   useList<AutomationRule>("automation_rules", "automation_rules", "created_at");
 export const useOutbox = () =>
   useList<OutboxMessage>("outbox", "messages_outbox", "scheduled_for", false);
+export const useServiceAddons = () =>
+  useList<ServiceAddon>("service_addons", "service_addons", "created_at");
+export const useAddonDiscountRules = () =>
+  useList<AddonDiscountRule>("addon_discount_rules", "addon_discount_rules", "created_at");
+export const usePaymentLinks = () =>
+  useList<PaymentLink>("payment_links", "payment_links", "created_at", false);
 
 const RELATED: Record<string, string[]> = {
   patients: ["patients"],
@@ -71,6 +80,9 @@ const RELATED: Record<string, string[]> = {
   services: ["services"],
   providers: ["providers"],
   rooms: ["rooms"],
+  service_addons: ["service_addons"],
+  addon_discount_rules: ["addon_discount_rules"],
+  payment_links: ["payment_links", "invoices", "payments"],
 };
 
 function useInvalidate() {
