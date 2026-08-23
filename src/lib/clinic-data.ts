@@ -80,6 +80,9 @@ const RELATED: Record<string, string[]> = {
   services: ["services"],
   providers: ["providers"],
   rooms: ["rooms"],
+  service_addons: ["service_addons"],
+  addon_discount_rules: ["addon_discount_rules"],
+  payment_links: ["payment_links", "invoices", "payments"],
 };
 
 function useInvalidate() {
