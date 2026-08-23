@@ -14,6 +14,47 @@ export type Database = {
   }
   public: {
     Tables: {
+      addon_discount_rules: {
+        Row: {
+          active: boolean
+          created_at: string
+          discount_type: string
+          discount_value: number
+          id: string
+          main_service_id: string | null
+          min_addons: number
+          name: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          discount_type?: string
+          discount_value?: number
+          id?: string
+          main_service_id?: string | null
+          min_addons?: number
+          name: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          discount_type?: string
+          discount_value?: number
+          id?: string
+          main_service_id?: string | null
+          min_addons?: number
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "addon_discount_rules_main_service_id_fkey"
+            columns: ["main_service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       appointments: {
         Row: {
           created_at: string
@@ -21,11 +62,16 @@ export type Database = {
           id: string
           notes: string | null
           patient_id: string
+          previous_starts_at: string | null
           provider_id: string | null
+          reschedule_count: number
+          reschedule_reason: string | null
           room_id: string | null
           service_id: string | null
+          source: string
           starts_at: string
           status: string
+          temperature: string
           updated_at: string
         }
         Insert: {
@@ -34,11 +80,16 @@ export type Database = {
           id?: string
           notes?: string | null
           patient_id: string
+          previous_starts_at?: string | null
           provider_id?: string | null
+          reschedule_count?: number
+          reschedule_reason?: string | null
           room_id?: string | null
           service_id?: string | null
+          source?: string
           starts_at: string
           status?: string
+          temperature?: string
           updated_at?: string
         }
         Update: {
@@ -47,11 +98,16 @@ export type Database = {
           id?: string
           notes?: string | null
           patient_id?: string
+          previous_starts_at?: string | null
           provider_id?: string | null
+          reschedule_count?: number
+          reschedule_reason?: string | null
           room_id?: string | null
           service_id?: string | null
+          source?: string
           starts_at?: string
           status?: string
+          temperature?: string
           updated_at?: string
         }
         Relationships: [
@@ -260,11 +316,15 @@ export type Database = {
           full_name: string
           id: string
           interest: string | null
+          next_follow_up_at: string | null
           notes: string | null
           owner_id: string | null
           phone: string | null
+          service_id: string | null
           source: string
+          source_group: string
           stage: string
+          temperature: string
           updated_at: string
         }
         Insert: {
@@ -275,11 +335,15 @@ export type Database = {
           full_name: string
           id?: string
           interest?: string | null
+          next_follow_up_at?: string | null
           notes?: string | null
           owner_id?: string | null
           phone?: string | null
+          service_id?: string | null
           source?: string
+          source_group?: string
           stage?: string
+          temperature?: string
           updated_at?: string
         }
         Update: {
@@ -290,11 +354,15 @@ export type Database = {
           full_name?: string
           id?: string
           interest?: string | null
+          next_follow_up_at?: string | null
           notes?: string | null
           owner_id?: string | null
           phone?: string | null
+          service_id?: string | null
           source?: string
+          source_group?: string
           stage?: string
+          temperature?: string
           updated_at?: string
         }
         Relationships: [
@@ -310,6 +378,13 @@ export type Database = {
             columns: ["owner_id"]
             isOneToOne: false
             referencedRelation: "providers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leads_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
             referencedColumns: ["id"]
           },
         ]
@@ -351,6 +426,7 @@ export type Database = {
           id: string
           lead_id: string | null
           patient_id: string | null
+          provider_message_id: string | null
           recipient: string | null
           rule_id: string | null
           scheduled_for: string
@@ -367,6 +443,7 @@ export type Database = {
           id?: string
           lead_id?: string | null
           patient_id?: string | null
+          provider_message_id?: string | null
           recipient?: string | null
           rule_id?: string | null
           scheduled_for?: string
@@ -383,6 +460,7 @@ export type Database = {
           id?: string
           lead_id?: string | null
           patient_id?: string | null
+          provider_message_id?: string | null
           recipient?: string | null
           rule_id?: string | null
           scheduled_for?: string
@@ -568,6 +646,95 @@ export type Database = {
         }
         Relationships: []
       }
+      payment_gateway_settings: {
+        Row: {
+          allow_emi: boolean
+          allow_upi: boolean
+          created_at: string
+          enabled: boolean
+          id: string
+          key_id: string | null
+          key_secret: string | null
+          mode: string
+          provider: string
+          singleton: boolean
+          updated_at: string
+          webhook_secret: string | null
+        }
+        Insert: {
+          allow_emi?: boolean
+          allow_upi?: boolean
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          key_id?: string | null
+          key_secret?: string | null
+          mode?: string
+          provider?: string
+          singleton?: boolean
+          updated_at?: string
+          webhook_secret?: string | null
+        }
+        Update: {
+          allow_emi?: boolean
+          allow_upi?: boolean
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          key_id?: string | null
+          key_secret?: string | null
+          mode?: string
+          provider?: string
+          singleton?: boolean
+          updated_at?: string
+          webhook_secret?: string | null
+        }
+        Relationships: []
+      }
+      payment_links: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          invoice_id: string
+          paid_at: string | null
+          provider: string
+          provider_ref: string | null
+          short_url: string | null
+          status: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          invoice_id: string
+          paid_at?: string | null
+          provider: string
+          provider_ref?: string | null
+          short_url?: string | null
+          status?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          invoice_id?: string
+          paid_at?: string | null
+          provider?: string
+          provider_ref?: string | null
+          short_url?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_links_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payments: {
         Row: {
           amount: number
@@ -662,6 +829,42 @@ export type Database = {
           name?: string
         }
         Relationships: []
+      }
+      service_addons: {
+        Row: {
+          addon_service_id: string
+          created_at: string
+          id: string
+          main_service_id: string
+        }
+        Insert: {
+          addon_service_id: string
+          created_at?: string
+          id?: string
+          main_service_id: string
+        }
+        Update: {
+          addon_service_id?: string
+          created_at?: string
+          id?: string
+          main_service_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_addons_addon_service_id_fkey"
+            columns: ["addon_service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_addons_main_service_id_fkey"
+            columns: ["main_service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       services: {
         Row: {
