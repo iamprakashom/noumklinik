@@ -54,6 +54,12 @@ export const useAutomationRules = () =>
   useList<AutomationRule>("automation_rules", "automation_rules", "created_at");
 export const useOutbox = () =>
   useList<OutboxMessage>("outbox", "messages_outbox", "scheduled_for", false);
+export const useServiceAddons = () =>
+  useList<ServiceAddon>("service_addons", "service_addons", "created_at");
+export const useAddonDiscountRules = () =>
+  useList<AddonDiscountRule>("addon_discount_rules", "addon_discount_rules", "created_at");
+export const usePaymentLinks = () =>
+  useList<PaymentLink>("payment_links", "payment_links", "created_at", false);
 
 const RELATED: Record<string, string[]> = {
   patients: ["patients"],
