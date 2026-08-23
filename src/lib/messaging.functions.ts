@@ -63,7 +63,7 @@ export const sendAppointmentReminder = createServerFn({ method: "POST" })
     const [{ data: patient }, { data: service }, { data: provider }] = await Promise.all([
       context.supabase
         .from("patients")
-        .select("first_name, last_name, email, phone, preferred_channel")
+        .select("id, first_name, last_name, email, phone, preferred_channel")
         .eq("id", appt.patient_id)
         .maybeSingle(),
       appt.service_id
