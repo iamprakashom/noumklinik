@@ -7,7 +7,11 @@ export type SendInput = {
   body: string;
 };
 
-export type SendResult = { ok: boolean; providerId?: string; error?: string };
+export type SendResult = {
+  ok: boolean;
+  providerId?: string | undefined;
+  error?: string | undefined;
+};
 
 async function sendWhatsApp(input: SendInput): Promise<SendResult> {
   const token = process.env["WHATSAPP_TOKEN"];
