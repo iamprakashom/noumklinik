@@ -20,7 +20,9 @@ import { Route as AuthenticatedLeadsRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedPatientsIndexRouteImport } from './routes/_authenticated/patients/index'
 import { Route as AuthenticatedPatientsPatientIdRouteImport } from './routes/_authenticated/patients/$patientId'
+import { Route as ApiPublicHooksCashfreeRouteImport } from './routes/api/public/hooks/cashfree'
 import { Route as ApiPublicHooksMetaLeadsRouteImport } from './routes/api/public/hooks/meta-leads'
+import { Route as ApiPublicHooksRazorpayRouteImport } from './routes/api/public/hooks/razorpay'
 import { Route as ApiPublicHooksRunRemindersRouteImport } from './routes/api/public/hooks/run-reminders'
 
 const IndexRoute = IndexRouteImport.update({
@@ -81,9 +83,19 @@ const AuthenticatedPatientsPatientIdRoute =
     path: '/patients/$patientId',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const ApiPublicHooksCashfreeRoute = ApiPublicHooksCashfreeRouteImport.update({
+  id: '/api/public/hooks/cashfree',
+  path: '/api/public/hooks/cashfree',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicHooksMetaLeadsRoute = ApiPublicHooksMetaLeadsRouteImport.update({
   id: '/api/public/hooks/meta-leads',
   path: '/api/public/hooks/meta-leads',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicHooksRazorpayRoute = ApiPublicHooksRazorpayRouteImport.update({
+  id: '/api/public/hooks/razorpay',
+  path: '/api/public/hooks/razorpay',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiPublicHooksRunRemindersRoute =
@@ -104,7 +116,9 @@ export interface FileRoutesByFullPath {
   '/settings': typeof AuthenticatedSettingsRoute
   '/patients/$patientId': typeof AuthenticatedPatientsPatientIdRoute
   '/patients/': typeof AuthenticatedPatientsIndexRoute
+  '/api/public/hooks/cashfree': typeof ApiPublicHooksCashfreeRoute
   '/api/public/hooks/meta-leads': typeof ApiPublicHooksMetaLeadsRoute
+  '/api/public/hooks/razorpay': typeof ApiPublicHooksRazorpayRoute
   '/api/public/hooks/run-reminders': typeof ApiPublicHooksRunRemindersRoute
 }
 export interface FileRoutesByTo {
@@ -118,7 +132,9 @@ export interface FileRoutesByTo {
   '/settings': typeof AuthenticatedSettingsRoute
   '/patients/$patientId': typeof AuthenticatedPatientsPatientIdRoute
   '/patients': typeof AuthenticatedPatientsIndexRoute
+  '/api/public/hooks/cashfree': typeof ApiPublicHooksCashfreeRoute
   '/api/public/hooks/meta-leads': typeof ApiPublicHooksMetaLeadsRoute
+  '/api/public/hooks/razorpay': typeof ApiPublicHooksRazorpayRoute
   '/api/public/hooks/run-reminders': typeof ApiPublicHooksRunRemindersRoute
 }
 export interface FileRoutesById {
@@ -134,7 +150,9 @@ export interface FileRoutesById {
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/patients/$patientId': typeof AuthenticatedPatientsPatientIdRoute
   '/_authenticated/patients/': typeof AuthenticatedPatientsIndexRoute
+  '/api/public/hooks/cashfree': typeof ApiPublicHooksCashfreeRoute
   '/api/public/hooks/meta-leads': typeof ApiPublicHooksMetaLeadsRoute
+  '/api/public/hooks/razorpay': typeof ApiPublicHooksRazorpayRoute
   '/api/public/hooks/run-reminders': typeof ApiPublicHooksRunRemindersRoute
 }
 export interface FileRouteTypes {
@@ -150,7 +168,9 @@ export interface FileRouteTypes {
     | '/settings'
     | '/patients/$patientId'
     | '/patients/'
+    | '/api/public/hooks/cashfree'
     | '/api/public/hooks/meta-leads'
+    | '/api/public/hooks/razorpay'
     | '/api/public/hooks/run-reminders'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -164,7 +184,9 @@ export interface FileRouteTypes {
     | '/settings'
     | '/patients/$patientId'
     | '/patients'
+    | '/api/public/hooks/cashfree'
     | '/api/public/hooks/meta-leads'
+    | '/api/public/hooks/razorpay'
     | '/api/public/hooks/run-reminders'
   id:
     | '__root__'
@@ -179,7 +201,9 @@ export interface FileRouteTypes {
     | '/_authenticated/settings'
     | '/_authenticated/patients/$patientId'
     | '/_authenticated/patients/'
+    | '/api/public/hooks/cashfree'
     | '/api/public/hooks/meta-leads'
+    | '/api/public/hooks/razorpay'
     | '/api/public/hooks/run-reminders'
   fileRoutesById: FileRoutesById
 }
@@ -187,7 +211,9 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  ApiPublicHooksCashfreeRoute: typeof ApiPublicHooksCashfreeRoute
   ApiPublicHooksMetaLeadsRoute: typeof ApiPublicHooksMetaLeadsRoute
+  ApiPublicHooksRazorpayRoute: typeof ApiPublicHooksRazorpayRoute
   ApiPublicHooksRunRemindersRoute: typeof ApiPublicHooksRunRemindersRoute
 }
 
@@ -270,11 +296,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPatientsPatientIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/public/hooks/cashfree': {
+      id: '/api/public/hooks/cashfree'
+      path: '/api/public/hooks/cashfree'
+      fullPath: '/api/public/hooks/cashfree'
+      preLoaderRoute: typeof ApiPublicHooksCashfreeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/meta-leads': {
       id: '/api/public/hooks/meta-leads'
       path: '/api/public/hooks/meta-leads'
       fullPath: '/api/public/hooks/meta-leads'
       preLoaderRoute: typeof ApiPublicHooksMetaLeadsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/hooks/razorpay': {
+      id: '/api/public/hooks/razorpay'
+      path: '/api/public/hooks/razorpay'
+      fullPath: '/api/public/hooks/razorpay'
+      preLoaderRoute: typeof ApiPublicHooksRazorpayRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/hooks/run-reminders': {
@@ -316,7 +356,9 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  ApiPublicHooksCashfreeRoute: ApiPublicHooksCashfreeRoute,
   ApiPublicHooksMetaLeadsRoute: ApiPublicHooksMetaLeadsRoute,
+  ApiPublicHooksRazorpayRoute: ApiPublicHooksRazorpayRoute,
   ApiPublicHooksRunRemindersRoute: ApiPublicHooksRunRemindersRoute,
 }
 export const routeTree = rootRouteImport
