@@ -106,7 +106,9 @@ export const Route = createFileRoute("/api/public/hooks/run-reminders")({
       POST: async () => {
         try {
           const queued = await run();
-          return Response.json({ queued });
+          const { flushOutbox } = await import("@/lib/messaging.server");
+          const { sent, failed } = await flushOutbox();
+          return Response.json({ queued, sent, failed });
         } catch (e) {
           return Response.json(
             { error: e instanceof Error ? e.message : "Unknown error" },
