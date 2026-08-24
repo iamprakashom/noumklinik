@@ -1,7 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import { BellRing, CalendarClock, Plus } from "lucide-react";
 import { AppShell, ghostButton, primaryButton } from "@/components/clinic/AppShell";
 import { Chip, EmptyState, Field, inputClass, textareaClass } from "@/components/clinic/bits";
 import {
@@ -12,14 +13,16 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
+  APPOINTMENT_SOURCES,
   APPOINTMENT_STATUSES,
-  addDays,
+  TEMPERATURES,
   appointmentTone,
-  formatTime,
-  isSameDay,
+  formatDateTime,
   patientName,
+  temperatureTone,
   toLocalInputValue,
 } from "@/data/clinic";
+import type { Appointment } from "@/data/clinic";
 import {
   useAppointments,
   useInsert,
@@ -29,32 +32,35 @@ import {
   useServices,
   useUpdate,
 } from "@/lib/clinic-data";
+import { sendAppointmentReminder } from "@/lib/messaging.functions";
 
 export const Route = createFileRoute("/_authenticated/appointments")({
   head: () => ({
     meta: [
-      { title: "Schedule — Luma Aesthetics Clinic CRM" },
+      { title: "Appointments — Luma Aesthetics Clinic CRM" },
       {
         name: "description",
         content:
-          "Book and manage clinic appointments by provider and treatment room, with check-in, completion and no-show tracking.",
+          "Book, reschedule and assign clinic appointments with source tracking, treatment type, doctor assignment and session reminders.",
       },
-      { property: "og:title", content: "Schedule — Luma Aesthetics Clinic CRM" },
+      { property: "og:title", content: "Appointments — Luma Aesthetics Clinic CRM" },
       {
         property: "og:description",
-        content: "Daily medspa schedule by provider and room with live appointment statuses.",
+        content: "Medspa appointment desk with reschedule, doctor assignment and reminders.",
       },
     ],
   }),
-  component: Schedule,
+  component: AppointmentsPage,
 });
 
-const HOURS = Array.from({ length: 12 }, (_, i) => i + 8); // 08:00 - 19:00
+type RangeKey = "today" | "upcoming" | "past" | "all";
 
-function Schedule() {
-  const [day, setDay] = useState(() => new Date());
+function AppointmentsPage() {
   const [open, setOpen] = useState(false);
-  const [providerFilter, setProviderFilter] = useState("all");
+  const [reschedule, setReschedule] = useState<Appointment | null>(null);
+  const [range, setRange] = useState<RangeKey>("upcoming");
+  const [sourceFilter, setSourceFilter] = useState("all");
+  const [doctorFilter, setDoctorFilter] = useState("all");
 
   const appointments = useAppointments();
   const patients = usePatients();
@@ -63,18 +69,40 @@ function Schedule() {
   const services = useServices();
   const createAppointment = useInsert("appointments");
   const updateAppointment = useUpdate("appointments");
+  const sendReminder = useServerFn(sendAppointmentReminder);
 
-  const dayAppointments = useMemo(
-    () =>
-      (appointments.data ?? [])
-        .filter((a) => isSameDay(a.starts_at, day))
-        .filter((a) => providerFilter === "all" || a.provider_id === providerFilter)
-        .sort((a, b) => a.starts_at.localeCompare(b.starts_at)),
-    [appointments.data, day, providerFilter],
-  );
+  const rows = useMemo(() => {
+    const now = new Date();
+    const startOfDay = new Date(now).setHours(0, 0, 0, 0);
+    const endOfDay = new Date(now).setHours(23, 59, 59, 999);
+    return (appointments.data ?? [])
+      .filter((a) => {
+        const t = new Date(a.starts_at).getTime();
+        if (range === "today") return t >= startOfDay && t <= endOfDay;
+        if (range === "upcoming") return t >= startOfDay;
+        if (range === "past") return t < startOfDay;
+        return true;
+      })
+      .filter((a) => sourceFilter === "all" || (a.source ?? "Walk-in") === sourceFilter)
+      .filter((a) =>
+        doctorFilter === "all"
+          ? true
+          : doctorFilter === "unassigned"
+            ? !a.provider_id
+            : a.provider_id === doctorFilter,
+      )
+      .sort((a, b) =>
+        range === "past"
+          ? b.starts_at.localeCompare(a.starts_at)
+          : a.starts_at.localeCompare(b.starts_at),
+      );
+  }, [appointments.data, range, sourceFilter, doctorFilter]);
 
   const nameOf = (id: string | null, list?: { id: string; name: string }[]) =>
     list?.find((x) => x.id === id)?.name ?? "—";
+
+  const patch = (id: string, values: Record<string, unknown>, msg = "Appointment updated") =>
+    updateAppointment.mutate({ id, values }, { onSuccess: () => toast.success(msg) });
 
   function submit(form: HTMLFormElement) {
     const fd = new FormData(form);
@@ -88,6 +116,8 @@ function Schedule() {
         starts_at: new Date(String(fd.get("starts_at"))).toISOString(),
         duration_min: Number(fd.get("duration_min")) || service?.duration_min || 30,
         status: "Booked",
+        source: String(fd.get("source")),
+        temperature: String(fd.get("temperature")),
         notes: String(fd.get("notes")) || null,
       },
       {
@@ -102,43 +132,42 @@ function Schedule() {
 
   return (
     <AppShell
-      title="Schedule"
-      subtitle={day.toLocaleDateString("en-US", {
-        weekday: "long",
-        month: "long",
-        day: "numeric",
-        year: "numeric",
-      })}
+      title="Appointments"
+      subtitle="Bookings across WhatsApp, Instagram and walk-ins — reschedule, assign a doctor or send a reminder"
       actions={
         <>
-          <div className="flex items-center rounded-md border border-border bg-card">
-            <button
-              className="px-2 py-2 text-muted-foreground hover:text-foreground"
-              onClick={() => setDay((d) => addDays(d, -1))}
-              aria-label="Previous day"
-            >
-              <ChevronLeft className="size-4" />
-            </button>
-            <button
-              className="px-2.5 text-xs font-medium"
-              onClick={() => setDay(new Date())}
-            >
-              Today
-            </button>
-            <button
-              className="px-2 py-2 text-muted-foreground hover:text-foreground"
-              onClick={() => setDay((d) => addDays(d, 1))}
-              aria-label="Next day"
-            >
-              <ChevronRight className="size-4" />
-            </button>
-          </div>
           <select
-            value={providerFilter}
-            onChange={(e) => setProviderFilter(e.target.value)}
-            className={`${inputClass} w-44`}
+            value={range}
+            onChange={(e) => setRange(e.target.value as RangeKey)}
+            className={`${inputClass} w-32`}
+            aria-label="Date range"
           >
-            <option value="all">All providers</option>
+            <option value="today">Today</option>
+            <option value="upcoming">Upcoming</option>
+            <option value="past">Past</option>
+            <option value="all">All</option>
+          </select>
+          <select
+            value={sourceFilter}
+            onChange={(e) => setSourceFilter(e.target.value)}
+            className={`${inputClass} w-36`}
+            aria-label="Filter by source"
+          >
+            <option value="all">All sources</option>
+            {APPOINTMENT_SOURCES.map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
+          </select>
+          <select
+            value={doctorFilter}
+            onChange={(e) => setDoctorFilter(e.target.value)}
+            className={`${inputClass} w-40`}
+            aria-label="Filter by doctor"
+          >
+            <option value="all">All doctors</option>
+            <option value="unassigned">Unassigned</option>
             {providers.data?.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.name}
@@ -151,82 +180,233 @@ function Schedule() {
         </>
       }
     >
-      <div className="rounded-xl border border-border bg-card">
-        {dayAppointments.length === 0 ? (
-          <div className="p-6">
-            <EmptyState>No appointments for this day.</EmptyState>
-          </div>
-        ) : (
-          <ul className="divide-y divide-border">
-            {HOURS.map((hour) => {
-              const slot = dayAppointments.filter(
-                (a) => new Date(a.starts_at).getHours() === hour,
-              );
-              if (slot.length === 0) return null;
-              return (
-                <li key={hour} className="flex gap-4 px-5 py-4">
-                  <span className="w-14 shrink-0 pt-1 text-xs tabular-nums text-muted-foreground">
-                    {`${String(hour).padStart(2, "0")}:00`}
-                  </span>
-                  <div className="grid flex-1 gap-2">
-                    {slot.map((a) => {
-                      const p = patients.data?.find((x) => x.id === a.patient_id);
-                      return (
-                        <div
-                          key={a.id}
-                          className="card-hover flex flex-wrap items-center gap-3 rounded-lg border border-border bg-background px-4 py-3"
+      {rows.length === 0 ? (
+        <EmptyState>No appointments match these filters.</EmptyState>
+      ) : (
+        <div className="overflow-x-auto rounded-xl border border-border bg-card">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-border text-left text-xs text-muted-foreground">
+                <th className="px-5 py-3 font-medium">Patient</th>
+                <th className="px-5 py-3 font-medium">Source</th>
+                <th className="px-5 py-3 font-medium">Created</th>
+                <th className="px-5 py-3 font-medium">Scheduled</th>
+                <th className="px-5 py-3 font-medium">Treatment</th>
+                <th className="px-5 py-3 font-medium">Doctor</th>
+                <th className="px-5 py-3 font-medium">Tag</th>
+                <th className="px-5 py-3 font-medium">Status</th>
+                <th className="px-5 py-3 font-medium">Notes</th>
+                <th className="px-5 py-3" />
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {rows.map((a) => {
+                const p = patients.data?.find((x) => x.id === a.patient_id);
+                return (
+                  <tr key={a.id} className="align-top transition-colors hover:bg-secondary/60">
+                    <td className="px-5 py-3">
+                      {p ? (
+                        <Link
+                          to="/patients/$patientId"
+                          params={{ patientId: p.id }}
+                          className="font-medium hover:underline"
                         >
-                          <span className="text-xs tabular-nums text-muted-foreground">
-                            {formatTime(a.starts_at)} · {a.duration_min}m
-                          </span>
-                          <div className="min-w-0 flex-1">
-                            <p className="truncate text-sm font-medium">
-                              {p ? (
-                                <Link
-                                  to="/patients/$patientId"
-                                  params={{ patientId: p.id }}
-                                  className="hover:underline"
-                                >
-                                  {patientName(p)}
-                                </Link>
-                              ) : (
-                                "Unknown patient"
-                              )}
-                            </p>
-                            <p className="truncate text-xs text-muted-foreground">
-                              {nameOf(a.service_id, services.data)} ·{" "}
-                              {nameOf(a.provider_id, providers.data)} ·{" "}
-                              {nameOf(a.room_id, rooms.data)}
-                            </p>
-                          </div>
-                          <Chip tone={appointmentTone(a.status)}>{a.status}</Chip>
-                          <select
-                            value={a.status}
-                            onChange={(e) =>
-                              updateAppointment.mutate(
-                                { id: a.id, values: { status: e.target.value } },
-                                { onSuccess: () => toast.success("Status updated") },
-                              )
-                            }
-                            className={`${inputClass} h-8 w-36 text-xs`}
-                            aria-label="Appointment status"
-                          >
-                            {APPOINTMENT_STATUSES.map((s) => (
-                              <option key={s} value={s}>
-                                {s}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </div>
+                          {patientName(p)}
+                        </Link>
+                      ) : (
+                        "Unknown patient"
+                      )}
+                      <p className="text-xs text-muted-foreground">
+                        {nameOf(a.room_id, rooms.data)} · {a.duration_min}m
+                      </p>
+                    </td>
+                    <td className="px-5 py-3">
+                      <select
+                        value={a.source ?? "Walk-in"}
+                        onChange={(e) => patch(a.id, { source: e.target.value })}
+                        className={`${inputClass} h-8 w-32 text-xs`}
+                        aria-label="Source"
+                      >
+                        {APPOINTMENT_SOURCES.map((s) => (
+                          <option key={s} value={s}>
+                            {s}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
+                    <td className="px-5 py-3 text-xs text-muted-foreground">
+                      {formatDateTime(a.created_at)}
+                    </td>
+                    <td className="px-5 py-3 text-xs">
+                      {formatDateTime(a.starts_at)}
+                      {a.reschedule_count ? (
+                        <span className="block text-[11px] text-status-progress">
+                          rescheduled {a.reschedule_count}×
+                        </span>
+                      ) : null}
+                    </td>
+                    <td className="px-5 py-3">
+                      <select
+                        value={a.service_id ?? ""}
+                        onChange={(e) => {
+                          const svc = services.data?.find((s) => s.id === e.target.value);
+                          patch(
+                            a.id,
+                            {
+                              service_id: e.target.value || null,
+                              duration_min: svc?.duration_min ?? a.duration_min,
+                            },
+                            "Treatment updated",
+                          );
+                        }}
+                        className={`${inputClass} h-8 w-40 text-xs`}
+                        aria-label="Treatment type"
+                      >
+                        <option value="">Not set</option>
+                        {services.data?.map((s) => (
+                          <option key={s.id} value={s.id}>
+                            {s.name}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
+                    <td className="px-5 py-3">
+                      <select
+                        value={a.provider_id ?? ""}
+                        onChange={(e) =>
+                          patch(a.id, { provider_id: e.target.value || null }, "Doctor assigned")
+                        }
+                        className={`${inputClass} h-8 w-36 text-xs`}
+                        aria-label="Doctor"
+                      >
+                        <option value="">Unassigned</option>
+                        {providers.data?.map((pr) => (
+                          <option key={pr.id} value={pr.id}>
+                            {pr.name}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
+                    <td className="px-5 py-3">
+                      <select
+                        value={a.temperature ?? "Warm"}
+                        onChange={(e) => patch(a.id, { temperature: e.target.value })}
+                        className={`${inputClass} h-8 w-24 text-xs`}
+                        aria-label="Tag"
+                      >
+                        {TEMPERATURES.map((t) => (
+                          <option key={t} value={t}>
+                            {t}
+                          </option>
+                        ))}
+                      </select>
+                      <Chip tone={temperatureTone(a.temperature ?? "Warm")} className="mt-1">
+                        {a.temperature ?? "Warm"}
+                      </Chip>
+                    </td>
+                    <td className="px-5 py-3">
+                      <select
+                        value={a.status}
+                        onChange={(e) => patch(a.id, { status: e.target.value }, "Status updated")}
+                        className={`${inputClass} h-8 w-32 text-xs`}
+                        aria-label="Status"
+                      >
+                        {APPOINTMENT_STATUSES.map((s) => (
+                          <option key={s} value={s}>
+                            {s}
+                          </option>
+                        ))}
+                      </select>
+                      <Chip tone={appointmentTone(a.status)} className="mt-1">
+                        {a.status}
+                      </Chip>
+                    </td>
+                    <td className="max-w-[180px] px-5 py-3 text-xs text-muted-foreground">
+                      {a.notes ?? "—"}
+                    </td>
+                    <td className="px-5 py-3">
+                      <div className="flex flex-col items-end gap-1">
+                        <button className={ghostButton} onClick={() => setReschedule(a)}>
+                          <CalendarClock className="size-3.5" /> Reschedule
+                        </button>
+                        <button
+                          className={ghostButton}
+                          onClick={() =>
+                            toast.promise(sendReminder({ data: { appointmentId: a.id } }), {
+                              loading: "Sending reminder…",
+                              success: "Reminder sent",
+                              error: (e: Error) => e.message,
+                            })
+                          }
+                        >
+                          <BellRing className="size-3.5" /> Remind
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      <Dialog open={!!reschedule} onOpenChange={(v) => !v && setReschedule(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Reschedule appointment</DialogTitle>
+          </DialogHeader>
+          {reschedule ? (
+            <form
+              id="reschedule-form"
+              className="grid gap-4"
+              onSubmit={(e) => {
+                e.preventDefault();
+                const fd = new FormData(e.currentTarget);
+                updateAppointment.mutate(
+                  {
+                    id: reschedule.id,
+                    values: {
+                      previous_starts_at: reschedule.starts_at,
+                      starts_at: new Date(String(fd.get("starts_at"))).toISOString(),
+                      reschedule_count: (reschedule.reschedule_count ?? 0) + 1,
+                      status: "Booked",
+                    },
+                  },
+                  {
+                    onSuccess: () => {
+                      toast.success("Appointment rescheduled");
+                      setReschedule(null);
+                    },
+                    onError: (err) => toast.error(err.message),
+                  },
+                );
+              }}
+            >
+              <p className="text-xs text-muted-foreground">
+                Currently {formatDateTime(reschedule.starts_at)}
+              </p>
+              <Field label="New date & time">
+                <input
+                  name="starts_at"
+                  type="datetime-local"
+                  required
+                  defaultValue={toLocalInputValue(new Date(reschedule.starts_at))}
+                  className={inputClass}
+                />
+              </Field>
+            </form>
+          ) : null}
+          <DialogFooter>
+            <button type="button" className={ghostButton} onClick={() => setReschedule(null)}>
+              Cancel
+            </button>
+            <button type="submit" form="reschedule-form" className={primaryButton}>
+              Save new time
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="sm:max-w-lg">
@@ -250,7 +430,7 @@ function Schedule() {
                 ))}
               </select>
             </Field>
-            <Field label="Service">
+            <Field label="Treatment type">
               <select name="service_id" className={inputClass}>
                 {services.data?.map((s) => (
                   <option key={s.id} value={s.id}>
@@ -259,8 +439,9 @@ function Schedule() {
                 ))}
               </select>
             </Field>
-            <Field label="Provider">
+            <Field label="Doctor">
               <select name="provider_id" className={inputClass}>
+                <option value="">Unassigned</option>
                 {providers.data?.map((p) => (
                   <option key={p.id} value={p.id}>
                     {p.name}
@@ -268,8 +449,27 @@ function Schedule() {
                 ))}
               </select>
             </Field>
+            <Field label="Source">
+              <select name="source" className={inputClass} defaultValue="WhatsApp">
+                {APPOINTMENT_SOURCES.map((s) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <Field label="Tag">
+              <select name="temperature" className={inputClass} defaultValue="Warm">
+                {TEMPERATURES.map((t) => (
+                  <option key={t} value={t}>
+                    {t}
+                  </option>
+                ))}
+              </select>
+            </Field>
             <Field label="Room">
               <select name="room_id" className={inputClass}>
+                <option value="">Not set</option>
                 {rooms.data?.map((r) => (
                   <option key={r.id} value={r.id}>
                     {r.name}
@@ -278,19 +478,30 @@ function Schedule() {
               </select>
             </Field>
             <Field label="Duration (min)">
-              <input name="duration_min" type="number" min={10} step={5} defaultValue={30} className={inputClass} />
+              <input
+                name="duration_min"
+                type="number"
+                min={10}
+                step={5}
+                defaultValue={30}
+                className={inputClass}
+              />
             </Field>
-            <Field label="Starts at" className="sm:col-span-2">
+            <Field label="Schedule date & time" className="sm:col-span-2">
               <input
                 name="starts_at"
                 type="datetime-local"
                 required
-                defaultValue={toLocalInputValue(new Date(day.setHours(10, 0, 0, 0)))}
+                defaultValue={toLocalInputValue(new Date(new Date().setHours(10, 0, 0, 0)))}
                 className={inputClass}
               />
             </Field>
             <Field label="Notes" className="sm:col-span-2">
-              <textarea name="notes" className={textareaClass} placeholder="Treatment notes, preferences…" />
+              <textarea
+                name="notes"
+                className={textareaClass}
+                placeholder="Treatment notes, preferences…"
+              />
             </Field>
           </form>
           <DialogFooter>
