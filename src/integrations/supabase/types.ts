@@ -549,35 +549,47 @@ export type Database = {
       }
       meta_lead_forms: {
         Row: {
+          auto_apply: boolean
+          confirmed_keys: string[]
           connection_id: string
           created_at: string
           enabled: boolean
+          field_confidence: Json
           field_map: Json
           form_id: string
           form_name: string
           id: string
+          needs_review: boolean
           questions: Json
           updated_at: string
         }
         Insert: {
+          auto_apply?: boolean
+          confirmed_keys?: string[]
           connection_id: string
           created_at?: string
           enabled?: boolean
+          field_confidence?: Json
           field_map?: Json
           form_id: string
           form_name: string
           id?: string
+          needs_review?: boolean
           questions?: Json
           updated_at?: string
         }
         Update: {
+          auto_apply?: boolean
+          confirmed_keys?: string[]
           connection_id?: string
           created_at?: string
           enabled?: boolean
+          field_confidence?: Json
           field_map?: Json
           form_id?: string
           form_name?: string
           id?: string
+          needs_review?: boolean
           questions?: Json
           updated_at?: string
         }
