@@ -235,6 +235,7 @@ function BillingPage() {
                   onSuccess: () => {
                     toast.success("Invoice created");
                     setLines([{ description: "", quantity: 1, unit_price: 0 }]);
+                    setDiscount(0);
                     setOpen(false);
                   },
                   onError: (err) => toast.error(err.message),
