@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Plus } from "lucide-react";
+import { Link2, Plus, Sparkles } from "lucide-react";
 import { AppShell, ghostButton, primaryButton } from "@/components/clinic/AppShell";
 import { Chip, EmptyState, Field, StatCard, inputClass } from "@/components/clinic/bits";
 import {
@@ -13,15 +14,18 @@ import {
 } from "@/components/ui/dialog";
 import { formatDate, invoiceTone, money, patientName } from "@/data/clinic";
 import {
+  useAddonDiscountRules,
   useCreateInvoice,
   useInsert,
   useInvoiceItems,
   useInvoices,
   usePatients,
   usePayments,
+  useServiceAddons,
   useServices,
   useUpdate,
 } from "@/lib/clinic-data";
+import { createInvoicePaymentLink } from "@/lib/payments.functions";
 
 export const Route = createFileRoute("/_authenticated/billing")({
   head: () => ({
@@ -30,12 +34,12 @@ export const Route = createFileRoute("/_authenticated/billing")({
       {
         name: "description",
         content:
-          "Create treatment invoices, apply discounts and tax, record payments and track outstanding patient balances.",
+          "Create treatment invoices with add-on upsells, apply bundle discounts and tax, collect UPI or EMI payments and track balances.",
       },
       { property: "og:title", content: "Billing — Luma Aesthetics Clinic CRM" },
       {
         property: "og:description",
-        content: "Invoices, payments and outstanding balances for the clinic.",
+        content: "Invoices, add-on upsells, payment links and outstanding balances for the clinic.",
       },
     ],
   }),
@@ -45,15 +49,19 @@ export const Route = createFileRoute("/_authenticated/billing")({
 function BillingPage() {
   const [open, setOpen] = useState(false);
   const [lines, setLines] = useState([{ description: "", quantity: 1, unit_price: 0 }]);
+  const [discount, setDiscount] = useState(0);
 
   const invoices = useInvoices();
   const items = useInvoiceItems();
   const payments = usePayments();
   const patients = usePatients();
   const services = useServices();
+  const addons = useServiceAddons();
+  const rules = useAddonDiscountRules();
   const createInvoice = useCreateInvoice();
   const addPayment = useInsert("payments");
   const updateInvoice = useUpdate("invoices");
+  const makeLink = useServerFn(createInvoicePaymentLink);
 
   const all = invoices.data ?? [];
   const outstanding = all
@@ -65,6 +73,37 @@ function BillingPage() {
     const p = patients.data?.find((x) => x.id === id);
     return p ? patientName(p) : "Unknown";
   };
+
+  const mainService = services.data?.find((s) => s.name === lines[0]?.description);
+  const suggestedAddons = useMemo(() => {
+    if (!mainService) return [];
+    const ids = (addons.data ?? [])
+      .filter((a) => a.main_service_id === mainService.id)
+      .map((a) => a.addon_service_id);
+    return (services.data ?? []).filter(
+      (s) => ids.includes(s.id) && !lines.some((l) => l.description === s.name),
+    );
+  }, [mainService, addons.data, services.data, lines]);
+
+  const subtotal = lines.reduce((s, l) => s + l.quantity * l.unit_price, 0);
+  const addonCount = Math.max(0, lines.filter((l) => l.description).length - 1);
+
+  /** Best matching bundle discount for the current line-up. */
+  const bundleRule = useMemo(() => {
+    const eligible = (rules.data ?? []).filter(
+      (r) =>
+        r.active &&
+        addonCount >= r.min_addons &&
+        (!r.main_service_id || r.main_service_id === mainService?.id),
+    );
+    let best: { name: string; value: number } | null = null;
+    for (const r of eligible) {
+      const value =
+        r.discount_type === "percent" ? (subtotal * Number(r.discount_value)) / 100 : Number(r.discount_value);
+      if (!best || value > best.value) best = { name: r.name, value: Math.round(value) };
+    }
+    return best;
+  }, [rules.data, addonCount, mainService?.id, subtotal]);
 
   return (
     <AppShell
@@ -119,31 +158,53 @@ function BillingPage() {
                     </td>
                     <td className="px-5 py-3 text-right">
                       {inv.status === "Open" ? (
-                        <button
-                          className={ghostButton}
-                          onClick={() =>
-                            addPayment.mutate(
-                              {
-                                invoice_id: inv.id,
-                                amount: Number(inv.total),
-                                method: "Card",
-                                status: "Paid",
-                              },
-                              {
-                                onSuccess: () =>
-                                  updateInvoice.mutate(
-                                    { id: inv.id, values: { status: "Paid" } },
-                                    { onSuccess: () => toast.success("Payment recorded") },
-                                  ),
-                                onError: (e) => toast.error(e.message),
-                              },
-                            )
-                          }
-                        >
-                          Record payment
-                        </button>
+                        <div className="flex justify-end gap-1">
+                          <button
+                            className={ghostButton}
+                            onClick={() =>
+                              toast.promise(
+                                makeLink({ data: { invoiceId: inv.id } }).then((r) => {
+                                  void navigator.clipboard?.writeText(r.url);
+                                  return r;
+                                }),
+                                {
+                                  loading: "Creating payment link…",
+                                  success: (r: { provider: string }) =>
+                                    `${r.provider} link copied — UPI & EMI enabled`,
+                                  error: (e: Error) => e.message,
+                                },
+                              )
+                            }
+                          >
+                            <Link2 className="size-3.5" /> Payment link
+                          </button>
+                          <button
+                            className={ghostButton}
+                            onClick={() =>
+                              addPayment.mutate(
+                                {
+                                  invoice_id: inv.id,
+                                  amount: Number(inv.total),
+                                  method: "Cash",
+                                  status: "Paid",
+                                },
+                                {
+                                  onSuccess: () =>
+                                    updateInvoice.mutate(
+                                      { id: inv.id, values: { status: "Paid" } },
+                                      { onSuccess: () => toast.success("Payment recorded") },
+                                    ),
+                                  onError: (e) => toast.error(e.message),
+                                },
+                              )
+                            }
+                          >
+                            Record payment
+                          </button>
+                        </div>
                       ) : null}
                     </td>
+
                   </tr>
                 );
               })}
@@ -259,14 +320,61 @@ function BillingPage() {
               </button>
             </div>
 
+            {suggestedAddons.length > 0 ? (
+              <div className="rounded-lg border border-border bg-secondary/50 p-3">
+                <p className="flex items-center gap-1.5 text-xs font-medium">
+                  <Sparkles className="size-3.5 text-primary" /> Suggested add-ons for{" "}
+                  {mainService?.name}
+                </p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {suggestedAddons.map((s) => (
+                    <button
+                      key={s.id}
+                      type="button"
+                      className="rounded-full border border-border bg-card px-3 py-1 text-xs hover:border-primary"
+                      onClick={() =>
+                        setLines((prev) => [
+                          ...prev.filter((l) => l.description),
+                          { description: s.name, quantity: 1, unit_price: Number(s.price) },
+                        ])
+                      }
+                    >
+                      + {s.name} · {money(s.price)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
+            {bundleRule ? (
+              <button
+                type="button"
+                className={`${ghostButton} w-fit`}
+                onClick={() => setDiscount(bundleRule.value)}
+              >
+                Apply “{bundleRule.name}” — {money(bundleRule.value)} off
+              </button>
+            ) : null}
+
             <div className="grid grid-cols-2 gap-4">
               <Field label="Discount">
-                <input name="discount" type="number" step="0.01" defaultValue={0} className={inputClass} />
+                <input
+                  name="discount"
+                  type="number"
+                  step="0.01"
+                  value={discount}
+                  onChange={(e) => setDiscount(Number(e.target.value))}
+                  className={inputClass}
+                />
               </Field>
               <Field label="Tax rate (%)">
                 <input name="tax_rate" type="number" step="0.1" defaultValue={8.25} className={inputClass} />
               </Field>
             </div>
+            <p className="text-xs text-muted-foreground">
+              Subtotal {money(subtotal)} · {addonCount} add-on{addonCount === 1 ? "" : "s"}
+            </p>
+
           </form>
           <DialogFooter>
             <button type="button" className={ghostButton} onClick={() => setOpen(false)}>
