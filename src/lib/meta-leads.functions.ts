@@ -131,16 +131,43 @@ export const saveFormSettings = createServerFn({ method: "POST" })
         id: z.string().uuid(),
         enabled: z.boolean(),
         field_map: z.record(z.string(), z.string()),
+        confirmed_keys: z.array(z.string()).optional(),
+        auto_apply: z.boolean().optional(),
       })
       .parse(input),
   )
   .handler(async ({ data, context }) => {
     await assertAdmin(context, "change lead capture settings");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { error } = await supabaseAdmin
+    const m = await import("@/lib/meta-leads.server");
+
+    const { data: row } = await supabaseAdmin
       .from("meta_lead_forms")
-      .update({ enabled: data.enabled, field_map: data.field_map })
-      .eq("id", data.id);
+      .select("questions, field_confidence, confirmed_keys")
+      .eq("id", data.id)
+      .maybeSingle();
+
+    const questions = ((row?.questions as { key: string }[] | null) ?? []) as { key: string }[];
+    const conf = (row?.field_confidence as { scores?: Record<string, number> } | null) ?? {};
+    const scores = { ...(conf.scores ?? {}) };
+    const previous = ((row?.confirmed_keys as string[] | null) ?? []) as string[];
+    // Saving the form counts as confirming every field the user could see.
+    const confirmed = Array.from(
+      new Set([...previous, ...(data.confirmed_keys ?? questions.map((q) => q.key))]),
+    );
+    for (const k of confirmed) scores[k] = 1;
+
+    const summary = m.reviewSummary(questions, scores, confirmed);
+    const update: Record<string, unknown> = {
+      enabled: data.enabled,
+      field_map: data.field_map,
+      confirmed_keys: confirmed,
+      field_confidence: { ...(conf as object), scores },
+      needs_review: summary.needsReview,
+    };
+    if (data.auto_apply !== undefined) update["auto_apply"] = data.auto_apply;
+
+    const { error } = await supabaseAdmin.from("meta_lead_forms").update(update).eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
