@@ -77,7 +77,18 @@ function SettingsPage() {
           <TabsTrigger value="providers">Providers</TabsTrigger>
           <TabsTrigger value="rooms">Rooms</TabsTrigger>
           <TabsTrigger value="consents">Consent forms</TabsTrigger>
+          <TabsTrigger value="addons">Add-ons</TabsTrigger>
+          <TabsTrigger value="payments">Payments</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="addons" className="mt-4">
+          <AddonsTab />
+        </TabsContent>
+        <TabsContent value="payments" className="mt-4">
+          <PaymentsTab />
+        </TabsContent>
+
+
 
         <TabsContent value="services" className="mt-4">
           <Panel
