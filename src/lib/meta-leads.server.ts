@@ -186,7 +186,12 @@ export async function fetchForms(pageId: string, pageToken: string) {
     data: {
       id: string;
       name: string;
-      questions?: { key?: string; type?: string; label?: string }[];
+      questions?: {
+        key?: string;
+        type?: string;
+        label?: string;
+        options?: { key?: string; value?: string }[];
+      }[];
     }[];
   }>(`${pageId}/leadgen_forms`, { access_token: pageToken, fields: "id,name,questions" });
   return res.data.map((f) => ({
@@ -195,6 +200,7 @@ export async function fetchForms(pageId: string, pageToken: string) {
     questions: (f.questions ?? []).map((q) => ({
       key: q.key ?? q.type ?? "",
       label: q.label ?? q.key ?? q.type ?? "",
+      options: (q.options ?? []).map((o) => o.value ?? o.key ?? "").filter(Boolean),
     })),
   }));
 }
