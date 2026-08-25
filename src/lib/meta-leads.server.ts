@@ -21,7 +21,11 @@ export type LeadForm = {
   form_name: string;
   enabled: boolean;
   field_map: Record<string, string>;
-  questions: { key: string; label: string }[];
+  questions: { key: string; label: string; options?: string[] }[];
+  field_confidence?: { scores?: Record<string, number>; reasons?: Record<string, string> } | null;
+  confirmed_keys?: string[] | null;
+  needs_review?: boolean | null;
+  auto_apply?: boolean | null;
 };
 
 export function metaAppConfig() {
