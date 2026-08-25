@@ -3,6 +3,8 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { Plus } from "lucide-react";
 import { AppShell, ghostButton, primaryButton } from "@/components/clinic/AppShell";
+import { AddonsTab } from "@/components/clinic/AddonsTab";
+import { PaymentsTab } from "@/components/clinic/PaymentsTab";
 import { Chip, EmptyState, Field, Panel, inputClass, textareaClass } from "@/components/clinic/bits";
 import { Switch } from "@/components/ui/switch";
 import {
