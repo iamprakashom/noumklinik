@@ -204,20 +204,37 @@ function Automations() {
                         <p className="mt-1 text-xs text-muted-foreground">{m.body}</p>
                       </div>
                       {m.status === "Queued" ? (
-                        <button
-                          className={ghostButton}
-                          onClick={() =>
-                            updateMessage.mutate(
-                              {
-                                id: m.id,
-                                values: { status: "Sent", sent_at: new Date().toISOString() },
-                              },
-                              { onSuccess: () => toast.success("Marked as sent") },
-                            )
-                          }
-                        >
-                          Mark sent
-                        </button>
+                        <div className="flex gap-1">
+                          <button
+                            className={ghostButton}
+                            onClick={() =>
+                              toast.promise(
+                                sendNow({ data: { id: m.id } }).then(() => outbox.refetch()),
+                                {
+                                  loading: "Sending…",
+                                  success: "Message sent",
+                                  error: (e: Error) => e.message,
+                                },
+                              )
+                            }
+                          >
+                            Send now
+                          </button>
+                          <button
+                            className={ghostButton}
+                            onClick={() =>
+                              updateMessage.mutate(
+                                {
+                                  id: m.id,
+                                  values: { status: "Sent", sent_at: new Date().toISOString() },
+                                },
+                                { onSuccess: () => toast.success("Marked as sent") },
+                              )
+                            }
+                          >
+                            Mark sent
+                          </button>
+                        </div>
                       ) : null}
                     </li>
                   );
@@ -225,8 +242,10 @@ function Automations() {
               </ul>
             )}
             <p className="mt-4 text-xs text-muted-foreground">
-              Messages queue here until Email, SMS and WhatsApp provider credentials are connected.
+              “Send now” delivers through the connected WhatsApp, SMS or email provider; messages
+              stay queued until those credentials are connected.
             </p>
+
           </Panel>
         </TabsContent>
       </Tabs>
