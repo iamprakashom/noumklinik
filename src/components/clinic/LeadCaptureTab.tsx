@@ -234,9 +234,9 @@ export function LeadCaptureTab() {
               </p>
             </div>
             {conn.error_message ? (
-              <Chip tone="danger">{conn.error_message}</Chip>
+              <Chip tone="overdue">{conn.error_message}</Chip>
             ) : (
-              <Chip tone="success">Live</Chip>
+              <Chip tone="completed">Live</Chip>
             )}
           </div>
         )}
