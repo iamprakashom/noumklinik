@@ -47,6 +47,11 @@ export const getLeadCaptureStatus = createServerFn({ method: "GET" })
         enabled: f.enabled,
         field_map: f.field_map ?? {},
         questions: f.questions ?? [],
+        confidence: f.field_confidence?.scores ?? {},
+        reasons: f.field_confidence?.reasons ?? {},
+        confirmed_keys: f.confirmed_keys ?? [],
+        needs_review: f.needs_review ?? false,
+        auto_apply: f.auto_apply ?? true,
       })),
       recentLeads: count ?? 0,
     };
@@ -131,15 +136,43 @@ export const saveFormSettings = createServerFn({ method: "POST" })
         id: z.string().uuid(),
         enabled: z.boolean(),
         field_map: z.record(z.string(), z.string()),
+        confirmed_keys: z.array(z.string()).optional(),
+        auto_apply: z.boolean().optional(),
       })
       .parse(input),
   )
   .handler(async ({ data, context }) => {
     await assertAdmin(context, "change lead capture settings");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const m = await import("@/lib/meta-leads.server");
+
+    const { data: row } = await supabaseAdmin
+      .from("meta_lead_forms")
+      .select("questions, field_confidence, confirmed_keys")
+      .eq("id", data.id)
+      .maybeSingle();
+
+    const questions = ((row?.questions as { key: string }[] | null) ?? []) as { key: string }[];
+    const conf = (row?.field_confidence as { scores?: Record<string, number> } | null) ?? {};
+    const scores = { ...(conf.scores ?? {}) };
+    const previous = ((row?.confirmed_keys as string[] | null) ?? []) as string[];
+    // Saving the form counts as confirming every field the user could see.
+    const confirmed = Array.from(
+      new Set([...previous, ...(data.confirmed_keys ?? questions.map((q) => q.key))]),
+    );
+    for (const k of confirmed) scores[k] = 1;
+
+    const summary = m.reviewSummary(questions, scores, confirmed);
     const { error } = await supabaseAdmin
       .from("meta_lead_forms")
-      .update({ enabled: data.enabled, field_map: data.field_map })
+      .update({
+        enabled: data.enabled,
+        field_map: data.field_map,
+        confirmed_keys: confirmed,
+        field_confidence: { ...(conf as object), scores },
+        needs_review: summary.needsReview,
+        ...(data.auto_apply === undefined ? {} : { auto_apply: data.auto_apply }),
+      })
       .eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
