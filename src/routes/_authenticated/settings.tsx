@@ -82,6 +82,7 @@ function SettingsPage() {
           <TabsTrigger value="consents">Consent forms</TabsTrigger>
           <TabsTrigger value="addons">Add-ons</TabsTrigger>
           <TabsTrigger value="payments">Payments</TabsTrigger>
+          <TabsTrigger value="lead-capture">Lead capture</TabsTrigger>
         </TabsList>
 
         <TabsContent value="addons" className="mt-4">
@@ -89,6 +90,9 @@ function SettingsPage() {
         </TabsContent>
         <TabsContent value="payments" className="mt-4">
           <PaymentsTab />
+        </TabsContent>
+        <TabsContent value="lead-capture" className="mt-4">
+          <LeadCaptureTab />
         </TabsContent>
 
 
