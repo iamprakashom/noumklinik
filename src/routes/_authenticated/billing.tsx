@@ -158,31 +158,53 @@ function BillingPage() {
                     </td>
                     <td className="px-5 py-3 text-right">
                       {inv.status === "Open" ? (
-                        <button
-                          className={ghostButton}
-                          onClick={() =>
-                            addPayment.mutate(
-                              {
-                                invoice_id: inv.id,
-                                amount: Number(inv.total),
-                                method: "Card",
-                                status: "Paid",
-                              },
-                              {
-                                onSuccess: () =>
-                                  updateInvoice.mutate(
-                                    { id: inv.id, values: { status: "Paid" } },
-                                    { onSuccess: () => toast.success("Payment recorded") },
-                                  ),
-                                onError: (e) => toast.error(e.message),
-                              },
-                            )
-                          }
-                        >
-                          Record payment
-                        </button>
+                        <div className="flex justify-end gap-1">
+                          <button
+                            className={ghostButton}
+                            onClick={() =>
+                              toast.promise(
+                                makeLink({ data: { invoiceId: inv.id } }).then((r) => {
+                                  void navigator.clipboard?.writeText(r.url);
+                                  return r;
+                                }),
+                                {
+                                  loading: "Creating payment link…",
+                                  success: (r: { provider: string }) =>
+                                    `${r.provider} link copied — UPI & EMI enabled`,
+                                  error: (e: Error) => e.message,
+                                },
+                              )
+                            }
+                          >
+                            <Link2 className="size-3.5" /> Payment link
+                          </button>
+                          <button
+                            className={ghostButton}
+                            onClick={() =>
+                              addPayment.mutate(
+                                {
+                                  invoice_id: inv.id,
+                                  amount: Number(inv.total),
+                                  method: "Cash",
+                                  status: "Paid",
+                                },
+                                {
+                                  onSuccess: () =>
+                                    updateInvoice.mutate(
+                                      { id: inv.id, values: { status: "Paid" } },
+                                      { onSuccess: () => toast.success("Payment recorded") },
+                                    ),
+                                  onError: (e) => toast.error(e.message),
+                                },
+                              )
+                            }
+                          >
+                            Record payment
+                          </button>
+                        </div>
                       ) : null}
                     </td>
+
                   </tr>
                 );
               })}
