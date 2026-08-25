@@ -56,16 +56,16 @@ export async function loadConnection(): Promise<MetaConnection | null> {
   return (data as MetaConnection | null) ?? null;
 }
 
-export async function saveConnection(values: Record<string, unknown>, id?: string) {
+export async function saveConnection(values: Record<string, string | null>, id?: string) {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   if (id) {
-    const { error } = await supabaseAdmin.from("meta_connections").update(values).eq("id", id);
+    const { error } = await supabaseAdmin.from("meta_connections").update(values as never).eq("id", id);
     if (error) throw new Error(error.message);
     return id;
   }
   const { data, error } = await supabaseAdmin
     .from("meta_connections")
-    .insert({ singleton: true, page_id: "", page_name: "", ...values })
+    .insert({ singleton: true, page_id: "", page_name: "", ...values } as never)
     .select("id")
     .single();
   if (error) throw new Error(error.message);
@@ -270,7 +270,7 @@ const PLATFORM_SOURCE: Record<string, string> = {
 export function buildLeadRow(
   entries: FieldEntry[],
   fieldMap: Record<string, string>,
-  meta: { leadId: string; formName: string; platform?: string; createdAt?: string },
+  meta: { leadId: string; formName: string; platform?: string | undefined; createdAt?: string | undefined },
 ) {
   const out: Record<string, string> = {};
   const noteParts: string[] = [];
