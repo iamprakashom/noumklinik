@@ -320,14 +320,61 @@ function BillingPage() {
               </button>
             </div>
 
+            {suggestedAddons.length > 0 ? (
+              <div className="rounded-lg border border-border bg-secondary/50 p-3">
+                <p className="flex items-center gap-1.5 text-xs font-medium">
+                  <Sparkles className="size-3.5 text-primary" /> Suggested add-ons for{" "}
+                  {mainService?.name}
+                </p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {suggestedAddons.map((s) => (
+                    <button
+                      key={s.id}
+                      type="button"
+                      className="rounded-full border border-border bg-card px-3 py-1 text-xs hover:border-primary"
+                      onClick={() =>
+                        setLines((prev) => [
+                          ...prev.filter((l) => l.description),
+                          { description: s.name, quantity: 1, unit_price: Number(s.price) },
+                        ])
+                      }
+                    >
+                      + {s.name} · {money(s.price)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
+            {bundleRule ? (
+              <button
+                type="button"
+                className={`${ghostButton} w-fit`}
+                onClick={() => setDiscount(bundleRule.value)}
+              >
+                Apply “{bundleRule.name}” — {money(bundleRule.value)} off
+              </button>
+            ) : null}
+
             <div className="grid grid-cols-2 gap-4">
               <Field label="Discount">
-                <input name="discount" type="number" step="0.01" defaultValue={0} className={inputClass} />
+                <input
+                  name="discount"
+                  type="number"
+                  step="0.01"
+                  value={discount}
+                  onChange={(e) => setDiscount(Number(e.target.value))}
+                  className={inputClass}
+                />
               </Field>
               <Field label="Tax rate (%)">
                 <input name="tax_rate" type="number" step="0.1" defaultValue={8.25} className={inputClass} />
               </Field>
             </div>
+            <p className="text-xs text-muted-foreground">
+              Subtotal {money(subtotal)} · {addonCount} add-on{addonCount === 1 ? "" : "s"}
+            </p>
+
           </form>
           <DialogFooter>
             <button type="button" className={ghostButton} onClick={() => setOpen(false)}>
