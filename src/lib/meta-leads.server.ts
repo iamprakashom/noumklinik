@@ -205,44 +205,243 @@ export const CRM_FIELDS = [
   "ignore",
 ] as const;
 
-/** Best-guess mapping so the clinic usually just confirms. */
-export function autoMap(questions: { key: string; label: string }[]) {
-  const map: Record<string, string> = {};
-  for (const q of questions) {
-    const k = `${q.key} ${q.label}`.toLowerCase();
-    if (/full[_ ]?name|^name|your name/.test(k)) map[q.key] = "full_name";
-    else if (/e-?mail/.test(k)) map[q.key] = "email";
-    else if (/phone|mobile|whatsapp|contact number/.test(k)) map[q.key] = "phone";
-    else if (/treatment|service|interest|procedure|concern/.test(k)) map[q.key] = "interest";
-    else if (/city|location|area/.test(k)) map[q.key] = "city";
-    else map[q.key] = "notes";
+/** Everything at or above this scores as "certain" and is applied without asking. */
+export const CONFIDENT_AT = 0.7;
+/** Below this we always ask the user to confirm. */
+export const UNSURE_BELOW = 0.4;
+
+export type Suggestion = { target: string; confidence: number; reason: string };
+
+/** Meta's own standardised question keys — these are unambiguous. */
+const STANDARD_KEYS: Record<string, string> = {
+  full_name: "full_name",
+  first_name: "full_name",
+  last_name: "full_name",
+  name: "full_name",
+  email: "email",
+  phone_number: "phone",
+  phone: "phone",
+  city: "city",
+  street_address: "city",
+  post_code: "city",
+};
+
+const SYNONYMS: { target: string; exact: string[]; strong: RegExp; weak?: RegExp }[] = [
+  {
+    target: "full_name",
+    exact: ["name", "full name", "your name", "patient name", "पूरा नाम"],
+    strong: /\b(full[_ ]?name|your name|patient name|first name|last name)\b/,
+    weak: /name/,
+  },
+  {
+    target: "email",
+    exact: ["email", "email address", "e-mail"],
+    strong: /\b(e-?mail|email address)\b/,
+    weak: /mail/,
+  },
+  {
+    target: "phone",
+    exact: ["phone", "phone number", "mobile", "mobile number", "whatsapp number", "contact number"],
+    strong: /\b(phone|mobile|whatsapp|contact number|cell)\b/,
+    weak: /number|contact|call/,
+  },
+  {
+    target: "interest",
+    exact: ["treatment", "service", "which treatment", "treatment of interest", "interested in"],
+    strong: /\b(treatment|service|procedure|interested in|concern|looking for)\b/,
+    weak: /interest|problem|issue|goal/,
+  },
+  {
+    target: "city",
+    exact: ["city", "location", "area", "which city"],
+    strong: /\b(city|location|area|pincode|pin code|zip|address)\b/,
+    weak: /where|near/,
+  },
+];
+
+function normalise(s: string) {
+  return s.toLowerCase().replace(/[^a-z0-9\s]/g, " ").replace(/\s+/g, " ").trim();
+}
+
+function scoreQuestion(
+  q: { key: string; label: string; options?: string[] },
+  serviceNames: string[],
+): Suggestion {
+  const key = normalise(q.key);
+  const label = normalise(q.label || q.key);
+
+  const std = STANDARD_KEYS[key.replace(/\s/g, "_")];
+  if (std) return { target: std, confidence: 1, reason: `Facebook's standard "${q.key}" field` };
+
+  for (const s of SYNONYMS) {
+    if (s.exact.includes(label)) {
+      return { target: s.target, confidence: 0.9, reason: `Question is titled "${q.label}"` };
+    }
   }
+  for (const s of SYNONYMS) {
+    const hit = label.match(s.strong) ?? key.match(s.strong);
+    if (hit) return { target: s.target, confidence: 0.7, reason: `Matched on "${hit[0]}"` };
+  }
+
+  // A multiple-choice question whose answers look like our services is a treatment picker.
+  const options = (q.options ?? []).map(normalise).filter(Boolean);
+  if (options.length > 0 && serviceNames.length > 0) {
+    const names = serviceNames.map(normalise).filter(Boolean);
+    const overlap = options.filter((o) => names.some((n) => o.includes(n) || n.includes(o)));
+    if (overlap.length > 0) {
+      return {
+        target: "interest",
+        confidence: overlap.length >= Math.max(2, options.length / 2) ? 0.7 : 0.5,
+        reason: `Answers match your services (${overlap.length} of ${options.length})`,
+      };
+    }
+  }
+
+  for (const s of SYNONYMS) {
+    if (!s.weak) continue;
+    const hit = label.match(s.weak) ?? key.match(s.weak);
+    if (hit) return { target: s.target, confidence: 0.5, reason: `Possibly about "${hit[0]}"` };
+  }
+
+  return { target: "notes", confidence: 0.2, reason: "No clear match — saved to notes" };
+}
+
+/**
+ * Scores every question against the CRM fields. Single-value fields (name,
+ * email, phone, city) can only be claimed once — the highest score wins and
+ * losers drop to notes with low confidence so the user is asked.
+ */
+export function suggestMap(
+  questions: { key: string; label: string; options?: string[] }[],
+  serviceNames: string[] = [],
+): Record<string, Suggestion> {
+  const scored = questions.map((q) => ({ key: q.key, ...scoreQuestion(q, serviceNames) }));
+  const UNIQUE = new Set(["full_name", "email", "phone", "city"]);
+  const claimed = new Map<string, { key: string; confidence: number }>();
+
+  for (const s of [...scored].sort((a, b) => b.confidence - a.confidence)) {
+    if (!UNIQUE.has(s.target)) continue;
+    const held = claimed.get(s.target);
+    if (!held) claimed.set(s.target, { key: s.key, confidence: s.confidence });
+  }
+
+  const out: Record<string, Suggestion> = {};
+  for (const s of scored) {
+    const held = claimed.get(s.target);
+    if (held && held.key !== s.key) {
+      out[s.key] = {
+        target: "notes",
+        confidence: 0.3,
+        reason: `Another question already maps to this field`,
+      };
+    } else {
+      out[s.key] = { target: s.target, confidence: s.confidence, reason: s.reason };
+    }
+  }
+  return out;
+}
+
+/** Flat key -> target map, for callers that don't care about confidence. */
+export function autoMap(
+  questions: { key: string; label: string; options?: string[] }[],
+  serviceNames: string[] = [],
+) {
+  const map: Record<string, string> = {};
+  for (const [key, s] of Object.entries(suggestMap(questions, serviceNames))) map[key] = s.target;
   return map;
+}
+
+export function reviewSummary(
+  questions: { key: string }[],
+  confidence: Record<string, number>,
+  confirmed: string[],
+) {
+  const done = new Set(confirmed);
+  const unsure = questions.filter((q) => !done.has(q.key) && (confidence[q.key] ?? 0) < CONFIDENT_AT);
+  return { total: questions.length, unsure: unsure.length, needsReview: unsure.length > 0 };
+}
+
+async function activeServiceNames(): Promise<string[]> {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data } = await supabaseAdmin.from("services").select("name").eq("active", true);
+  return (data ?? []).map((s) => s.name as string);
 }
 
 export async function saveForms(
   connectionId: string,
-  forms: { form_id: string; form_name: string; questions: { key: string; label: string }[] }[],
+  forms: { form_id: string; form_name: string; questions: { key: string; label: string; options?: string[] }[] }[],
 ) {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const services = await activeServiceNames();
   const { data: existing } = await supabaseAdmin
     .from("meta_lead_forms")
-    .select("form_id")
+    .select("id, form_id, field_map, field_confidence, confirmed_keys, auto_apply")
     .eq("connection_id", connectionId);
-  const known = new Set((existing ?? []).map((f) => f.form_id));
+  const known = new Map((existing ?? []).map((f) => [f.form_id as string, f]));
+
   const fresh = forms.filter((f) => !known.has(f.form_id));
-  if (fresh.length === 0) return;
-  const { error } = await supabaseAdmin.from("meta_lead_forms").insert(
-    fresh.map((f) => ({
-      connection_id: connectionId,
-      form_id: f.form_id,
-      form_name: f.form_name,
-      enabled: true,
-      questions: f.questions,
-      field_map: autoMap(f.questions),
-    })),
-  );
-  if (error) throw new Error(error.message);
+  if (fresh.length > 0) {
+    const rows = fresh.map((f) => {
+      const suggestions = suggestMap(f.questions, services);
+      const field_map: Record<string, string> = {};
+      const field_confidence: Record<string, number> = {};
+      const field_reason: Record<string, string> = {};
+      for (const [k, s] of Object.entries(suggestions)) {
+        field_map[k] = s.target;
+        field_confidence[k] = s.confidence;
+        field_reason[k] = s.reason;
+      }
+      const summary = reviewSummary(f.questions, field_confidence, []);
+      return {
+        connection_id: connectionId,
+        form_id: f.form_id,
+        form_name: f.form_name,
+        enabled: true,
+        questions: f.questions,
+        field_map,
+        field_confidence: { scores: field_confidence, reasons: field_reason },
+        confirmed_keys: [] as string[],
+        needs_review: summary.needsReview,
+        auto_apply: true,
+      };
+    });
+    const { error } = await supabaseAdmin.from("meta_lead_forms").insert(rows);
+    if (error) throw new Error(error.message);
+  }
+
+  // Re-score existing forms, but never overwrite a mapping the user confirmed.
+  for (const f of forms) {
+    const row = known.get(f.form_id);
+    if (!row) continue;
+    const suggestions = suggestMap(f.questions, services);
+    const confirmed = new Set(((row.confirmed_keys as string[] | null) ?? []) as string[]);
+    const prevMap = ((row.field_map as Record<string, string> | null) ?? {}) as Record<string, string>;
+    const field_map: Record<string, string> = {};
+    const field_confidence: Record<string, number> = {};
+    const field_reason: Record<string, string> = {};
+    for (const [k, s] of Object.entries(suggestions)) {
+      if (confirmed.has(k) && prevMap[k]) {
+        field_map[k] = prevMap[k];
+        field_confidence[k] = 1;
+        field_reason[k] = "Confirmed by you";
+      } else {
+        field_map[k] = s.target;
+        field_confidence[k] = s.confidence;
+        field_reason[k] = s.reason;
+      }
+    }
+    const summary = reviewSummary(f.questions, field_confidence, [...confirmed]);
+    await supabaseAdmin
+      .from("meta_lead_forms")
+      .update({
+        form_name: f.form_name,
+        questions: f.questions,
+        field_map,
+        field_confidence: { scores: field_confidence, reasons: field_reason },
+        needs_review: summary.needsReview,
+      })
+      .eq("id", row.id as string);
+  }
 }
 
 export async function loadForms(connectionId: string): Promise<LeadForm[]> {
