@@ -1,43 +1,45 @@
-# Auto-capture leads from Meta Ads
+# Auto-capture leads from Meta Ads — one-click connect
 
-Today the app has a webhook endpoint for lead capture, but it only accepts a simplified custom payload (name/email/phone posted directly). Real Meta Lead Ads webhooks send a notification with a `leadgen_id` only — the actual answers must then be fetched from the Meta Graph API. This plan makes that real flow work end to end.
+Goal: a clinic staff member connects Facebook/Instagram lead ads in about a minute, with no webhook URLs, tokens, or developer steps. All technical work (Meta app, webhook, signature verification, token exchange) happens once behind the scenes and is reused by every clinic user.
 
-## How it will work
+## What the clinic sees
 
-1. Meta sends a subscription verification request when the webhook is connected; the endpoint answers it with the verify token (already supported, kept).
-2. When someone submits a lead form on Instagram, Facebook or WhatsApp Click-to-Form, Meta posts a notification to the endpoint.
-3. The endpoint verifies the request signature against the app secret and rejects anything unsigned or tampered with.
-4. For each notification, the app calls Meta to fetch the full lead answers (name, phone, email, plus any custom questions such as treatment of interest and preferred city).
-5. The lead is saved into Leads with:
-   - Source set from the ad platform (Instagram / Facebook / WhatsApp) and source group "Meta Ads"
-   - Stage "New", temperature "Warm" by default
-   - Treatment interest matched to a service in the catalog when the form answer matches a service name
-   - Ad/form/campaign names stored in notes for attribution
-   - `external_id` = Meta's leadgen id, so re-delivered notifications never create duplicates
-6. Optional follow-up automation: newly captured leads get a next-follow-up time set a configurable number of hours ahead, so they appear in the existing Overdue/Scheduled follow-up lists.
+Settings → **Lead capture** tab:
 
-## Setup screen
+1. **"Connect Facebook" button** — opens Meta's login popup, the user picks the Facebook Page(s) tied to their ads, and approves. No copy-paste of anything.
+2. **Connected state** — shows Page name, profile picture, connection health, and a Disconnect button.
+3. **Choose forms** — after connecting, the app lists the lead forms already on that Page with simple toggles ("Capture leads from this form"). No form setup required inside the CRM; forms stay where the marketer builds them.
+4. **Field mapping** — for each enabled form, the app shows the form's questions on the left and CRM fields (Name, Phone, Email, Treatment interest, City, Notes) on the right. Obvious matches are pre-selected automatically; the user only fixes what looks wrong and hits Save.
+5. **Test** — "Send a test lead" uses Meta's own test-lead tool result (or a sample from the form definition) to create a lead so the staff sees exactly how it will appear in the Leads table.
+6. **Live status** — last lead received, leads captured in the last 7 days, and any error in plain English ("Facebook connection expired — reconnect").
 
-A new "Lead capture" tab in Settings showing:
-- The webhook URL to paste into the Meta app (read-only, copy button)
-- Fields to store the Meta verify token, app secret and page access token (write-only, masked once saved — same pattern as the payment gateway settings)
-- Connection status, last received lead time, and a count of leads captured in the last 7 days
-- A "Test capture" button that inserts a sample lead through the same mapping path so the clinic can confirm the pipeline before going live
+Total user actions: click Connect → pick page → toggle a form → confirm mapping. Everything else is automatic.
 
-## Failure handling
+```text
+[Connect Facebook] → pick Page → forms list (toggles) → auto-mapped fields (confirm) → live
+```
 
-- Signature failures return 401 and are not stored.
-- Graph API failures are retried once; if still failing, a minimal lead row is created with the leadgen id and a note so nothing is lost.
-- All duplicates are ignored by leadgen id.
+## What happens automatically
+
+- Webhook subscription for the selected Page is created by the app through the Graph API — the user never sees a URL.
+- Short-lived login token is exchanged for a long-lived page token and stored server-side, encrypted, never sent to the browser.
+- Incoming lead notifications are signature-verified, the full answers are fetched from Meta, mapped, deduped by Meta's lead id, and inserted into Leads with source (Instagram / Facebook / WhatsApp), source group "Meta Ads", stage New, and a follow-up date.
+- Historical leads: on connect, the last 30 days of existing leads from the selected forms are backfilled so the table isn't empty.
+- Token expiry is detected and surfaced as a single "Reconnect" button.
+
+## Fallback for edge cases
+
+An "Advanced" disclosure keeps the manual path (paste page token / verify token) for clinics whose ad account is managed by an outside agency that won't grant login access.
 
 ## Technical notes
 
-- Rewrite `src/routes/api/public/hooks/meta-leads.tsx`: keep the GET handshake, replace POST with signature verification (`x-hub-signature-256`, HMAC-SHA256 over the raw body, timing-safe compare) and iterate `entry[].changes[].value`.
-- New `src/lib/meta-leads.server.ts` holds the Graph API fetch (`GET /{leadgen_id}?access_token=...`), field-name normalisation, service matching, and the insert via `supabaseAdmin`.
-- Credentials read from server env only, inside handlers: `META_VERIFY_TOKEN` (exists), plus new `META_APP_SECRET` and `META_PAGE_ACCESS_TOKEN` requested through the secure secret prompt.
-- Migration: add a unique index on `leads.external_id` (partial, where not null) for dedupe; add a `lead_capture_settings` singleton table for non-secret display state (last received at, enabled flag) with staff-role RLS and GRANTs.
-- Settings UI: new `src/components/clinic/LeadCaptureTab.tsx` plus server functions in `src/lib/meta-leads.functions.ts` (admin-gated, same role check pattern as payments).
+- Requires one Meta app owned by the product (not per clinic), configured once with Facebook Login for Business, `pages_show_list`, `pages_manage_metadata`, `leads_retrieval`, and Advanced Access review. Its app id is public config; the app secret is a project secret. This is the only setup step, and it is done once by us, not by clinics.
+- OAuth: `/api/public/hooks/meta-oauth-callback` handles the redirect, exchanges code → user token → long-lived page tokens via server-side calls; state is signed to prevent CSRF.
+- Webhook: rewrite `src/routes/api/public/hooks/meta-leads.tsx` for the real payload — GET verification handshake, POST with `x-hub-signature-256` HMAC check over the raw body, then per `entry[].changes[].value.leadgen_id` fetch and insert.
+- New `src/lib/meta-leads.server.ts` (Graph API calls, field mapping, insert via `supabaseAdmin`) and `src/lib/meta-leads.functions.ts` (admin-gated server functions: start connect, list pages/forms, save mapping, disconnect, status, test lead, backfill).
+- Migration: `meta_connections` (page id/name, encrypted long-lived token, status, last_lead_at), `meta_lead_forms` (form id/name, enabled, field mapping JSON), unique partial index on `leads.external_id` for dedupe. Staff-role RLS plus GRANTs; token column readable only by service role.
+- UI: `src/components/clinic/LeadCaptureTab.tsx` added to the Settings tabs, following the existing PaymentsTab pattern.
 
-## What I'll need from you
+## What I need from you
 
-Meta app secret, a long-lived page access token with `leads_retrieval`, and the verify token you want to use. The build works without them — capture stays disabled until they're added.
+Only the Meta app credentials (app id + app secret) for the product-level Meta app, requested through the secure secret prompt when I reach that step. If you don't have a Meta app yet, I'll build the flow with the manual fallback working first, and the one-click connect activates as soon as the credentials are added.
