@@ -6,6 +6,17 @@ import { Field, Panel, inputClass } from "@/components/clinic/bits";
 import { Switch } from "@/components/ui/switch";
 import { getGatewayConfig, saveGatewayConfig } from "@/lib/payments.functions";
 
+type GatewayInput = {
+  provider: "razorpay" | "cashfree";
+  mode: "test" | "live";
+  key_id: string;
+  key_secret: string;
+  webhook_secret: string;
+  enabled: boolean;
+  allow_upi: boolean;
+  allow_emi: boolean;
+};
+
 /** Razorpay / Cashfree merchant account configuration (admins only). */
 export function PaymentsTab() {
   const load = useServerFn(getGatewayConfig);
@@ -14,7 +25,7 @@ export function PaymentsTab() {
 
   const config = useQuery({ queryKey: ["gateway"], queryFn: () => load() });
   const mutation = useMutation({
-    mutationFn: (values: Parameters<typeof save>[0]["data"]) => save({ data: values }),
+    mutationFn: (values: GatewayInput) => save({ data: values }),
     onSuccess: () => {
       toast.success("Payment settings saved");
       void qc.invalidateQueries({ queryKey: ["gateway"] });

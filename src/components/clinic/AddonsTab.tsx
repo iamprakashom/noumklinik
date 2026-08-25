@@ -4,9 +4,10 @@ import { Plus, Trash2 } from "lucide-react";
 import { ghostButton, primaryButton } from "@/components/clinic/AppShell";
 import { EmptyState, Field, Panel, inputClass } from "@/components/clinic/bits";
 import { money } from "@/data/clinic";
+import type { ServiceAddon } from "@/data/clinic";
 import {
   useAddonDiscountRules,
-  useAddonServices,
+  useServiceAddons,
   useInsert,
   useRemove,
   useServices,
@@ -15,7 +16,7 @@ import {
 /** Upsell configuration: which treatments can be added on, and bundle discounts. */
 export function AddonsTab() {
   const services = useServices();
-  const addons = useAddonServices();
+  const addons = useServiceAddons();
   const rules = useAddonDiscountRules();
   const addAddon = useInsert("service_addons");
   const removeAddon = useRemove("service_addons");
@@ -26,7 +27,7 @@ export function AddonsTab() {
   const [addon, setAddon] = useState("");
 
   const name = (id: string | null) => services.data?.find((s) => s.id === id)?.name ?? "Any treatment";
-  const grouped = new Map<string, typeof addons.data>();
+  const grouped = new Map<string, ServiceAddon[]>();
   for (const a of addons.data ?? []) {
     grouped.set(a.main_service_id, [...(grouped.get(a.main_service_id) ?? []), a]);
   }
@@ -83,7 +84,7 @@ export function AddonsTab() {
             <div key={mainId} className="rounded-lg border border-border p-3">
               <p className="text-sm font-medium">{name(mainId)}</p>
               <ul className="mt-2 flex flex-wrap gap-2">
-                {list?.map((a) => {
+                {list.map((a: ServiceAddon) => {
                   const svc = services.data?.find((s) => s.id === a.addon_service_id);
                   return (
                     <li
