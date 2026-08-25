@@ -1,4 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
+import { sendOutboxMessage } from "@/lib/messaging.functions";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Play, Plus } from "lucide-react";
@@ -60,6 +62,7 @@ function Automations() {
   const patients = usePatients();
   const updateRule = useUpdate("automation_rules");
   const updateMessage = useUpdate("messages_outbox");
+  const sendNow = useServerFn(sendOutboxMessage);
   const createRule = useInsert("automation_rules");
   const createTemplate = useInsert("message_templates");
 
