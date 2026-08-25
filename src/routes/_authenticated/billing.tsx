@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Plus } from "lucide-react";
+import { Link2, Plus, Sparkles } from "lucide-react";
 import { AppShell, ghostButton, primaryButton } from "@/components/clinic/AppShell";
 import { Chip, EmptyState, Field, StatCard, inputClass } from "@/components/clinic/bits";
 import {
@@ -13,15 +14,18 @@ import {
 } from "@/components/ui/dialog";
 import { formatDate, invoiceTone, money, patientName } from "@/data/clinic";
 import {
+  useAddonDiscountRules,
   useCreateInvoice,
   useInsert,
   useInvoiceItems,
   useInvoices,
   usePatients,
   usePayments,
+  useServiceAddons,
   useServices,
   useUpdate,
 } from "@/lib/clinic-data";
+import { createInvoicePaymentLink } from "@/lib/payments.functions";
 
 export const Route = createFileRoute("/_authenticated/billing")({
   head: () => ({
@@ -30,12 +34,12 @@ export const Route = createFileRoute("/_authenticated/billing")({
       {
         name: "description",
         content:
-          "Create treatment invoices, apply discounts and tax, record payments and track outstanding patient balances.",
+          "Create treatment invoices with add-on upsells, apply bundle discounts and tax, collect UPI or EMI payments and track balances.",
       },
       { property: "og:title", content: "Billing — Luma Aesthetics Clinic CRM" },
       {
         property: "og:description",
-        content: "Invoices, payments and outstanding balances for the clinic.",
+        content: "Invoices, add-on upsells, payment links and outstanding balances for the clinic.",
       },
     ],
   }),
@@ -45,15 +49,19 @@ export const Route = createFileRoute("/_authenticated/billing")({
 function BillingPage() {
   const [open, setOpen] = useState(false);
   const [lines, setLines] = useState([{ description: "", quantity: 1, unit_price: 0 }]);
+  const [discount, setDiscount] = useState(0);
 
   const invoices = useInvoices();
   const items = useInvoiceItems();
   const payments = usePayments();
   const patients = usePatients();
   const services = useServices();
+  const addons = useServiceAddons();
+  const rules = useAddonDiscountRules();
   const createInvoice = useCreateInvoice();
   const addPayment = useInsert("payments");
   const updateInvoice = useUpdate("invoices");
+  const makeLink = useServerFn(createInvoicePaymentLink);
 
   const all = invoices.data ?? [];
   const outstanding = all
@@ -65,6 +73,37 @@ function BillingPage() {
     const p = patients.data?.find((x) => x.id === id);
     return p ? patientName(p) : "Unknown";
   };
+
+  const mainService = services.data?.find((s) => s.name === lines[0]?.description);
+  const suggestedAddons = useMemo(() => {
+    if (!mainService) return [];
+    const ids = (addons.data ?? [])
+      .filter((a) => a.main_service_id === mainService.id)
+      .map((a) => a.addon_service_id);
+    return (services.data ?? []).filter(
+      (s) => ids.includes(s.id) && !lines.some((l) => l.description === s.name),
+    );
+  }, [mainService, addons.data, services.data, lines]);
+
+  const subtotal = lines.reduce((s, l) => s + l.quantity * l.unit_price, 0);
+  const addonCount = Math.max(0, lines.filter((l) => l.description).length - 1);
+
+  /** Best matching bundle discount for the current line-up. */
+  const bundleRule = useMemo(() => {
+    const eligible = (rules.data ?? []).filter(
+      (r) =>
+        r.active &&
+        addonCount >= r.min_addons &&
+        (!r.main_service_id || r.main_service_id === mainService?.id),
+    );
+    let best: { name: string; value: number } | null = null;
+    for (const r of eligible) {
+      const value =
+        r.discount_type === "percent" ? (subtotal * Number(r.discount_value)) / 100 : Number(r.discount_value);
+      if (!best || value > best.value) best = { name: r.name, value: Math.round(value) };
+    }
+    return best;
+  }, [rules.data, addonCount, mainService?.id, subtotal]);
 
   return (
     <AppShell
