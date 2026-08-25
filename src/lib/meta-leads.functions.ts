@@ -47,6 +47,11 @@ export const getLeadCaptureStatus = createServerFn({ method: "GET" })
         enabled: f.enabled,
         field_map: f.field_map ?? {},
         questions: f.questions ?? [],
+        confidence: f.field_confidence?.scores ?? {},
+        reasons: f.field_confidence?.reasons ?? {},
+        confirmed_keys: f.confirmed_keys ?? [],
+        needs_review: f.needs_review ?? false,
+        auto_apply: f.auto_apply ?? true,
       })),
       recentLeads: count ?? 0,
     };
