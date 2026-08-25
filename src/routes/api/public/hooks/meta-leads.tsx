@@ -1,14 +1,27 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 
-const leadSchema = z.object({
-  full_name: z.string().min(1).max(200),
-  email: z.string().email().max(200).optional().nullable(),
-  phone: z.string().max(50).optional().nullable(),
-  interest: z.string().max(200).optional().nullable(),
-  notes: z.string().max(2000).optional().nullable(),
-  external_id: z.string().max(200).optional().nullable(),
-  source: z.string().max(100).optional().nullable(),
+const notification = z.object({
+  entry: z
+    .array(
+      z.object({
+        changes: z
+          .array(
+            z.object({
+              field: z.string().optional(),
+              value: z
+                .object({
+                  leadgen_id: z.string().optional(),
+                  form_id: z.string().optional(),
+                  platform: z.string().optional(),
+                })
+                .optional(),
+            }),
+          )
+          .optional(),
+      }),
+    )
+    .optional(),
 });
 
 export const Route = createFileRoute("/api/public/hooks/meta-leads")({
@@ -28,29 +41,33 @@ export const Route = createFileRoute("/api/public/hooks/meta-leads")({
         return new Response("Forbidden", { status: 403 });
       },
       POST: async ({ request }) => {
-        const secret = process.env["META_VERIFY_TOKEN"];
-        if (secret && request.headers.get("x-verify-token") !== secret) {
-          return new Response("Unauthorized", { status: 401 });
-        }
+        const raw = await request.text();
+        const m = await import("@/lib/meta-leads.server");
 
-        const parsed = leadSchema.safeParse(await request.json().catch(() => null));
-        if (!parsed.success) {
-          return Response.json({ error: "Invalid payload" }, { status: 400 });
-        }
+        const valid = await m.verifyWebhookSignature(
+          request.headers.get("x-hub-signature-256"),
+          raw,
+        );
+        if (!valid) return new Response("Invalid signature", { status: 401 });
 
-        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-        const { error } = await supabaseAdmin.from("leads").insert({
-          full_name: parsed.data.full_name,
-          email: parsed.data.email ?? null,
-          phone: parsed.data.phone ?? null,
-          interest: parsed.data.interest ?? null,
-          notes: parsed.data.notes ?? null,
-          external_id: parsed.data.external_id ?? null,
-          source: parsed.data.source ?? "Meta Lead Ads",
-          stage: "New",
-        });
-        if (error) return Response.json({ error: "Could not store lead" }, { status: 500 });
-        return Response.json({ ok: true });
+        const parsed = notification.safeParse(JSON.parse(raw || "{}"));
+        if (!parsed.success) return Response.json({ error: "Invalid payload" }, { status: 400 });
+
+        let captured = 0;
+        for (const entry of parsed.data.entry ?? []) {
+          for (const change of entry.changes ?? []) {
+            const leadId = change.value?.leadgen_id;
+            if (!leadId) continue;
+            try {
+              if (await m.captureLeadById(leadId, change.value?.platform)) captured++;
+            } catch (e) {
+              const conn = await m.loadConnection();
+              if (conn) await m.saveConnection({ error_message: (e as Error).message }, conn.id);
+            }
+          }
+        }
+        // Always 200 so Meta does not disable the subscription.
+        return Response.json({ ok: true, captured });
       },
     },
   },
