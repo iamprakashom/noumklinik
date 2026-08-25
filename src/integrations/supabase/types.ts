@@ -499,6 +499,98 @@ export type Database = {
           },
         ]
       }
+      meta_connections: {
+        Row: {
+          connected_by: string | null
+          created_at: string
+          error_message: string | null
+          id: string
+          last_lead_at: string | null
+          page_access_token: string | null
+          page_id: string
+          page_name: string
+          page_picture_url: string | null
+          singleton: boolean
+          status: string
+          updated_at: string
+          user_access_token: string | null
+        }
+        Insert: {
+          connected_by?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          last_lead_at?: string | null
+          page_access_token?: string | null
+          page_id: string
+          page_name: string
+          page_picture_url?: string | null
+          singleton?: boolean
+          status?: string
+          updated_at?: string
+          user_access_token?: string | null
+        }
+        Update: {
+          connected_by?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          last_lead_at?: string | null
+          page_access_token?: string | null
+          page_id?: string
+          page_name?: string
+          page_picture_url?: string | null
+          singleton?: boolean
+          status?: string
+          updated_at?: string
+          user_access_token?: string | null
+        }
+        Relationships: []
+      }
+      meta_lead_forms: {
+        Row: {
+          connection_id: string
+          created_at: string
+          enabled: boolean
+          field_map: Json
+          form_id: string
+          form_name: string
+          id: string
+          questions: Json
+          updated_at: string
+        }
+        Insert: {
+          connection_id: string
+          created_at?: string
+          enabled?: boolean
+          field_map?: Json
+          form_id: string
+          form_name: string
+          id?: string
+          questions?: Json
+          updated_at?: string
+        }
+        Update: {
+          connection_id?: string
+          created_at?: string
+          enabled?: boolean
+          field_map?: Json
+          form_id?: string
+          form_name?: string
+          id?: string
+          questions?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meta_lead_forms_connection_id_fkey"
+            columns: ["connection_id"]
+            isOneToOne: false
+            referencedRelation: "meta_connections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       patient_consents: {
         Row: {
           created_at: string
