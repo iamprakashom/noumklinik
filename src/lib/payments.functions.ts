@@ -16,10 +16,11 @@ const configSchema = z.object({
 export const getGatewayConfig = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { data: isAdmin } = await context.supabase.rpc("has_role", {
+    const { data: isAdmin, error: roleError } = await context.supabase.rpc("has_role", {
       _user_id: context.userId,
       _role: "admin",
     });
+    if (roleError) throw new Error(`Could not verify your role: ${roleError.message}`);
     if (!isAdmin) throw new Error("Only clinic admins can view payment settings");
     const { loadGateway, maskKey } = await import("@/lib/payments.server");
     const g = await loadGateway();
@@ -40,10 +41,11 @@ export const saveGatewayConfig = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => configSchema.parse(input))
   .handler(async ({ data, context }) => {
-    const { data: isAdmin } = await context.supabase.rpc("has_role", {
+    const { data: isAdmin, error: roleError } = await context.supabase.rpc("has_role", {
       _user_id: context.userId,
       _role: "admin",
     });
+    if (roleError) throw new Error(`Could not verify your role: ${roleError.message}`);
     if (!isAdmin) throw new Error("Only clinic admins can change payment settings");
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
