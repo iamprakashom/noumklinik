@@ -158,16 +158,17 @@ export const saveFormSettings = createServerFn({ method: "POST" })
     for (const k of confirmed) scores[k] = 1;
 
     const summary = m.reviewSummary(questions, scores, confirmed);
-    const update: Record<string, unknown> = {
-      enabled: data.enabled,
-      field_map: data.field_map,
-      confirmed_keys: confirmed,
-      field_confidence: { ...(conf as object), scores },
-      needs_review: summary.needsReview,
-    };
-    if (data.auto_apply !== undefined) update["auto_apply"] = data.auto_apply;
-
-    const { error } = await supabaseAdmin.from("meta_lead_forms").update(update).eq("id", data.id);
+    const { error } = await supabaseAdmin
+      .from("meta_lead_forms")
+      .update({
+        enabled: data.enabled,
+        field_map: data.field_map,
+        confirmed_keys: confirmed,
+        field_confidence: { ...(conf as object), scores },
+        needs_review: summary.needsReview,
+        ...(data.auto_apply === undefined ? {} : { auto_apply: data.auto_apply }),
+      })
+      .eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
