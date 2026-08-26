@@ -255,9 +255,7 @@ export function LeadCaptureTab() {
                 <FormCard
                   key={f.id}
                   form={f}
-                  onSave={(enabled, map) =>
-                    updateForm.mutate({ id: f.id, enabled, field_map: map })
-                  }
+                  onSave={(v) => updateForm.mutate({ id: f.id, ...v })}
                   onTest={() => test.mutate(f.id)}
                 />
               ))}
