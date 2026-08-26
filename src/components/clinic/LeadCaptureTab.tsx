@@ -255,9 +255,7 @@ export function LeadCaptureTab() {
                 <FormCard
                   key={f.id}
                   form={f}
-                  onSave={(enabled, map) =>
-                    updateForm.mutate({ id: f.id, enabled, field_map: map })
-                  }
+                  onSave={(v) => updateForm.mutate({ id: f.id, ...v })}
                   onTest={() => test.mutate(f.id)}
                 />
               ))}
@@ -309,8 +307,30 @@ type FormRow = {
   form_name: string;
   enabled: boolean;
   field_map: Record<string, string>;
-  questions: { key: string; label: string }[];
+  questions: { key: string; label: string; options?: string[] }[];
+  confidence: Record<string, number>;
+  reasons: Record<string, string>;
+  confirmed_keys: string[];
+  needs_review: boolean;
+  auto_apply: boolean;
 };
+
+type SavePayload = {
+  enabled: boolean;
+  field_map: Record<string, string>;
+  confirmed_keys: string[];
+  auto_apply: boolean;
+};
+
+const CONFIDENT_AT = 0.7;
+const UNSURE_BELOW = 0.4;
+
+function confidenceLabel(score: number) {
+  if (score >= 0.9) return { label: "Certain", tone: "completed" as const };
+  if (score >= CONFIDENT_AT) return { label: "Likely", tone: "progress" as const };
+  if (score >= UNSURE_BELOW) return { label: "Likely", tone: "progress" as const };
+  return { label: "Unsure", tone: "overdue" as const };
+}
 
 function FormCard({
   form,
@@ -318,20 +338,46 @@ function FormCard({
   onTest,
 }: {
   form: FormRow;
-  onSave: (enabled: boolean, map: Record<string, string>) => void;
+  onSave: (payload: SavePayload) => void;
   onTest: () => void;
 }) {
   const [enabled, setEnabled] = useState(form.enabled);
+  const [autoApply, setAutoApply] = useState(form.auto_apply);
   const [map, setMap] = useState<Record<string, string>>(form.field_map ?? {});
+  const [touched, setTouched] = useState<string[]>([]);
+  const [showAll, setShowAll] = useState(false);
+
+  const confirmed = new Set([...(form.confirmed_keys ?? []), ...touched]);
+  const scoreOf = (key: string) => (confirmed.has(key) ? 1 : (form.confidence?.[key] ?? 0));
+  const unsure = form.questions.filter((q) => scoreOf(q.key) < CONFIDENT_AT);
+  const allConfident = unsure.length === 0;
+  const visible = showAll || !allConfident ? (showAll ? form.questions : unsure) : [];
+
+  const summary = allConfident
+    ? autoApply
+      ? "Mapped automatically — review anytime"
+      : `All ${form.questions.length} field(s) matched confidently`
+    : `${form.questions.length - unsure.length} of ${form.questions.length} field(s) matched confidently — ${unsure.length} need${unsure.length === 1 ? "s" : ""} your confirmation`;
+
+  const setField = (key: string, value: string) => {
+    setMap({ ...map, [key]: value });
+    setTouched((t) => (t.includes(key) ? t : [...t, key]));
+  };
+
+  const save = () =>
+    onSave({
+      enabled,
+      field_map: map,
+      confirmed_keys: showAll || !allConfident ? form.questions.map((q) => q.key) : touched,
+      auto_apply: autoApply,
+    });
 
   return (
     <div className="rounded-lg border border-border p-3">
       <div className="flex items-center gap-3">
         <div className="min-w-0 flex-1">
           <p className="text-sm font-medium">{form.form_name}</p>
-          <p className="text-xs text-muted-foreground">
-            {form.questions.length} question(s) · fields matched automatically
-          </p>
+          <p className="text-xs text-muted-foreground">{summary}</p>
         </div>
         <button className={ghostButton} onClick={onTest}>
           <Sparkles className="size-3.5" /> Test
@@ -339,30 +385,60 @@ function FormCard({
         <Switch checked={enabled} onCheckedChange={setEnabled} aria-label="Capture leads" />
       </div>
 
+      {enabled && !allConfident ? (
+        <div className="mt-3 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-foreground">
+          Confirm {unsure.length} field{unsure.length === 1 ? "" : "s"} below so leads land in the
+          right place.
+        </div>
+      ) : null}
+
       {enabled && form.questions.length > 0 ? (
-        <div className="mt-3 grid gap-2 sm:grid-cols-2">
-          {form.questions.map((q) => (
-            <label key={q.key} className="flex items-center gap-2 text-xs">
-              <span className="min-w-0 flex-1 truncate text-muted-foreground">{q.label}</span>
-              <select
-                className={inputClass}
-                value={map[q.key] ?? "notes"}
-                onChange={(e) => setMap({ ...map, [q.key]: e.target.value })}
-              >
-                {CRM_FIELDS.map((f) => (
-                  <option key={f.value} value={f.value}>
-                    {f.label}
-                  </option>
-                ))}
-              </select>
+        <div className="mt-3 grid gap-2">
+          {visible.map((q) => {
+            const score = scoreOf(q.key);
+            const badge = confidenceLabel(score);
+            return (
+              <label key={q.key} className="flex items-center gap-2 text-xs" title={form.reasons?.[q.key] ?? ""}>
+                <span className="min-w-0 flex-1 truncate text-muted-foreground">{q.label}</span>
+                <Chip tone={badge.tone}>{confirmed.has(q.key) ? "Confirmed" : badge.label}</Chip>
+                <select
+                  className={`${inputClass} max-w-44`}
+                  value={map[q.key] ?? "notes"}
+                  onChange={(e) => setField(q.key, e.target.value)}
+                >
+                  {CRM_FIELDS.map((f) => (
+                    <option key={f.value} value={f.value}>
+                      {f.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            );
+          })}
+
+          <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+            <button
+              className="text-xs text-muted-foreground underline-offset-2 hover:underline"
+              onClick={() => setShowAll((v) => !v)}
+              type="button"
+            >
+              {showAll ? "Hide matched fields" : `Show all ${form.questions.length} fields`}
+            </button>
+            <label className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Switch
+                checked={autoApply}
+                onCheckedChange={setAutoApply}
+                aria-label="Auto-apply best guesses"
+              />
+              Auto-apply my best guess
             </label>
-          ))}
+          </div>
         </div>
       ) : null}
 
       <div className="mt-3">
-        <button className={primaryButton} onClick={() => onSave(enabled, map)}>
-          Save
+        <button className={primaryButton} onClick={save}>
+          {allConfident ? "Save" : `Confirm ${unsure.length} field${unsure.length === 1 ? "" : "s"}`}
         </button>
       </div>
     </div>
