@@ -61,10 +61,12 @@ function sourceGroupOf(lead: Lead) {
 function LeadsPage() {
   const [open, setOpen] = useState(false);
   const [view, setView] = useState<"table" | "cards">("table");
+  const [query, setQuery] = useState("");
   const [stage, setStage] = useState("all");
   const [treatment, setTreatment] = useState("all");
   const [group, setGroup] = useState("all");
   const [doctor, setDoctor] = useState("all");
+  const [followUp, setFollowUp] = useState("all");
   const [sort, setSort] = useState<SortKey>("oldest");
 
   const leads = useLeads();
