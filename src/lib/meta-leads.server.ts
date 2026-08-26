@@ -512,6 +512,23 @@ export function buildLeadRow(
   };
 }
 
+/**
+ * The mapping we actually ingest with. Low-confidence guesses the user has not
+ * confirmed only apply when "auto-apply my best guess" is on; otherwise the
+ * answer is kept verbatim in notes so nothing lands in the wrong field.
+ */
+export function effectiveFieldMap(form: LeadForm | undefined) {
+  const map = { ...(form?.field_map ?? {}) };
+  if (!form || form.auto_apply !== false) return map;
+  const scores = form.field_confidence?.scores ?? {};
+  const confirmed = new Set(form.confirmed_keys ?? []);
+  for (const key of Object.keys(map)) {
+    if (confirmed.has(key)) continue;
+    if ((scores[key] ?? 0) < CONFIDENT_AT) map[key] = "notes";
+  }
+  return map;
+}
+
 export async function fetchLead(leadId: string, token: string) {
   return graph<{
     id: string;
@@ -537,7 +554,7 @@ export async function captureLeadById(leadId: string, platform?: string) {
   const forms = await loadForms(conn.id);
   const form = forms.find((f) => f.form_id === lead.form_id);
   if (form && !form.enabled) return false;
-  const row = buildLeadRow(lead.field_data ?? [], form?.field_map ?? {}, {
+  const row = buildLeadRow(lead.field_data ?? [], effectiveFieldMap(form), {
     leadId: lead.id,
     formName: form?.form_name ?? "Lead ad",
     platform: platform ?? lead.platform,
@@ -565,7 +582,7 @@ export async function backfillForm(conn: MetaConnection, form: LeadForm, sinceDa
   );
   let count = 0;
   for (const lead of res.data) {
-    const row = buildLeadRow(lead.field_data ?? [], form.field_map ?? {}, {
+    const row = buildLeadRow(lead.field_data ?? [], effectiveFieldMap(form), {
       leadId: lead.id,
       formName: form.form_name,
       platform: lead.platform,
