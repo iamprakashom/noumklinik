@@ -103,7 +103,12 @@ async function run() {
 export const Route = createFileRoute("/api/public/hooks/run-reminders")({
   server: {
     handlers: {
-      POST: async () => {
+      POST: async ({ request }) => {
+        const secret = process.env["CRON_SECRET"];
+        if (!secret) return new Response("Scheduler not configured", { status: 503 });
+        const auth = request.headers.get("authorization") ?? "";
+        const provided = request.headers.get("x-cron-secret") ?? auth.replace(/^Bearer\s+/i, "");
+        if (provided !== secret) return new Response("Unauthorized", { status: 401 });
         try {
           const queued = await run();
           const { flushOutbox } = await import("@/lib/messaging.server");
