@@ -55,8 +55,92 @@ export type Database = {
           },
         ]
       }
+      appointment_requests: {
+        Row: {
+          alternate_at: string | null
+          appointment_id: string | null
+          created_at: string
+          email: string | null
+          full_name: string
+          id: string
+          kind: string
+          notes: string | null
+          patient_id: string | null
+          phone: string
+          preferred_at: string
+          provider_id: string | null
+          service_id: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          alternate_at?: string | null
+          appointment_id?: string | null
+          created_at?: string
+          email?: string | null
+          full_name: string
+          id?: string
+          kind?: string
+          notes?: string | null
+          patient_id?: string | null
+          phone: string
+          preferred_at: string
+          provider_id?: string | null
+          service_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          alternate_at?: string | null
+          appointment_id?: string | null
+          created_at?: string
+          email?: string | null
+          full_name?: string
+          id?: string
+          kind?: string
+          notes?: string | null
+          patient_id?: string | null
+          phone?: string
+          preferred_at?: string
+          provider_id?: string | null
+          service_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "appointment_requests_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointment_requests_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointment_requests_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "providers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointment_requests_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       appointments: {
         Row: {
+          confirmed_at: string | null
           created_at: string
           duration_min: number
           id: string
@@ -75,6 +159,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          confirmed_at?: string | null
           created_at?: string
           duration_min?: number
           id?: string
@@ -93,6 +178,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          confirmed_at?: string | null
           created_at?: string
           duration_min?: number
           id?: string
@@ -942,6 +1028,7 @@ export type Database = {
       }
       patient_links: {
         Row: {
+          appointment_id: string | null
           completed_at: string | null
           consent_template_id: string | null
           created_at: string
@@ -953,6 +1040,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          appointment_id?: string | null
           completed_at?: string | null
           consent_template_id?: string | null
           created_at?: string
@@ -964,6 +1052,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          appointment_id?: string | null
           completed_at?: string | null
           consent_template_id?: string | null
           created_at?: string
@@ -975,6 +1064,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "patient_links_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "patient_links_consent_template_id_fkey"
             columns: ["consent_template_id"]
