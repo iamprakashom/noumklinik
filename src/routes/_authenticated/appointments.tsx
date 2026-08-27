@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { BellRing, CalendarClock, Plus } from "lucide-react";
 import { AppShell, ghostButton, primaryButton } from "@/components/clinic/AppShell";
+import { BookingRequests } from "@/components/clinic/BookingRequests";
 import { Chip, EmptyState, Field, inputClass, textareaClass } from "@/components/clinic/bits";
 import {
   Dialog,
@@ -190,6 +191,7 @@ function AppointmentsPage() {
         </>
       }
     >
+      <BookingRequests />
       {rows.length === 0 ? (
         <EmptyState>No appointments match these filters.</EmptyState>
       ) : (
