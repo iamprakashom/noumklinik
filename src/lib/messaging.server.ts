@@ -14,25 +14,11 @@ export type SendResult = {
 };
 
 async function sendWhatsApp(input: SendInput): Promise<SendResult> {
-  const token = process.env["WHATSAPP_TOKEN"];
-  const phoneId = process.env["WHATSAPP_PHONE_NUMBER_ID"];
-  if (!token || !phoneId) return { ok: false, error: "WhatsApp is not connected" };
-  const res = await fetch(`https://graph.facebook.com/v20.0/${phoneId}/messages`, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-    body: JSON.stringify({
-      messaging_product: "whatsapp",
-      to: input.recipient.replace(/[^\d+]/g, ""),
-      type: "text",
-      text: { body: input.body },
-    }),
-  });
-  const json = (await res.json()) as {
-    messages?: { id: string }[];
-    error?: { message?: string };
-  };
-  if (!res.ok) return { ok: false, error: json.error?.message ?? "WhatsApp send failed" };
-  return { ok: true, providerId: json.messages?.[0]?.id };
+  const { sendText } = await import("@/lib/whatsapp.server");
+  const result = await sendText(input.recipient, input.body);
+  return result.ok
+    ? { ok: true, providerId: result.providerId }
+    : { ok: false, error: result.error };
 }
 
 async function sendSms(input: SendInput): Promise<SendResult> {
