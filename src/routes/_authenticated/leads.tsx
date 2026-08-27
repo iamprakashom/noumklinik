@@ -78,14 +78,28 @@ function LeadsPage() {
 
   const all = useMemo(() => leads.data ?? [], [leads.data]);
 
+  const today = new Date().toISOString();
+  const isOverdueLead = (l: Lead) =>
+    !!l.next_follow_up_at &&
+    l.next_follow_up_at < today &&
+    l.stage !== "Converted" &&
+    l.stage !== "Lost";
+  const isScheduledLead = (l: Lead) =>
+    !!l.next_follow_up_at && l.next_follow_up_at >= today && l.stage !== "Converted";
+
   const rows = useMemo(() => {
+    const q = query.trim().toLowerCase();
     const filtered = all.filter(
       (l) =>
         (stage === "all" || l.stage === stage) &&
         (treatment === "all" || l.service_id === treatment) &&
         (group === "all" || sourceGroupOf(l) === group) &&
         (doctor === "all" ||
-          (doctor === "unassigned" ? !l.owner_id : l.owner_id === doctor)),
+          (doctor === "unassigned" ? !l.owner_id : l.owner_id === doctor)) &&
+        (followUp === "all" ||
+          (followUp === "overdue" ? isOverdueLead(l) : isScheduledLead(l))) &&
+        (!q ||
+          [l.full_name, l.phone, l.email].some((v) => v?.toLowerCase().includes(q))),
     );
     return [...filtered].sort((a, b) => {
       if (sort === "newest") return b.created_at.localeCompare(a.created_at);
@@ -93,15 +107,12 @@ function LeadsPage() {
         return (a.next_follow_up_at ?? "9999").localeCompare(b.next_follow_up_at ?? "9999");
       return a.created_at.localeCompare(b.created_at);
     });
-  }, [all, stage, treatment, group, doctor, sort]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [all, query, stage, treatment, group, doctor, followUp, sort]);
 
-  const today = new Date().toISOString();
-  const overdue = all.filter(
-    (l) => l.next_follow_up_at && l.next_follow_up_at < today && l.stage !== "Converted" && l.stage !== "Lost",
-  );
-  const scheduled = all.filter(
-    (l) => l.next_follow_up_at && l.next_follow_up_at >= today && l.stage !== "Converted",
-  );
+  const overdue = all.filter(isOverdueLead);
+  const scheduled = all.filter(isScheduledLead);
+
 
   const providerName = (id: string | null) =>
     providers.data?.find((p) => p.id === id)?.name ?? "Unassigned";
