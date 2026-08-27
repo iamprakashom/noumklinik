@@ -359,7 +359,7 @@ function SettingsPage() {
                 <Field label="Required consent form" className="sm:col-span-2">
                   <select name="consent_template_id" className={inputClass}>
                     <option value="">None</option>
-                    {consentTemplates.data?.map((t) => (
+                    {consents.data?.map((t) => (
                       <option key={t.id} value={t.id}>
                         {t.name}
                       </option>
