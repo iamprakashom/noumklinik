@@ -52,13 +52,17 @@ export const Route = createFileRoute("/_authenticated/appointments")({
       },
     ],
   }),
+  validateSearch: (search: Record<string, unknown>) => ({
+    new: search["new"] === true || search["new"] === "true",
+  }),
   component: AppointmentsPage,
 });
 
 type RangeKey = "today" | "upcoming" | "past" | "all";
 
 function AppointmentsPage() {
-  const [open, setOpen] = useState(false);
+  const { new: openNew } = Route.useSearch();
+  const [open, setOpen] = useState(openNew);
   const [reschedule, setReschedule] = useState<Appointment | null>(null);
   const [range, setRange] = useState<RangeKey>("upcoming");
   const [sourceFilter, setSourceFilter] = useState("all");

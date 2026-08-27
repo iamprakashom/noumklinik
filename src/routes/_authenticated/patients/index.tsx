@@ -30,12 +30,16 @@ export const Route = createFileRoute("/_authenticated/patients/")({
       },
     ],
   }),
+  validateSearch: (search: Record<string, unknown>) => ({
+    new: search["new"] === true || search["new"] === "true",
+  }),
   component: PatientsPage,
 });
 
 function PatientsPage() {
+  const { new: openNew } = Route.useSearch();
   const [query, setQuery] = useState("");
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(openNew);
   const [ignoreDupe, setIgnoreDupe] = useState<string | null>(null);
   const patients = usePatients();
   const appointments = useAppointments();
