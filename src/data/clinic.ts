@@ -20,6 +20,17 @@ export type ServiceAddon = Tables<"service_addons">;
 export type AddonDiscountRule = Tables<"addon_discount_rules">;
 export type PaymentLink = Tables<"payment_links">;
 export type ClinicProfile = Tables<"clinic_profile">;
+export type Package = Tables<"packages">;
+export type PackageItem = Tables<"package_items">;
+export type PatientPackage = Tables<"patient_packages">;
+export type PatientPackageItem = Tables<"patient_package_items">;
+export type PackageRedemption = Tables<"package_redemptions">;
+
+export function packageTone(p: { status: string; expires_at: string }): StatusTone {
+  if (p.status === "Expired" || new Date(p.expires_at) < new Date()) return "overdue";
+  if (p.status === "Completed") return "completed";
+  return "progress";
+}
 
 export const APPOINTMENT_STATUSES = [
   "Booked",
