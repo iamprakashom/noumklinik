@@ -83,6 +83,19 @@ type SortKey = "oldest" | "newest" | "follow_up";
 
 const PAGE_SIZE = 25;
 
+// Windowed page list: 1 … current±1 … last, with nulls as ellipsis gaps.
+function pageNumbers(page: number, pageCount: number): (number | null)[] {
+  if (pageCount <= 7) return Array.from({ length: pageCount }, (_, i) => i + 1);
+  const around = new Set([1, pageCount, page - 1, page, page + 1]);
+  const list = [...around].filter((p) => p >= 1 && p <= pageCount).sort((a, b) => a - b);
+  const out: (number | null)[] = [];
+  list.forEach((p, i) => {
+    if (i > 0 && p - list[i - 1] > 1) out.push(null);
+    out.push(p);
+  });
+  return out;
+}
+
 function sourceGroupOf(lead: Lead) {
   return lead.source_group ?? SOURCE_GROUP_BY_SOURCE[lead.source] ?? "Organic";
 }
