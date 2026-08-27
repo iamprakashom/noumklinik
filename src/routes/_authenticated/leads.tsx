@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { LayoutGrid, Plus, Rows3, UserRoundCheck } from "lucide-react";
 import { AppShell, ghostButton, primaryButton } from "@/components/clinic/AppShell";
 import { Chip, EmptyState, Field, inputClass, textareaClass } from "@/components/clinic/bits";
+import { LeadsToolbar } from "@/components/clinic/LeadsToolbar";
 import {
   Dialog,
   DialogContent,
@@ -78,14 +79,28 @@ function LeadsPage() {
 
   const all = useMemo(() => leads.data ?? [], [leads.data]);
 
+  const today = new Date().toISOString();
+  const isOverdueLead = (l: Lead) =>
+    !!l.next_follow_up_at &&
+    l.next_follow_up_at < today &&
+    l.stage !== "Converted" &&
+    l.stage !== "Lost";
+  const isScheduledLead = (l: Lead) =>
+    !!l.next_follow_up_at && l.next_follow_up_at >= today && l.stage !== "Converted";
+
   const rows = useMemo(() => {
+    const q = query.trim().toLowerCase();
     const filtered = all.filter(
       (l) =>
         (stage === "all" || l.stage === stage) &&
         (treatment === "all" || l.service_id === treatment) &&
         (group === "all" || sourceGroupOf(l) === group) &&
         (doctor === "all" ||
-          (doctor === "unassigned" ? !l.owner_id : l.owner_id === doctor)),
+          (doctor === "unassigned" ? !l.owner_id : l.owner_id === doctor)) &&
+        (followUp === "all" ||
+          (followUp === "overdue" ? isOverdueLead(l) : isScheduledLead(l))) &&
+        (!q ||
+          [l.full_name, l.phone, l.email].some((v) => v?.toLowerCase().includes(q))),
     );
     return [...filtered].sort((a, b) => {
       if (sort === "newest") return b.created_at.localeCompare(a.created_at);
@@ -93,15 +108,12 @@ function LeadsPage() {
         return (a.next_follow_up_at ?? "9999").localeCompare(b.next_follow_up_at ?? "9999");
       return a.created_at.localeCompare(b.created_at);
     });
-  }, [all, stage, treatment, group, doctor, sort]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [all, query, stage, treatment, group, doctor, followUp, sort]);
 
-  const today = new Date().toISOString();
-  const overdue = all.filter(
-    (l) => l.next_follow_up_at && l.next_follow_up_at < today && l.stage !== "Converted" && l.stage !== "Lost",
-  );
-  const scheduled = all.filter(
-    (l) => l.next_follow_up_at && l.next_follow_up_at >= today && l.stage !== "Converted",
-  );
+  const overdue = all.filter(isOverdueLead);
+  const scheduled = all.filter(isScheduledLead);
+
 
   const providerName = (id: string | null) =>
     providers.data?.find((p) => p.id === id)?.name ?? "Unassigned";
@@ -138,7 +150,12 @@ function LeadsPage() {
       }
     >
       <div className="grid gap-4 lg:grid-cols-2">
-        <section className="rounded-xl border border-border bg-card p-4">
+        <button
+          type="button"
+          aria-pressed={followUp === "overdue"}
+          onClick={() => setFollowUp(followUp === "overdue" ? "all" : "overdue")}
+          className={`card-hover rounded-xl border bg-card p-4 text-left transition-colors ${followUp === "overdue" ? "border-primary" : "border-border"}`}
+        >
           <p className="text-xs font-medium text-muted-foreground">Overdue follow-ups</p>
           <p className="mt-1 text-2xl font-semibold tabular-nums">{overdue.length}</p>
           <ul className="mt-2 space-y-1">
@@ -154,8 +171,13 @@ function LeadsPage() {
               <li className="text-xs text-muted-foreground">Nothing overdue.</li>
             ) : null}
           </ul>
-        </section>
-        <section className="rounded-xl border border-border bg-card p-4">
+        </button>
+        <button
+          type="button"
+          aria-pressed={followUp === "scheduled"}
+          onClick={() => setFollowUp(followUp === "scheduled" ? "all" : "scheduled")}
+          className={`card-hover rounded-xl border bg-card p-4 text-left transition-colors ${followUp === "scheduled" ? "border-primary" : "border-border"}`}
+        >
           <p className="text-xs font-medium text-muted-foreground">Scheduled follow-ups</p>
           <p className="mt-1 text-2xl font-semibold tabular-nums">{scheduled.length}</p>
           <ul className="mt-2 space-y-1">
@@ -169,49 +191,82 @@ function LeadsPage() {
               <li className="text-xs text-muted-foreground">Nothing scheduled.</li>
             ) : null}
           </ul>
-        </section>
+        </button>
       </div>
 
-      <div className="mt-6 flex flex-wrap items-center gap-2">
-        <select value={stage} onChange={(e) => setStage(e.target.value)} className={`${inputClass} w-40`} aria-label="Filter by status">
-          <option value="all">All statuses</option>
-          {LEAD_STAGES.map((s) => (
-            <option key={s} value={s}>
-              {s}
-            </option>
-          ))}
-        </select>
-        <select value={treatment} onChange={(e) => setTreatment(e.target.value)} className={`${inputClass} w-44`} aria-label="Filter by treatment">
-          <option value="all">All treatments</option>
-          {services.data?.map((s) => (
-            <option key={s.id} value={s.id}>
-              {s.name}
-            </option>
-          ))}
-        </select>
-        <select value={group} onChange={(e) => setGroup(e.target.value)} className={`${inputClass} w-40`} aria-label="Filter by source">
-          <option value="all">All sources</option>
-          {LEAD_SOURCE_GROUPS.map((s) => (
-            <option key={s} value={s}>
-              {s}
-            </option>
-          ))}
-        </select>
-        <select value={doctor} onChange={(e) => setDoctor(e.target.value)} className={`${inputClass} w-44`} aria-label="Filter by doctor">
-          <option value="all">All doctors</option>
-          <option value="unassigned">Unassigned</option>
-          {providers.data?.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.name}
-            </option>
-          ))}
-        </select>
-        <select value={sort} onChange={(e) => setSort(e.target.value as SortKey)} className={`${inputClass} w-48`} aria-label="Sort leads">
-          <option value="oldest">Ageing · oldest first</option>
-          <option value="newest">Ageing · newest first</option>
-          <option value="follow_up">Next follow-up</option>
-        </select>
-      </div>
+
+      <LeadsToolbar
+        query={query}
+        onQueryChange={setQuery}
+        shown={rows.length}
+        total={all.length}
+        onClearAll={() => {
+          setQuery("");
+          setStage("all");
+          setTreatment("all");
+          setGroup("all");
+          setDoctor("all");
+          setFollowUp("all");
+        }}
+        filters={[
+          {
+            key: "stage",
+            label: "Status",
+            allLabel: "All statuses",
+            value: stage,
+            onChange: setStage,
+            options: LEAD_STAGES.map((s) => ({ value: s, label: s })),
+          },
+          {
+            key: "treatment",
+            label: "Treatment",
+            allLabel: "All treatments",
+            value: treatment,
+            onChange: setTreatment,
+            options: (services.data ?? []).map((s) => ({ value: s.id, label: s.name })),
+          },
+          {
+            key: "group",
+            label: "Source",
+            allLabel: "All sources",
+            value: group,
+            onChange: setGroup,
+            options: LEAD_SOURCE_GROUPS.map((s) => ({ value: s, label: s })),
+          },
+          {
+            key: "doctor",
+            label: "Doctor",
+            allLabel: "All doctors",
+            value: doctor,
+            onChange: setDoctor,
+            options: [
+              { value: "unassigned", label: "Unassigned" },
+              ...(providers.data ?? []).map((p) => ({ value: p.id, label: p.name })),
+            ],
+          },
+          {
+            key: "followUp",
+            label: "Follow-up",
+            allLabel: "Any follow-up",
+            value: followUp,
+            onChange: setFollowUp,
+            options: [
+              { value: "overdue", label: "Overdue" },
+              { value: "scheduled", label: "Scheduled" },
+            ],
+          },
+        ]}
+        sort={{
+          value: sort,
+          onChange: (v: string) => setSort(v as SortKey),
+          options: [
+            { value: "oldest", label: "Ageing · oldest first" },
+            { value: "newest", label: "Ageing · newest first" },
+            { value: "follow_up", label: "Next follow-up" },
+          ],
+        }}
+      />
+
 
       {rows.length === 0 ? (
         <div className="mt-4">
