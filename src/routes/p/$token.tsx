@@ -56,10 +56,15 @@ function PatientLinkPage() {
   const consent = useServerFn(submitConsent);
   const doConfirm = useServerFn(confirmAppointment);
   const doReschedule = useServerFn(requestReschedule);
+  const doFeedback = useServerFn(submitFeedback);
+  const noteReviewClick = useServerFn(markReviewClicked);
   const [done, setDone] = useState(false);
   const [doneMessage, setDoneMessage] = useState<string | null>(null);
+  const [reviewLink, setReviewLink] = useState<string | null>(null);
   const [showReschedule, setShowReschedule] = useState(false);
   const [signature, setSignature] = useState<string | null>(null);
+  const [rating, setRating] = useState(0);
+
 
   const link = useQuery({
     queryKey: ["patient_link", token],
