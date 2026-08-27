@@ -120,7 +120,7 @@ function SettingsPage() {
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-medium">{s.name}</p>
                       <p className="text-xs text-muted-foreground">
-                        {s.category ?? "General"} · {s.duration_min} min ·{" "}
+                        {s.category ?? "General"} · {s.duration_min} min · SAC {s.sac_code} · GST {s.gst_rate}% ·{" "}
                         {s.followup_days ? `${s.followup_days}d follow-up` : "no follow-up"}
                       </p>
                     </div>
@@ -271,6 +271,8 @@ function SettingsPage() {
                     duration_min: Number(fd.get("duration_min")) || 30,
                     price: Number(fd.get("price")) || 0,
                     followup_days: Number(fd.get("followup_days")) || null,
+                    sac_code: String(fd.get("sac_code")) || "999722",
+                    gst_rate: Number(fd.get("gst_rate")) || 18,
                     active: true,
                   },
                   { onSuccess: () => ok("Service added"), onError: fail },
@@ -324,6 +326,12 @@ function SettingsPage() {
                 </Field>
                 <Field label="Follow-up after (days)">
                   <input name="followup_days" type="number" defaultValue={14} className={inputClass} />
+                </Field>
+                <Field label="SAC code">
+                  <input name="sac_code" defaultValue="999722" className={inputClass} />
+                </Field>
+                <Field label="GST rate (%)">
+                  <input name="gst_rate" type="number" step="0.1" defaultValue={18} className={inputClass} />
                 </Field>
               </>
             ) : null}
