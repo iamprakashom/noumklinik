@@ -29,6 +29,7 @@ import {
   usePatients,
   useProviders,
   useRooms,
+  usePatientConsents,
   useServices,
   useUpdate,
 } from "@/lib/clinic-data";
@@ -67,6 +68,15 @@ function AppointmentsPage() {
   const providers = useProviders();
   const rooms = useRooms();
   const services = useServices();
+  const consents = usePatientConsents();
+
+  const consentPending = (patientId: string, serviceId: string | null) => {
+    const svc = services.data?.find((s) => s.id === serviceId);
+    if (!svc?.consent_template_id) return false;
+    return !(consents.data ?? []).some(
+      (c) => c.patient_id === patientId && c.template_id === svc.consent_template_id,
+    );
+  };
   const createAppointment = useInsert("appointments");
   const updateAppointment = useUpdate("appointments");
   const sendReminder = useServerFn(sendAppointmentReminder);
@@ -269,6 +279,11 @@ function AppointmentsPage() {
                           </option>
                         ))}
                       </select>
+                      {consentPending(a.patient_id, a.service_id) ? (
+                        <Chip tone="overdue" className="mt-1">
+                          Consent pending
+                        </Chip>
+                      ) : null}
                     </td>
                     <td className="px-5 py-3">
                       <select
