@@ -3,6 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
   CalendarDays,
+  MessageSquare,
   CreditCard,
   BarChart3,
   LayoutDashboard,
@@ -21,6 +22,7 @@ const NAV = [
   { to: "/appointments", label: "Appointments", icon: CalendarDays },
   { to: "/patients", label: "Patients", icon: Users },
   { to: "/leads", label: "Leads", icon: UserPlus },
+  { to: "/inbox", label: "Inbox", icon: MessageSquare },
   { to: "/billing", label: "Billing", icon: CreditCard },
   { to: "/reports", label: "Reports", icon: BarChart3 },
   { to: "/automations", label: "Follow-ups", icon: Sparkles },
