@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { LayoutGrid, Plus, Rows3, UserRoundCheck } from "lucide-react";
 import { AppShell, ghostButton, primaryButton } from "@/components/clinic/AppShell";
 import { Chip, EmptyState, Field, inputClass, textareaClass } from "@/components/clinic/bits";
+import { LeadsToolbar } from "@/components/clinic/LeadsToolbar";
 import {
   Dialog,
   DialogContent,
