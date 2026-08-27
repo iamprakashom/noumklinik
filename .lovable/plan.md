@@ -1,6 +1,10 @@
 # Leads page: pagination, mobile filters, shareable URLs, accessibility
 
-Four improvements to the Leads list, all frontend.
+Four improvements to the Leads list, plus switching all money display to Indian Rupees.
+
+## 0. Currency to Rupees
+
+All amounts across the app (billing, invoices, dashboard stats) display in ₹ with Indian number formatting (e.g. ₹1,25,000) instead of $.
 
 ## 1. URL-backed filters and sort
 
