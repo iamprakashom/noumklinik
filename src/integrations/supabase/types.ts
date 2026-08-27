@@ -185,6 +185,66 @@ export type Database = {
           },
         ]
       }
+      clinic_profile: {
+        Row: {
+          address_line1: string | null
+          address_line2: string | null
+          city: string | null
+          created_at: string
+          declaration: string
+          email: string | null
+          gstin: string | null
+          id: string
+          invoice_prefix: string
+          legal_name: string
+          phone: string | null
+          pincode: string | null
+          singleton: boolean
+          state: string
+          state_code: string
+          trade_name: string | null
+          updated_at: string
+        }
+        Insert: {
+          address_line1?: string | null
+          address_line2?: string | null
+          city?: string | null
+          created_at?: string
+          declaration?: string
+          email?: string | null
+          gstin?: string | null
+          id?: string
+          invoice_prefix?: string
+          legal_name?: string
+          phone?: string | null
+          pincode?: string | null
+          singleton?: boolean
+          state?: string
+          state_code?: string
+          trade_name?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address_line1?: string | null
+          address_line2?: string | null
+          city?: string | null
+          created_at?: string
+          declaration?: string
+          email?: string | null
+          gstin?: string | null
+          id?: string
+          invoice_prefix?: string
+          legal_name?: string
+          phone?: string | null
+          pincode?: string | null
+          singleton?: boolean
+          state?: string
+          state_code?: string
+          trade_name?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       consent_templates: {
         Row: {
           active: boolean
@@ -212,29 +272,47 @@ export type Database = {
       invoice_items: {
         Row: {
           amount: number
+          cgst: number
           created_at: string
           description: string
+          gst_rate: number
           id: string
+          igst: number
           invoice_id: string
           quantity: number
+          sac_code: string
+          sgst: number
+          taxable_amount: number
           unit_price: number
         }
         Insert: {
           amount?: number
+          cgst?: number
           created_at?: string
           description: string
+          gst_rate?: number
           id?: string
+          igst?: number
           invoice_id: string
           quantity?: number
+          sac_code?: string
+          sgst?: number
+          taxable_amount?: number
           unit_price?: number
         }
         Update: {
           amount?: number
+          cgst?: number
           created_at?: string
           description?: string
+          gst_rate?: number
           id?: string
+          igst?: number
           invoice_id?: string
           quantity?: number
+          sac_code?: string
+          sgst?: number
+          taxable_amount?: number
           unit_price?: number
         }
         Relationships: [
@@ -250,43 +328,79 @@ export type Database = {
       invoices: {
         Row: {
           appointment_id: string | null
+          cgst: number
           created_at: string
           discount: number
+          doc_type: string
           id: string
+          igst: number
           issued_at: string
+          notes: string | null
           number: string
+          original_invoice_id: string | null
           patient_id: string
+          place_of_supply: string | null
+          place_of_supply_code: string | null
+          round_off: number
+          seq: number | null
+          sgst: number
           status: string
           subtotal: number
+          supplier_gstin: string | null
           tax: number
+          taxable_value: number
           total: number
           updated_at: string
         }
         Insert: {
           appointment_id?: string | null
+          cgst?: number
           created_at?: string
           discount?: number
+          doc_type?: string
           id?: string
+          igst?: number
           issued_at?: string
+          notes?: string | null
           number: string
+          original_invoice_id?: string | null
           patient_id: string
+          place_of_supply?: string | null
+          place_of_supply_code?: string | null
+          round_off?: number
+          seq?: number | null
+          sgst?: number
           status?: string
           subtotal?: number
+          supplier_gstin?: string | null
           tax?: number
+          taxable_value?: number
           total?: number
           updated_at?: string
         }
         Update: {
           appointment_id?: string | null
+          cgst?: number
           created_at?: string
           discount?: number
+          doc_type?: string
           id?: string
+          igst?: number
           issued_at?: string
+          notes?: string | null
           number?: string
+          original_invoice_id?: string | null
           patient_id?: string
+          place_of_supply?: string | null
+          place_of_supply_code?: string | null
+          round_off?: number
+          seq?: number | null
+          sgst?: number
           status?: string
           subtotal?: number
+          supplier_gstin?: string | null
           tax?: number
+          taxable_value?: number
           total?: number
           updated_at?: string
         }
@@ -296,6 +410,13 @@ export type Database = {
             columns: ["appointment_id"]
             isOneToOne: false
             referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_original_invoice_id_fkey"
+            columns: ["original_invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
             referencedColumns: ["id"]
           },
           {
@@ -709,6 +830,7 @@ export type Database = {
           phone: string | null
           preferred_channel: string
           source: string
+          state: string | null
           tags: string[]
           updated_at: string
         }
@@ -727,6 +849,7 @@ export type Database = {
           phone?: string | null
           preferred_channel?: string
           source?: string
+          state?: string | null
           tags?: string[]
           updated_at?: string
         }
@@ -745,6 +868,7 @@ export type Database = {
           phone?: string | null
           preferred_channel?: string
           source?: string
+          state?: string | null
           tags?: string[]
           updated_at?: string
         }
@@ -977,9 +1101,11 @@ export type Database = {
           created_at: string
           duration_min: number
           followup_days: number | null
+          gst_rate: number
           id: string
           name: string
           price: number
+          sac_code: string
         }
         Insert: {
           active?: boolean
@@ -987,9 +1113,11 @@ export type Database = {
           created_at?: string
           duration_min?: number
           followup_days?: number | null
+          gst_rate?: number
           id?: string
           name: string
           price?: number
+          sac_code?: string
         }
         Update: {
           active?: boolean
@@ -997,9 +1125,11 @@ export type Database = {
           created_at?: string
           duration_min?: number
           followup_days?: number | null
+          gst_rate?: number
           id?: string
           name?: string
           price?: number
+          sac_code?: string
         }
         Relationships: []
       }

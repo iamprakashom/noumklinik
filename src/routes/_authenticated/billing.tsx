@@ -2,9 +2,10 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Link2, Plus, Sparkles } from "lucide-react";
+import { FileText, Link2, Plus, Sparkles, Undo2 } from "lucide-react";
 import { AppShell, ghostButton, primaryButton } from "@/components/clinic/AppShell";
 import { Chip, EmptyState, Field, StatCard, inputClass } from "@/components/clinic/bits";
+import { InvoiceDocument } from "@/components/clinic/InvoiceDocument";
 import {
   Dialog,
   DialogContent,
@@ -13,8 +14,12 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { formatDate, invoiceTone, money, patientName } from "@/data/clinic";
+import type { Invoice } from "@/data/clinic";
+import { INDIAN_STATES, computeGstTotals } from "@/lib/gst";
 import {
   useAddonDiscountRules,
+  useClinicProfile,
+  useCreateCreditNote,
   useCreateInvoice,
   useInsert,
   useInvoiceItems,
@@ -34,22 +39,29 @@ export const Route = createFileRoute("/_authenticated/billing")({
       {
         name: "description",
         content:
-          "Create treatment invoices with add-on upsells, apply bundle discounts and tax, collect UPI or EMI payments and track balances.",
+          "Raise GST tax invoices with CGST/SGST split, SAC codes and sequential numbering, collect UPI or EMI payments and track balances.",
       },
       { property: "og:title", content: "Billing — Luma Aesthetics Clinic CRM" },
       {
         property: "og:description",
-        content: "Invoices, add-on upsells, payment links and outstanding balances for the clinic.",
+        content: "GST invoices, credit notes, payment links and outstanding balances for the clinic.",
       },
     ],
   }),
   component: BillingPage,
 });
 
+type Line = { description: string; quantity: number; unit_price: number; gst_rate: number; sac_code: string };
+
+const emptyLine: Line = { description: "", quantity: 1, unit_price: 0, gst_rate: 18, sac_code: "999722" };
+
 function BillingPage() {
   const [open, setOpen] = useState(false);
-  const [lines, setLines] = useState([{ description: "", quantity: 1, unit_price: 0 }]);
+  const [lines, setLines] = useState<Line[]>([{ ...emptyLine }]);
   const [discount, setDiscount] = useState(0);
+  const [patientId, setPatientId] = useState("");
+  const [pos, setPos] = useState("");
+  const [preview, setPreview] = useState<Invoice | null>(null);
 
   const invoices = useInvoices();
   const items = useInvoiceItems();
@@ -58,7 +70,9 @@ function BillingPage() {
   const services = useServices();
   const addons = useServiceAddons();
   const rules = useAddonDiscountRules();
+  const clinic = useClinicProfile();
   const createInvoice = useCreateInvoice();
+  const creditNote = useCreateCreditNote();
   const addPayment = useInsert("payments");
   const updateInvoice = useUpdate("invoices");
   const makeLink = useServerFn(createInvoicePaymentLink);
@@ -74,6 +88,11 @@ function BillingPage() {
     return p ? patientName(p) : "Unknown";
   };
 
+  const selectedPatient = patients.data?.find((p) => p.id === patientId) ?? null;
+  const clinicState = clinic.data?.state ?? "";
+  const placeOfSupply = pos || selectedPatient?.state || clinicState;
+  const interState = Boolean(placeOfSupply && clinicState && placeOfSupply !== clinicState);
+
   const mainService = services.data?.find((s) => s.name === lines[0]?.description);
   const suggestedAddons = useMemo(() => {
     if (!mainService) return [];
@@ -85,7 +104,10 @@ function BillingPage() {
     );
   }, [mainService, addons.data, services.data, lines]);
 
-  const subtotal = lines.reduce((s, l) => s + l.quantity * l.unit_price, 0);
+  const totals = useMemo(
+    () => computeGstTotals(lines, discount, interState),
+    [lines, discount, interState],
+  );
   const addonCount = Math.max(0, lines.filter((l) => l.description).length - 1);
 
   /** Best matching bundle discount for the current line-up. */
@@ -99,24 +121,39 @@ function BillingPage() {
     let best: { name: string; value: number } | null = null;
     for (const r of eligible) {
       const value =
-        r.discount_type === "percent" ? (subtotal * Number(r.discount_value)) / 100 : Number(r.discount_value);
+        r.discount_type === "percent"
+          ? (totals.subtotal * Number(r.discount_value)) / 100
+          : Number(r.discount_value);
       if (!best || value > best.value) best = { name: r.name, value: Math.round(value) };
     }
     return best;
-  }, [rules.data, addonCount, mainService?.id, subtotal]);
+  }, [rules.data, addonCount, mainService?.id, totals.subtotal]);
+
+  const gstinMissing = !clinic.data?.gstin;
 
   return (
     <AppShell
       title="Billing"
-      subtitle="Invoices, payments and balances"
+      subtitle="GST invoices, payments and balances"
       actions={
         <button className={primaryButton} onClick={() => setOpen(true)}>
           <Plus className="size-3.5" /> New invoice
         </button>
       }
     >
+      {gstinMissing ? (
+        <div className="mb-4 rounded-lg border border-status-overdue/30 bg-status-overdue-soft px-4 py-3 text-xs text-status-overdue">
+          No GSTIN saved yet — add the clinic's GSTIN and address in Settings → Clinic so invoices
+          are GST-compliant.
+        </div>
+      ) : null}
+
       <div className="grid gap-4 sm:grid-cols-3">
-        <StatCard label="Outstanding" value={money(outstanding)} hint={`${all.filter((i) => i.status === "Open").length} open invoices`} />
+        <StatCard
+          label="Outstanding"
+          value={money(outstanding)}
+          hint={`${all.filter((i) => i.status === "Open").length} open invoices`}
+        />
         <StatCard label="Collected" value={money(collected)} hint={`${payments.data?.length ?? 0} payments`} />
         <StatCard label="Invoices" value={all.length} />
       </div>
@@ -134,6 +171,7 @@ function BillingPage() {
                 <th className="px-5 py-3 font-medium">Patient</th>
                 <th className="px-5 py-3 font-medium">Items</th>
                 <th className="px-5 py-3 font-medium">Issued</th>
+                <th className="px-5 py-3 text-right font-medium">Tax</th>
                 <th className="px-5 py-3 text-right font-medium">Total</th>
                 <th className="px-5 py-3 font-medium">Status</th>
                 <th className="px-5 py-3" />
@@ -144,7 +182,12 @@ function BillingPage() {
                 const lineItems = (items.data ?? []).filter((i) => i.invoice_id === inv.id);
                 return (
                   <tr key={inv.id} className="transition-colors hover:bg-secondary/60">
-                    <td className="px-5 py-3 tabular-nums">{inv.number}</td>
+                    <td className="px-5 py-3 tabular-nums">
+                      {inv.number}
+                      {inv.doc_type === "credit_note" ? (
+                        <span className="ml-1 text-[11px] text-muted-foreground">CN</span>
+                      ) : null}
+                    </td>
                     <td className="px-5 py-3">{patientOf(inv.patient_id)}</td>
                     <td className="px-5 py-3 text-xs text-muted-foreground">
                       {lineItems.map((i) => i.description).join(", ") || "—"}
@@ -152,59 +195,92 @@ function BillingPage() {
                     <td className="px-5 py-3 text-xs text-muted-foreground">
                       {formatDate(inv.issued_at)}
                     </td>
+                    <td className="px-5 py-3 text-right text-xs tabular-nums text-muted-foreground">
+                      {money(inv.tax)}
+                    </td>
                     <td className="px-5 py-3 text-right tabular-nums">{money(inv.total)}</td>
                     <td className="px-5 py-3">
                       <Chip tone={invoiceTone(inv.status)}>{inv.status}</Chip>
                     </td>
                     <td className="px-5 py-3 text-right">
-                      {inv.status === "Open" ? (
-                        <div className="flex justify-end gap-1">
+                      <div className="flex justify-end gap-1">
+                        <button
+                          className={ghostButton}
+                          onClick={() => setPreview(inv)}
+                          aria-label={`View invoice ${inv.number}`}
+                        >
+                          <FileText className="size-3.5" /> View
+                        </button>
+                        {inv.status === "Open" ? (
+                          <>
+                            <button
+                              className={ghostButton}
+                              onClick={() =>
+                                toast.promise(
+                                  makeLink({ data: { invoiceId: inv.id } }).then((r) => {
+                                    void navigator.clipboard?.writeText(r.url);
+                                    return r;
+                                  }),
+                                  {
+                                    loading: "Creating payment link…",
+                                    success: (r: { provider: string }) =>
+                                      `${r.provider} link copied — UPI & EMI enabled`,
+                                    error: (e: Error) => e.message,
+                                  },
+                                )
+                              }
+                            >
+                              <Link2 className="size-3.5" /> Payment link
+                            </button>
+                            <button
+                              className={ghostButton}
+                              onClick={() =>
+                                addPayment.mutate(
+                                  {
+                                    invoice_id: inv.id,
+                                    amount: Number(inv.total),
+                                    method: "Cash",
+                                    status: "Paid",
+                                  },
+                                  {
+                                    onSuccess: () =>
+                                      updateInvoice.mutate(
+                                        { id: inv.id, values: { status: "Paid" } },
+                                        { onSuccess: () => toast.success("Payment recorded") },
+                                      ),
+                                    onError: (e) => toast.error(e.message),
+                                  },
+                                )
+                              }
+                            >
+                              Record payment
+                            </button>
+                          </>
+                        ) : null}
+                        {inv.doc_type === "invoice" && inv.status !== "Void" ? (
                           <button
                             className={ghostButton}
-                            onClick={() =>
-                              toast.promise(
-                                makeLink({ data: { invoiceId: inv.id } }).then((r) => {
-                                  void navigator.clipboard?.writeText(r.url);
-                                  return r;
-                                }),
+                            onClick={() => {
+                              const reason = window.prompt("Reason for the credit note?");
+                              if (!reason) return;
+                              creditNote.mutate(
                                 {
-                                  loading: "Creating payment link…",
-                                  success: (r: { provider: string }) =>
-                                    `${r.provider} link copied — UPI & EMI enabled`,
-                                  error: (e: Error) => e.message,
-                                },
-                              )
-                            }
-                          >
-                            <Link2 className="size-3.5" /> Payment link
-                          </button>
-                          <button
-                            className={ghostButton}
-                            onClick={() =>
-                              addPayment.mutate(
-                                {
-                                  invoice_id: inv.id,
-                                  amount: Number(inv.total),
-                                  method: "Cash",
-                                  status: "Paid",
+                                  invoice: inv,
+                                  items: (items.data ?? []).filter((i) => i.invoice_id === inv.id),
+                                  reason,
                                 },
                                 {
-                                  onSuccess: () =>
-                                    updateInvoice.mutate(
-                                      { id: inv.id, values: { status: "Paid" } },
-                                      { onSuccess: () => toast.success("Payment recorded") },
-                                    ),
+                                  onSuccess: () => toast.success("Credit note issued"),
                                   onError: (e) => toast.error(e.message),
                                 },
-                              )
-                            }
+                              );
+                            }}
                           >
-                            Record payment
+                            <Undo2 className="size-3.5" /> Credit note
                           </button>
-                        </div>
-                      ) : null}
+                        ) : null}
+                      </div>
                     </td>
-
                   </tr>
                 );
               })}
@@ -213,28 +289,37 @@ function BillingPage() {
         )}
       </div>
 
+      <InvoiceDocument
+        invoice={preview}
+        items={(items.data ?? []).filter((i) => i.invoice_id === preview?.id)}
+        patient={patients.data?.find((p) => p.id === preview?.patient_id) ?? null}
+        clinic={clinic.data ?? null}
+        open={Boolean(preview)}
+        onOpenChange={(v) => !v && setPreview(null)}
+      />
+
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="sm:max-w-xl">
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
           <DialogHeader>
-            <DialogTitle>New invoice</DialogTitle>
+            <DialogTitle>New GST invoice</DialogTitle>
           </DialogHeader>
           <form
             id="new-invoice"
             className="grid gap-4"
             onSubmit={(e) => {
               e.preventDefault();
-              const fd = new FormData(e.currentTarget);
               createInvoice.mutate(
                 {
-                  patient_id: String(fd.get("patient_id")),
+                  patient_id: patientId,
                   items: lines.filter((l) => l.description),
-                  discount: Number(fd.get("discount")) || 0,
-                  taxRate: Number(fd.get("tax_rate")) || 0,
+                  discount,
+                  clinic: clinic.data ?? null,
+                  placeOfSupply: placeOfSupply || null,
                 },
                 {
                   onSuccess: () => {
                     toast.success("Invoice created");
-                    setLines([{ description: "", quantity: 1, unit_price: 0 }]);
+                    setLines([{ ...emptyLine }]);
                     setDiscount(0);
                     setOpen(false);
                   },
@@ -243,20 +328,41 @@ function BillingPage() {
               );
             }}
           >
-            <Field label="Patient">
-              <select name="patient_id" required className={inputClass}>
-                {patients.data?.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {patientName(p)}
-                  </option>
-                ))}
-              </select>
-            </Field>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field label="Patient">
+                <select
+                  required
+                  className={inputClass}
+                  value={patientId}
+                  onChange={(e) => setPatientId(e.target.value)}
+                >
+                  <option value="">Select patient…</option>
+                  {patients.data?.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {patientName(p)}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              <Field label="Place of supply">
+                <select
+                  className={inputClass}
+                  value={placeOfSupply}
+                  onChange={(e) => setPos(e.target.value)}
+                >
+                  {INDIAN_STATES.map((s) => (
+                    <option key={s.code} value={s.name}>
+                      {s.name} ({s.code})
+                    </option>
+                  ))}
+                </select>
+              </Field>
+            </div>
 
             <div className="grid gap-2">
               <span className="text-xs font-medium text-muted-foreground">Line items</span>
               {lines.map((line, idx) => (
-                <div key={idx} className="grid grid-cols-[1fr_70px_100px] gap-2">
+                <div key={idx} className="grid grid-cols-[1fr_60px_90px_70px] gap-2">
                   <select
                     value={line.description}
                     onChange={(e) => {
@@ -268,6 +374,8 @@ function BillingPage() {
                                 ...l,
                                 description: e.target.value,
                                 unit_price: service ? Number(service.price) : l.unit_price,
+                                gst_rate: service ? Number(service.gst_rate) : l.gst_rate,
+                                sac_code: service?.sac_code ?? l.sac_code,
                               }
                             : l,
                         ),
@@ -285,6 +393,7 @@ function BillingPage() {
                   <input
                     type="number"
                     min={1}
+                    aria-label="Quantity"
                     value={line.quantity}
                     onChange={(e) =>
                       setLines((prev) =>
@@ -298,6 +407,7 @@ function BillingPage() {
                   <input
                     type="number"
                     step="0.01"
+                    aria-label="Rate"
                     value={line.unit_price}
                     onChange={(e) =>
                       setLines((prev) =>
@@ -308,14 +418,26 @@ function BillingPage() {
                     }
                     className={inputClass}
                   />
+                  <input
+                    type="number"
+                    step="0.1"
+                    aria-label="GST %"
+                    value={line.gst_rate}
+                    onChange={(e) =>
+                      setLines((prev) =>
+                        prev.map((l, i) =>
+                          i === idx ? { ...l, gst_rate: Number(e.target.value) } : l,
+                        ),
+                      )
+                    }
+                    className={inputClass}
+                  />
                 </div>
               ))}
               <button
                 type="button"
                 className={`${ghostButton} w-fit`}
-                onClick={() =>
-                  setLines((prev) => [...prev, { description: "", quantity: 1, unit_price: 0 }])
-                }
+                onClick={() => setLines((prev) => [...prev, { ...emptyLine }])}
               >
                 <Plus className="size-3.5" /> Add line
               </button>
@@ -336,7 +458,13 @@ function BillingPage() {
                       onClick={() =>
                         setLines((prev) => [
                           ...prev.filter((l) => l.description),
-                          { description: s.name, quantity: 1, unit_price: Number(s.price) },
+                          {
+                            description: s.name,
+                            quantity: 1,
+                            unit_price: Number(s.price),
+                            gst_rate: Number(s.gst_rate),
+                            sac_code: s.sac_code,
+                          },
                         ])
                       }
                     >
@@ -357,36 +485,63 @@ function BillingPage() {
               </button>
             ) : null}
 
-            <div className="grid grid-cols-2 gap-4">
-              <Field label="Discount">
-                <input
-                  name="discount"
-                  type="number"
-                  step="0.01"
-                  value={discount}
-                  onChange={(e) => setDiscount(Number(e.target.value))}
-                  className={inputClass}
-                />
-              </Field>
-              <Field label="Tax rate (%)">
-                <input name="tax_rate" type="number" step="0.1" defaultValue={8.25} className={inputClass} />
-              </Field>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Subtotal {money(subtotal)} · {addonCount} add-on{addonCount === 1 ? "" : "s"}
-            </p>
+            <Field label="Discount" className="max-w-40">
+              <input
+                type="number"
+                step="0.01"
+                value={discount}
+                onChange={(e) => setDiscount(Number(e.target.value))}
+                className={inputClass}
+              />
+            </Field>
 
+            <dl className="grid gap-1 rounded-lg border border-border bg-secondary/40 p-3 text-xs">
+              <Summary label="Subtotal" value={money(totals.subtotal)} />
+              {totals.discount > 0 ? (
+                <Summary label="Discount" value={`- ${money(totals.discount)}`} />
+              ) : null}
+              <Summary label="Taxable value" value={money(totals.taxable_value)} />
+              {interState ? (
+                <Summary label="IGST" value={money(totals.igst)} />
+              ) : (
+                <>
+                  <Summary label="CGST" value={money(totals.cgst)} />
+                  <Summary label="SGST" value={money(totals.sgst)} />
+                </>
+              )}
+              {totals.round_off !== 0 ? (
+                <Summary label="Round off" value={money(totals.round_off)} />
+              ) : null}
+              <div className="flex justify-between border-t border-border pt-1 text-sm font-semibold">
+                <dt>Total</dt>
+                <dd className="tabular-nums">{money(totals.total)}</dd>
+              </div>
+            </dl>
           </form>
           <DialogFooter>
             <button type="button" className={ghostButton} onClick={() => setOpen(false)}>
               Cancel
             </button>
-            <button type="submit" form="new-invoice" className={primaryButton} disabled={createInvoice.isPending}>
+            <button
+              type="submit"
+              form="new-invoice"
+              className={primaryButton}
+              disabled={createInvoice.isPending}
+            >
               Create invoice
             </button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
     </AppShell>
+  );
+}
+
+function Summary({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex justify-between">
+      <dt className="text-muted-foreground">{label}</dt>
+      <dd className="tabular-nums">{value}</dd>
+    </div>
   );
 }

@@ -19,6 +19,7 @@ export type OutboxMessage = Tables<"messages_outbox">;
 export type ServiceAddon = Tables<"service_addons">;
 export type AddonDiscountRule = Tables<"addon_discount_rules">;
 export type PaymentLink = Tables<"payment_links">;
+export type ClinicProfile = Tables<"clinic_profile">;
 
 export const APPOINTMENT_STATUSES = [
   "Booked",
@@ -150,17 +151,17 @@ export function money(value: number | string | null | undefined) {
 }
 
 export function formatTime(iso: string) {
-  return new Date(iso).toLocaleTimeString("en-US", {
+  return new Date(iso).toLocaleTimeString("en-IN", {
     hour: "numeric",
     minute: "2-digit",
   });
 }
 
 export function formatDay(iso: string) {
-  return new Date(iso).toLocaleDateString("en-US", {
+  return new Date(iso).toLocaleDateString("en-IN", {
     weekday: "short",
-    month: "short",
     day: "numeric",
+    month: "short",
   });
 }
 
@@ -171,9 +172,9 @@ export function formatDateTime(iso: string) {
 export function formatDate(iso: string | null | undefined) {
   if (!iso) return "—";
   const d = iso.length <= 10 ? new Date(`${iso}T00:00:00Z`) : new Date(iso);
-  return d.toLocaleDateString("en-US", {
-    month: "short",
+  return d.toLocaleDateString("en-IN", {
     day: "numeric",
+    month: "short",
     year: "numeric",
     timeZone: iso.length <= 10 ? "UTC" : undefined,
   });
