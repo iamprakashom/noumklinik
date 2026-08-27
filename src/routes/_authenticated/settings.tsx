@@ -3,6 +3,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { Plus } from "lucide-react";
 import { AppShell, ghostButton, primaryButton } from "@/components/clinic/AppShell";
+import { ClinicProfileTab } from "@/components/clinic/ClinicProfileTab";
 import { AddonsTab } from "@/components/clinic/AddonsTab";
 import { PaymentsTab } from "@/components/clinic/PaymentsTab";
 import { LeadCaptureTab } from "@/components/clinic/LeadCaptureTab";
@@ -76,6 +77,7 @@ function SettingsPage() {
     <AppShell title="Clinic setup" subtitle="Treatment menu, team, rooms and consent forms">
       <Tabs defaultValue="services">
         <TabsList>
+          <TabsTrigger value="clinic">Clinic</TabsTrigger>
           <TabsTrigger value="services">Services</TabsTrigger>
           <TabsTrigger value="providers">Providers</TabsTrigger>
           <TabsTrigger value="rooms">Rooms</TabsTrigger>
@@ -85,6 +87,9 @@ function SettingsPage() {
           <TabsTrigger value="lead-capture">Lead capture</TabsTrigger>
         </TabsList>
 
+        <TabsContent value="clinic" className="mt-4">
+          <ClinicProfileTab />
+        </TabsContent>
         <TabsContent value="addons" className="mt-4">
           <AddonsTab />
         </TabsContent>
