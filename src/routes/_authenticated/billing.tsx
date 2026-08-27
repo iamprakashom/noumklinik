@@ -2,10 +2,11 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { FileText, Link2, Plus, Sparkles, Undo2 } from "lucide-react";
+import { FileText, Link2, Package as PackageIcon, Plus, Sparkles, Undo2 } from "lucide-react";
 import { AppShell, ghostButton, primaryButton } from "@/components/clinic/AppShell";
 import { Chip, EmptyState, Field, StatCard, inputClass } from "@/components/clinic/bits";
 import { InvoiceDocument } from "@/components/clinic/InvoiceDocument";
+import { SellPackageDialog } from "@/components/clinic/SellPackageDialog";
 import {
   Dialog,
   DialogContent,
@@ -17,6 +18,9 @@ import { formatDate, invoiceTone, money, patientName } from "@/data/clinic";
 import type { Invoice } from "@/data/clinic";
 import { INDIAN_STATES, computeGstTotals } from "@/lib/gst";
 import {
+  unusedValue,
+  usePatientPackageItems,
+  usePatientPackages,
   useAddonDiscountRules,
   useClinicProfile,
   useCreateCreditNote,
@@ -62,6 +66,7 @@ function BillingPage() {
   const [patientId, setPatientId] = useState("");
   const [pos, setPos] = useState("");
   const [preview, setPreview] = useState<Invoice | null>(null);
+  const [sellOpen, setSellOpen] = useState(false);
 
   const invoices = useInvoices();
   const items = useInvoiceItems();
@@ -71,6 +76,8 @@ function BillingPage() {
   const addons = useServiceAddons();
   const rules = useAddonDiscountRules();
   const clinic = useClinicProfile();
+  const patientPackages = usePatientPackages();
+  const packageItems = usePatientPackageItems();
   const createInvoice = useCreateInvoice();
   const creditNote = useCreateCreditNote();
   const addPayment = useInsert("payments");
@@ -131,14 +138,40 @@ function BillingPage() {
 
   const gstinMissing = !clinic.data?.gstin;
 
+  /** Unused prepaid balance per live package, grouped by expiry month. */
+  const liability = useMemo(() => {
+    const live = (patientPackages.data ?? []).filter((p) => p.status !== "Refunded");
+    const rows = live
+      .map((p) => {
+        const items = (packageItems.data ?? []).filter((i) => i.patient_package_id === p.id);
+        return { pkg: p, unused: unusedValue(items) };
+      })
+      .filter((r) => r.unused > 0);
+    const byMonth = new Map<string, number>();
+    for (const r of rows) {
+      const key = r.pkg.expires_at.slice(0, 7);
+      byMonth.set(key, (byMonth.get(key) ?? 0) + r.unused);
+    }
+    return {
+      total: rows.reduce((s, r) => s + r.unused, 0),
+      count: rows.length,
+      months: [...byMonth.entries()].sort((a, b) => a[0].localeCompare(b[0])),
+    };
+  }, [patientPackages.data, packageItems.data]);
+
   return (
     <AppShell
       title="Billing"
       subtitle="GST invoices, payments and balances"
       actions={
-        <button className={primaryButton} onClick={() => setOpen(true)}>
-          <Plus className="size-3.5" /> New invoice
-        </button>
+        <div className="flex gap-2">
+          <button className={ghostButton} onClick={() => setSellOpen(true)}>
+            <PackageIcon className="size-3.5" /> Sell package
+          </button>
+          <button className={primaryButton} onClick={() => setOpen(true)}>
+            <Plus className="size-3.5" /> New invoice
+          </button>
+        </div>
       }
     >
       {gstinMissing ? (
@@ -148,7 +181,7 @@ function BillingPage() {
         </div>
       ) : null}
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-4">
         <StatCard
           label="Outstanding"
           value={money(outstanding)}
@@ -156,7 +189,32 @@ function BillingPage() {
         />
         <StatCard label="Collected" value={money(collected)} hint={`${payments.data?.length ?? 0} payments`} />
         <StatCard label="Invoices" value={all.length} />
+        <StatCard
+          label="Prepaid liability"
+          value={money(liability.total)}
+          hint={`${liability.count} live packages`}
+        />
       </div>
+
+      {liability.months.length > 0 ? (
+        <section className="mt-6 rounded-xl border border-border bg-card p-5">
+          <h2 className="text-sm font-semibold">Unused prepaid balance by expiry month</h2>
+          <ul className="mt-3 divide-y divide-border text-sm">
+            {liability.months.map(([month, value]) => (
+              <li key={month} className="flex justify-between py-2 first:pt-0 last:pb-0">
+                <span className="text-muted-foreground">
+                  {new Date(`${month}-01T00:00:00Z`).toLocaleDateString("en-IN", {
+                    month: "long",
+                    year: "numeric",
+                    timeZone: "UTC",
+                  })}
+                </span>
+                <span className="tabular-nums">{money(value)}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
 
       <div className="mt-6 overflow-hidden rounded-xl border border-border bg-card">
         {all.length === 0 ? (
@@ -288,6 +346,8 @@ function BillingPage() {
           </table>
         )}
       </div>
+
+      <SellPackageDialog open={sellOpen} onOpenChange={setSellOpen} />
 
       <InvoiceDocument
         invoice={preview}
