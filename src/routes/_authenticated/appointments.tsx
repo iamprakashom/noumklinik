@@ -476,18 +476,39 @@ function AppointmentsPage() {
             className="grid gap-4 sm:grid-cols-2"
             onSubmit={(e) => {
               e.preventDefault();
-              submit(e.currentTarget);
+              void submit(e.currentTarget);
             }}
           >
-            <Field label="Patient" className="sm:col-span-2">
-              <select name="patient_id" required className={inputClass}>
-                {patients.data?.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {patientName(p)}
-                  </option>
-                ))}
-              </select>
-            </Field>
+            <div className="sm:col-span-2">
+              {quickAdd ? (
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <Field label="New patient name">
+                    <input name="new_patient_name" required className={inputClass} autoFocus />
+                  </Field>
+                  <Field label="Mobile number">
+                    <input name="new_patient_phone" inputMode="tel" required className={inputClass} />
+                  </Field>
+                </div>
+              ) : (
+                <Field label="Patient">
+                  <select name="patient_id" required className={inputClass}>
+                    {patients.data?.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {patientName(p)}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+              )}
+              <button
+                type="button"
+                className="mt-1.5 text-xs text-primary underline"
+                onClick={() => setQuickAdd((v) => !v)}
+              >
+                {quickAdd ? "Choose an existing patient" : "New patient — add name & mobile only"}
+              </button>
+            </div>
+
             <Field label="Treatment type">
               <select name="service_id" className={inputClass}>
                 {services.data?.map((s) => (
