@@ -191,7 +191,7 @@ function LeadsPage() {
         <button
           type="button"
           aria-pressed={followUp === "overdue"}
-          onClick={() => setFollowUp(followUp === "overdue" ? "all" : "overdue")}
+          onClick={() => setSearch({ followUp: followUp === "overdue" ? "all" : "overdue" })}
           className={`card-hover rounded-xl border bg-card p-4 text-left transition-colors ${followUp === "overdue" ? "border-primary" : "border-border"}`}
         >
           <p className="text-xs font-medium text-muted-foreground">Overdue follow-ups</p>
@@ -213,7 +213,7 @@ function LeadsPage() {
         <button
           type="button"
           aria-pressed={followUp === "scheduled"}
-          onClick={() => setFollowUp(followUp === "scheduled" ? "all" : "scheduled")}
+          onClick={() => setSearch({ followUp: followUp === "scheduled" ? "all" : "scheduled" })}
           className={`card-hover rounded-xl border bg-card p-4 text-left transition-colors ${followUp === "scheduled" ? "border-primary" : "border-border"}`}
         >
           <p className="text-xs font-medium text-muted-foreground">Scheduled follow-ups</p>
