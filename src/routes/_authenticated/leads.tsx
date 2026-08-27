@@ -1,4 +1,6 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, stripSearchParams, useNavigate } from "@tanstack/react-router";
+import { zodValidator, fallback } from "@tanstack/zod-adapter";
+import { z } from "zod";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { LayoutGrid, Plus, Rows3, UserRoundCheck } from "lucide-react";
@@ -34,7 +36,31 @@ import {
   useUpdate,
 } from "@/lib/clinic-data";
 
+const leadsSearchSchema = z.object({
+  q: fallback(z.string(), "").default(""),
+  stage: fallback(z.string(), "all").default("all"),
+  treatment: fallback(z.string(), "all").default("all"),
+  group: fallback(z.string(), "all").default("all"),
+  doctor: fallback(z.string(), "all").default("all"),
+  followUp: fallback(z.string(), "all").default("all"),
+  sort: fallback(z.string(), "oldest").default("oldest"),
+  page: fallback(z.number().int(), 1).default(1),
+});
+
+const leadsSearchDefaults = {
+  q: "",
+  stage: "all",
+  treatment: "all",
+  group: "all",
+  doctor: "all",
+  followUp: "all",
+  sort: "oldest",
+  page: 1,
+};
+
 export const Route = createFileRoute("/_authenticated/leads")({
+  validateSearch: zodValidator(leadsSearchSchema),
+  search: { middlewares: [stripSearchParams(leadsSearchDefaults)] },
   head: () => ({
     meta: [
       { title: "Leads — Luma Aesthetics Clinic CRM" },
