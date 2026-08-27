@@ -118,12 +118,46 @@ function AppointmentsPage() {
   const patch = (id: string, values: Record<string, unknown>, msg = "Appointment updated") =>
     updateAppointment.mutate({ id, values }, { onSuccess: () => toast.success(msg) });
 
-  function submit(form: HTMLFormElement) {
+  async function submit(form: HTMLFormElement) {
     const fd = new FormData(form);
     const service = services.data?.find((s) => s.id === String(fd.get("service_id")));
+
+    let patientId = String(fd.get("patient_id") ?? "");
+    if (quickAdd) {
+      const name = String(fd.get("new_patient_name") ?? "").trim();
+      const phone = String(fd.get("new_patient_phone") ?? "").trim();
+      if (!name || !phone) {
+        toast.error("New patient needs a name and mobile number");
+        return;
+      }
+      const existing = patients.data?.find((p) => (p.phone ?? "").replace(/\D/g, "") === phone.replace(/\D/g, ""));
+      if (existing) {
+        patientId = existing.id;
+        toast.info(`${patientName(existing)} already exists — booking against that record`);
+      } else {
+        const [first, ...rest] = name.split(" ");
+        try {
+          const rows = (await createPatient.mutateAsync({
+            first_name: first ?? name,
+            last_name: rest.join(" ") || "—",
+            phone,
+            source: "Walk-in",
+          })) as { id: string }[];
+          patientId = rows[0]?.id ?? "";
+        } catch (e) {
+          toast.error((e as Error).message);
+          return;
+        }
+      }
+    }
+    if (!patientId) {
+      toast.error("Pick a patient first");
+      return;
+    }
+
     createAppointment.mutate(
       {
-        patient_id: String(fd.get("patient_id")),
+        patient_id: patientId,
         provider_id: String(fd.get("provider_id")) || null,
         room_id: String(fd.get("room_id")) || null,
         service_id: service?.id ?? null,
@@ -137,12 +171,14 @@ function AppointmentsPage() {
       {
         onSuccess: () => {
           toast.success("Appointment booked");
+          setQuickAdd(false);
           setOpen(false);
         },
         onError: (e) => toast.error(e.message),
       },
     );
   }
+
 
   return (
     <AppShell
