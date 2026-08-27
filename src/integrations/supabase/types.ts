@@ -894,8 +894,10 @@ export type Database = {
           created_at: string
           id: string
           patient_id: string
+          signature_data: string | null
           signature_name: string
           signed_at: string
+          signed_via: string
           template_id: string | null
           template_name: string
         }
@@ -903,8 +905,10 @@ export type Database = {
           created_at?: string
           id?: string
           patient_id: string
+          signature_data?: string | null
           signature_name: string
           signed_at?: string
+          signed_via?: string
           template_id?: string | null
           template_name: string
         }
@@ -912,8 +916,10 @@ export type Database = {
           created_at?: string
           id?: string
           patient_id?: string
+          signature_data?: string | null
           signature_name?: string
           signed_at?: string
+          signed_via?: string
           template_id?: string | null
           template_name?: string
         }
@@ -930,6 +936,57 @@ export type Database = {
             columns: ["template_id"]
             isOneToOne: false
             referencedRelation: "consent_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      patient_links: {
+        Row: {
+          completed_at: string | null
+          consent_template_id: string | null
+          created_at: string
+          expires_at: string
+          id: string
+          kind: string
+          patient_id: string | null
+          token: string
+          updated_at: string
+        }
+        Insert: {
+          completed_at?: string | null
+          consent_template_id?: string | null
+          created_at?: string
+          expires_at?: string
+          id?: string
+          kind?: string
+          patient_id?: string | null
+          token: string
+          updated_at?: string
+        }
+        Update: {
+          completed_at?: string | null
+          consent_template_id?: string | null
+          created_at?: string
+          expires_at?: string
+          id?: string
+          kind?: string
+          patient_id?: string | null
+          token?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "patient_links_consent_template_id_fkey"
+            columns: ["consent_template_id"]
+            isOneToOne: false
+            referencedRelation: "consent_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "patient_links_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
             referencedColumns: ["id"]
           },
         ]
@@ -1378,7 +1435,11 @@ export type Database = {
         Row: {
           active: boolean
           category: string
+          consent_template_id: string | null
           created_at: string
+          default_device_settings: string | null
+          default_product: string | null
+          default_units: number | null
           duration_min: number
           followup_days: number | null
           gst_rate: number
@@ -1390,7 +1451,11 @@ export type Database = {
         Insert: {
           active?: boolean
           category?: string
+          consent_template_id?: string | null
           created_at?: string
+          default_device_settings?: string | null
+          default_product?: string | null
+          default_units?: number | null
           duration_min?: number
           followup_days?: number | null
           gst_rate?: number
@@ -1402,7 +1467,11 @@ export type Database = {
         Update: {
           active?: boolean
           category?: string
+          consent_template_id?: string | null
           created_at?: string
+          default_device_settings?: string | null
+          default_product?: string | null
+          default_units?: number | null
           duration_min?: number
           followup_days?: number | null
           gst_rate?: number
@@ -1411,10 +1480,21 @@ export type Database = {
           price?: number
           sac_code?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "services_consent_template_id_fkey"
+            columns: ["consent_template_id"]
+            isOneToOne: false
+            referencedRelation: "consent_templates"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       treatment_records: {
         Row: {
+          addendum: string | null
+          addendum_at: string | null
+          addendum_by: string | null
           appointment_id: string | null
           assessment: string | null
           created_at: string
@@ -1433,6 +1513,9 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          addendum?: string | null
+          addendum_at?: string | null
+          addendum_by?: string | null
           appointment_id?: string | null
           assessment?: string | null
           created_at?: string
@@ -1451,6 +1534,9 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          addendum?: string | null
+          addendum_at?: string | null
+          addendum_by?: string | null
           appointment_id?: string | null
           assessment?: string | null
           created_at?: string
