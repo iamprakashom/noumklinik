@@ -17,7 +17,6 @@ Everything from the earlier review is done except three areas, plus a small poli
 
 ## 3. Remaining data-entry friction (review item 10 leftovers)
 
-- Duplicate-phone merge tool: lists patients sharing a normalised phone, pick a survivor, re-points appointments/invoices/packages and archives the duplicate.
 - Global keyboard shortcut (Cmd/Ctrl+K) command palette: jump to patient, book appointment, add lead without touching the mouse.
 - Quick-add patient inline from the booking dialog (name + phone only, details later).
 
