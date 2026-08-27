@@ -20,7 +20,7 @@ Minimal, dense, functional. Dark mode for the trend-intelligence view; light, cl
 ## Tech stack
 
 - [TanStack Start](https://tanstack.com/start) — full-stack React framework
-- [React](https://react.dev) 19 + [Tailwind CSS v4](https://tailwindcss.com) + [shadcn/ui](https://ui.shadhn.com)
+- [React](https://react.dev) 19 + [Tailwind CSS v4](https://tailwindcss.com) + [shadcn/ui](https://ui.shadcn.com)
 - [Lovable Cloud](https://lovable.dev/cloud) — backend, auth, and database
 - [Supabase](https://supabase.com) — PostgreSQL database with Row-Level Security (RLS)
 
