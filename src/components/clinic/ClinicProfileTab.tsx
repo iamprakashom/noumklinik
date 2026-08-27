@@ -9,7 +9,6 @@ const FIELDS = [
   "legal_name",
   "trade_name",
   "gstin",
-  "pan",
   "address_line1",
   "address_line2",
   "city",
@@ -33,8 +32,9 @@ export function ClinicProfileTab() {
 
   useEffect(() => {
     if (!profile.data) return;
+    const row = profile.data as unknown as Record<string, string | null>;
     const next = { ...blank };
-    for (const f of FIELDS) next[f] = (profile.data[f] as string | null) ?? "";
+    for (const f of FIELDS) next[f] = row[f] ?? "";
     setForm(next);
   }, [profile.data]);
 
@@ -44,7 +44,7 @@ export function ClinicProfileTab() {
   const gstinBad = form.gstin.length > 0 && !isValidGstin(form.gstin);
 
   return (
-    <Panel title="Clinic profile" description="Appears on tax invoices and credit notes.">
+    <Panel title="Clinic profile">
       <form
         className="grid gap-4"
         onSubmit={(e) => {
@@ -61,7 +61,6 @@ export function ClinicProfileTab() {
               values: {
                 ...form,
                 gstin: form.gstin.toUpperCase() || null,
-                pan: form.pan.toUpperCase() || null,
                 state_code: stateCode(form.state) ?? "",
               },
             },
@@ -88,20 +87,12 @@ export function ClinicProfileTab() {
               onChange={(e) => set("trade_name")(e.target.value)}
             />
           </Field>
-          <Field label="GSTIN" hint={gstinBad ? "15 characters, e.g. 29ABCDE1234F1Z5" : undefined}>
+          <Field label={gstinBad ? "GSTIN — 15 characters, e.g. 29ABCDE1234F1Z5" : "GSTIN"}>
             <input
               className={`${inputClass} uppercase ${gstinBad ? "border-status-overdue" : ""}`}
               value={form.gstin}
               maxLength={15}
               onChange={(e) => set("gstin")(e.target.value.toUpperCase())}
-            />
-          </Field>
-          <Field label="PAN">
-            <input
-              className={`${inputClass} uppercase`}
-              value={form.pan}
-              maxLength={10}
-              onChange={(e) => set("pan")(e.target.value.toUpperCase())}
             />
           </Field>
           <Field label="Address line 1">
@@ -125,7 +116,7 @@ export function ClinicProfileTab() {
               onChange={(e) => set("city")(e.target.value)}
             />
           </Field>
-          <Field label="State" hint="Sets the default place of supply">
+          <Field label="State (default place of supply)">
             <select
               className={inputClass}
               value={form.state}
@@ -162,7 +153,7 @@ export function ClinicProfileTab() {
               onChange={(e) => set("email")(e.target.value)}
             />
           </Field>
-          <Field label="Invoice prefix" hint="Numbering stays gapless per financial year">
+          <Field label="Invoice prefix">
             <input
               className={inputClass}
               value={form.invoice_prefix}
