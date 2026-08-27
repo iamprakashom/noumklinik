@@ -169,7 +169,8 @@ function Automations() {
             )}
             <p className="mt-4 text-xs text-muted-foreground">
               Merge fields: {"{{first_name}}"}, {"{{service}}"}, {"{{provider}}"}, {"{{time}}"},{" "}
-              {"{{interest}}"}
+              {"{{interest}}"}, {"{{confirm_link}}"} — the last one sends a private link where the
+              patient can confirm or ask to reschedule.
             </p>
           </Panel>
         </TabsContent>
