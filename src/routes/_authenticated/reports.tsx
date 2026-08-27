@@ -426,6 +426,105 @@ function ReportsPage() {
             </Panel>
           </div>
         </TabsContent>
+
+        {/* --------------------------- Feedback --------------------------- */}
+        <TabsContent value="feedback" className="mt-4 space-y-6">
+          <div className="flex flex-wrap items-end gap-3">
+            <Field label="From" className="w-44">
+              <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className={inputClass} />
+            </Field>
+            <Field label="To" className="w-44">
+              <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className={inputClass} />
+            </Field>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <StatCard
+              label="Average rating"
+              value={reviews.total ? reviews.avg.toFixed(1) : "—"}
+              hint={`${reviews.total} response${reviews.total === 1 ? "" : "s"}`}
+            />
+            <StatCard
+              label="Happy (4–5★)"
+              value={String(reviews.promoters)}
+              hint={reviews.total ? `${Math.round((reviews.promoters / reviews.total) * 100)}% of responses` : undefined}
+            />
+            <StatCard
+              label="Review link opened"
+              value={String(reviews.clicked)}
+              hint="Patients sent to Google"
+            />
+            <StatCard
+              label="Open complaints"
+              value={String(reviews.openComplaints.length)}
+              hint="1–3★ awaiting a call back"
+            />
+          </div>
+
+          <Panel title="Complaints to handle">
+            {reviews.complaints.length === 0 ? (
+              <EmptyState>No low ratings in this range.</EmptyState>
+            ) : (
+              <ul className="divide-y divide-border">
+                {reviews.complaints.map((f) => {
+                  const pt = f.patient_id ? patientOf(f.patient_id) : undefined;
+                  return (
+                    <li key={f.id} className="flex items-start gap-3 py-3 first:pt-0 last:pb-0">
+                      <Chip tone={f.rating <= 2 ? "overdue" : "progress"}>{f.rating}★</Chip>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium">{pt ? patientName(pt) : "Patient"}</p>
+                        {f.comment ? (
+                          <p className="mt-0.5 text-xs text-muted-foreground">{f.comment}</p>
+                        ) : null}
+                        <p className="mt-0.5 text-[11px] text-muted-foreground">
+                          {formatDate(f.created_at)}
+                          {pt?.phone ? ` · ${pt.phone}` : ""}
+                        </p>
+                      </div>
+                      {f.resolved_at ? (
+                        <Chip tone="completed">Resolved</Chip>
+                      ) : (
+                        <button
+                          className="h-8 shrink-0 rounded-md border border-border px-3 text-xs hover:bg-secondary"
+                          onClick={() =>
+                            updateFeedback.mutate(
+                              { id: f.id, values: { resolved_at: new Date().toISOString() } },
+                              { onSuccess: () => toast.success("Marked resolved") },
+                            )
+                          }
+                        >
+                          Mark resolved
+                        </button>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </Panel>
+
+          <Panel title="All responses">
+            {reviews.rows.length === 0 ? (
+              <EmptyState>No feedback collected yet. Add {"{{feedback_link}}"} to a post-treatment automation.</EmptyState>
+            ) : (
+              <ul className="divide-y divide-border">
+                {reviews.rows.map((f) => {
+                  const pt = f.patient_id ? patientOf(f.patient_id) : undefined;
+                  return (
+                    <Row
+                      key={f.id}
+                      label={pt ? patientName(pt) : "Patient"}
+                      hint={`${formatDate(f.created_at)}${f.comment ? ` · ${f.comment}` : ""}`}
+                      value={`${f.rating}★`}
+                      tone={f.rating >= 4 ? "completed" : f.rating === 3 ? "progress" : "overdue"}
+                    />
+                  );
+                })}
+              </ul>
+            )}
+          </Panel>
+        </TabsContent>
+
       </Tabs>
     </AppShell>
   );
