@@ -11,8 +11,9 @@ export const createPatientLink = createServerFn({ method: "POST" })
     z
       .object({
         patient_id: z.string().uuid(),
-        kind: z.enum(["intake", "consent"]),
+        kind: z.enum(["intake", "consent", "appointment"]),
         consent_template_id: z.string().uuid().nullable().optional(),
+        appointment_id: z.string().uuid().nullable().optional(),
       })
       .parse(data),
   )
@@ -23,6 +24,7 @@ export const createPatientLink = createServerFn({ method: "POST" })
       patient_id: data.patient_id,
       kind: data.kind,
       consent_template_id: data.consent_template_id ?? null,
+      appointment_id: data.appointment_id ?? null,
     });
     if (error) throw new Error(error.message);
     return { token };
@@ -35,7 +37,7 @@ export const getPatientLink = createServerFn({ method: "GET" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: link } = await supabaseAdmin
       .from("patient_links")
-      .select("id, kind, patient_id, consent_template_id, expires_at, completed_at")
+      .select("id, kind, patient_id, consent_template_id, appointment_id, expires_at, completed_at")
       .eq("token", data.token)
       .maybeSingle();
     if (!link) return { status: "invalid" as const };
@@ -64,9 +66,26 @@ export const getPatientLink = createServerFn({ method: "GET" })
       .limit(1)
       .maybeSingle();
 
+    let appointment: { starts_at: string; service: string | null; provider: string | null } | null = null;
+    if (link.kind === "appointment" && link.appointment_id) {
+      const { data: appt } = await supabaseAdmin
+        .from("appointments")
+        .select("starts_at, status, services(name), providers(name)")
+        .eq("id", link.appointment_id)
+        .maybeSingle();
+      if (appt) {
+        appointment = {
+          starts_at: appt.starts_at,
+          service: (appt.services as { name: string } | null)?.name ?? null,
+          provider: (appt.providers as { name: string } | null)?.name ?? null,
+        };
+      }
+    }
+
     return {
       status: "ok" as const,
-      kind: link.kind as "intake" | "consent",
+      kind: link.kind as "intake" | "consent" | "appointment",
+      appointment,
       patientName: patient ? `${patient.first_name} ${patient.last_name}`.trim() : "Patient",
       clinicName: clinic?.trade_name ?? clinic?.legal_name ?? "Our clinic",
       consent,
@@ -163,5 +182,73 @@ export const submitConsent = createServerFn({ method: "POST" })
       .from("patient_links")
       .update({ completed_at: new Date().toISOString() })
       .eq("id", link.id);
+    return { ok: true };
+  });
+
+/** Public: patient confirms they will attend the linked appointment. */
+export const confirmAppointment = createServerFn({ method: "POST" })
+  .inputValidator((data: unknown) => tokenSchema.parse(data))
+  .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: link } = await supabaseAdmin
+      .from("patient_links")
+      .select("id, kind, appointment_id, expires_at, completed_at")
+      .eq("token", data.token)
+      .maybeSingle();
+    if (!link || link.kind !== "appointment" || !link.appointment_id || new Date(link.expires_at) < new Date()) {
+      throw new Error("This link is no longer valid.");
+    }
+    await supabaseAdmin
+      .from("appointments")
+      .update({ status: "Confirmed", confirmed_at: new Date().toISOString() })
+      .eq("id", link.appointment_id);
+    await supabaseAdmin
+      .from("patient_links")
+      .update({ completed_at: new Date().toISOString() })
+      .eq("id", link.id);
+    return { ok: true };
+  });
+
+/** Public: patient asks the clinic to move the linked appointment. */
+export const requestReschedule = createServerFn({ method: "POST" })
+  .inputValidator((data: unknown) =>
+    z
+      .object({
+        token: z.string().min(10),
+        preferred_at: z.string().min(10),
+        notes: z.string().max(1000).nullable().optional(),
+      })
+      .parse(data),
+  )
+  .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: link } = await supabaseAdmin
+      .from("patient_links")
+      .select("id, kind, patient_id, appointment_id, expires_at")
+      .eq("token", data.token)
+      .maybeSingle();
+    if (!link || link.kind !== "appointment" || !link.appointment_id || new Date(link.expires_at) < new Date()) {
+      throw new Error("This link is no longer valid.");
+    }
+    const { data: patient } = await supabaseAdmin
+      .from("patients")
+      .select("first_name, last_name, phone, email")
+      .eq("id", link.patient_id!)
+      .maybeSingle();
+    const { error } = await supabaseAdmin.from("appointment_requests").insert({
+      full_name: patient ? `${patient.first_name} ${patient.last_name}`.trim() : "Patient",
+      phone: patient?.phone ?? "",
+      email: patient?.email ?? null,
+      preferred_at: new Date(data.preferred_at).toISOString(),
+      notes: data.notes ?? null,
+      kind: "reschedule",
+      appointment_id: link.appointment_id,
+      patient_id: link.patient_id,
+    });
+    if (error) throw new Error(error.message);
+    await supabaseAdmin
+      .from("appointments")
+      .update({ status: "Reschedule requested" })
+      .eq("id", link.appointment_id);
     return { ok: true };
   });
