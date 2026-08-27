@@ -2,7 +2,17 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
-async function assertStaff(context: { supabase: any; userId: string }) {
+type RoleCtx = {
+  supabase: {
+    rpc: (
+      fn: "has_role",
+      args: { _user_id: string; _role: "admin" | "provider" | "front_desk" },
+    ) => PromiseLike<{ data: boolean | null; error: { message: string } | null }>;
+  };
+  userId: string;
+};
+
+async function assertStaff(context: RoleCtx) {
   const roles = ["admin", "provider", "front_desk"] as const;
   for (const role of roles) {
     const { data } = await context.supabase.rpc("has_role", {
@@ -14,7 +24,7 @@ async function assertStaff(context: { supabase: any; userId: string }) {
   throw new Error("Only clinic staff can use WhatsApp");
 }
 
-async function assertAdmin(context: { supabase: any; userId: string }) {
+async function assertAdmin(context: RoleCtx) {
   const { data, error } = await context.supabase.rpc("has_role", {
     _user_id: context.userId,
     _role: "admin",
@@ -217,12 +227,7 @@ export const startWhatsAppConversation = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertStaff(context);
     const { sendTemplate, normaliseNumber } = await import("@/lib/whatsapp.server");
-    const result = await sendTemplate(
-      data.phone,
-      data.templateName,
-      data.language,
-      data.variables,
-    );
+    const result = await sendTemplate(data.phone, data.templateName, data.language, data.variables);
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     await supabaseAdmin.from("whatsapp_messages").insert({

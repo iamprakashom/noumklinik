@@ -103,8 +103,8 @@ function InboxPage() {
             <p className="text-sm text-muted-foreground">Loading…</p>
           ) : list.length === 0 ? (
             <EmptyState>
-              No WhatsApp messages yet. Connect WhatsApp in Settings and patient replies will
-              appear here.
+              No WhatsApp messages yet. Connect WhatsApp in Settings and patient replies will appear
+              here.
             </EmptyState>
           ) : (
             <ul className="-mx-2 divide-y divide-border">

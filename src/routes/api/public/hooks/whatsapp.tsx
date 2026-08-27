@@ -28,9 +28,7 @@ const payload = z.object({
                       }),
                     )
                     .optional(),
-                  statuses: z
-                    .array(z.object({ id: z.string(), status: z.string() }))
-                    .optional(),
+                  statuses: z.array(z.object({ id: z.string(), status: z.string() })).optional(),
                 })
                 .optional(),
             }),
