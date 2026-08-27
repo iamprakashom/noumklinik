@@ -134,47 +134,156 @@ export function useRemove(table: string) {
   });
 }
 
-/** Creates an invoice with its line items in one go. */
+export function useClinicProfile() {
+  return useQuery({
+    queryKey: ["clinic_profile"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("clinic_profile").select("*").limit(1).maybeSingle();
+      if (error) throw error;
+      return data as ClinicProfile | null;
+    },
+  });
+}
+
+export function useUpdateClinicProfile() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, values }: { id: string; values: Record<string, unknown> }) => {
+      const { error } = await supabase
+        .from("clinic_profile")
+        .update(values as never)
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ["clinic_profile"] }),
+  });
+}
+
+/** Creates a GST invoice with its line-level tax breakup in one go. */
 export function useCreateInvoice() {
   const invalidate = useInvalidate();
   return useMutation({
     mutationFn: async (input: {
       patient_id: string;
       appointment_id?: string | null;
-      items: { description: string; quantity: number; unit_price: number }[];
+      items: GstLine[];
       discount: number;
-      taxRate: number;
+      clinic: ClinicProfile | null;
+      placeOfSupply: string | null;
+      notes?: string | null;
     }) => {
-      const subtotal = input.items.reduce((s, i) => s + i.quantity * i.unit_price, 0);
-      const taxable = Math.max(subtotal - input.discount, 0);
-      const tax = Math.round(taxable * input.taxRate) / 100;
-      const total = taxable + tax;
-      const number = `INV-${Date.now().toString().slice(-6)}`;
+      const clinicState = input.clinic?.state ?? null;
+      const pos = input.placeOfSupply ?? clinicState;
+      const interState = Boolean(pos && clinicState && pos !== clinicState);
+      const t = computeGstTotals(input.items, input.discount, interState);
+
       const { data, error } = await supabase
         .from("invoices")
         .insert({
           patient_id: input.patient_id,
           appointment_id: input.appointment_id ?? null,
-          number,
+          number: "AUTO",
           status: "Open",
-          subtotal,
-          discount: input.discount,
-          tax,
-          total,
+          doc_type: "invoice",
+          subtotal: t.subtotal,
+          discount: t.discount,
+          taxable_value: t.taxable_value,
+          cgst: t.cgst,
+          sgst: t.sgst,
+          igst: t.igst,
+          tax: t.tax,
+          round_off: t.round_off,
+          total: t.total,
+          supplier_gstin: input.clinic?.gstin ?? null,
+          place_of_supply: pos,
+          place_of_supply_code: stateCode(pos),
+          notes: input.notes ?? null,
         })
         .select("id")
         .single();
       if (error) throw error;
+
       const { error: itemErr } = await supabase.from("invoice_items").insert(
-        input.items.map((i) => ({
+        t.lines.map((i) => ({
           invoice_id: data.id,
           description: i.description,
           quantity: i.quantity,
           unit_price: i.unit_price,
-          amount: i.quantity * i.unit_price,
+          amount: i.amount,
+          sac_code: i.sac_code,
+          gst_rate: i.gst_rate,
+          taxable_amount: i.taxable_amount,
+          cgst: i.cgst,
+          sgst: i.sgst,
+          igst: i.igst,
         })),
       );
       if (itemErr) throw itemErr;
+      return data.id;
+    },
+    onSuccess: () => invalidate("invoices"),
+  });
+}
+
+/** Issues a credit note that reverses an invoice, keeping the number series intact. */
+export function useCreateCreditNote() {
+  const invalidate = useInvalidate();
+  return useMutation({
+    mutationFn: async ({
+      invoice,
+      items,
+      reason,
+    }: {
+      invoice: Invoice;
+      items: InvoiceItem[];
+      reason: string;
+    }) => {
+      const { data, error } = await supabase
+        .from("invoices")
+        .insert({
+          patient_id: invoice.patient_id,
+          appointment_id: invoice.appointment_id,
+          number: "AUTO",
+          status: "Paid",
+          doc_type: "credit_note",
+          original_invoice_id: invoice.id,
+          subtotal: -Number(invoice.subtotal),
+          discount: -Number(invoice.discount),
+          taxable_value: -Number(invoice.taxable_value),
+          cgst: -Number(invoice.cgst),
+          sgst: -Number(invoice.sgst),
+          igst: -Number(invoice.igst),
+          tax: -Number(invoice.tax),
+          round_off: -Number(invoice.round_off),
+          total: -Number(invoice.total),
+          supplier_gstin: invoice.supplier_gstin,
+          place_of_supply: invoice.place_of_supply,
+          place_of_supply_code: invoice.place_of_supply_code,
+          notes: reason,
+        })
+        .select("id")
+        .single();
+      if (error) throw error;
+
+      if (items.length) {
+        const { error: itemErr } = await supabase.from("invoice_items").insert(
+          items.map((i) => ({
+            invoice_id: data.id,
+            description: i.description,
+            quantity: i.quantity,
+            unit_price: i.unit_price,
+            amount: -Number(i.amount),
+            sac_code: i.sac_code,
+            gst_rate: i.gst_rate,
+            taxable_amount: -Number(i.taxable_amount),
+            cgst: -Number(i.cgst),
+            sgst: -Number(i.sgst),
+            igst: -Number(i.igst),
+          })),
+        );
+        if (itemErr) throw itemErr;
+      }
+      await supabase.from("invoices").update({ status: "Void" }).eq("id", invoice.id);
       return data.id;
     },
     onSuccess: () => invalidate("invoices"),
