@@ -52,9 +52,8 @@ export const Route = createFileRoute("/_authenticated/appointments")({
       },
     ],
   }),
-  validateSearch: (search: Record<string, unknown>) => ({
-    new: search["new"] === true || search["new"] === "true",
-  }),
+  validateSearch: (search: Record<string, unknown>): { new?: boolean } =>
+    search["new"] === true || search["new"] === "true" ? { new: true } : {},
   component: AppointmentsPage,
 });
 
@@ -62,7 +61,7 @@ type RangeKey = "today" | "upcoming" | "past" | "all";
 
 function AppointmentsPage() {
   const { new: openNew } = Route.useSearch();
-  const [open, setOpen] = useState(openNew);
+  const [open, setOpen] = useState(openNew ?? false);
   const [reschedule, setReschedule] = useState<Appointment | null>(null);
   const [range, setRange] = useState<RangeKey>("upcoming");
   const [sourceFilter, setSourceFilter] = useState("all");
