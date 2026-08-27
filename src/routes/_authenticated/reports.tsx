@@ -79,6 +79,9 @@ function ReportsPage() {
   const services = useServices();
   const appointments = useAppointments();
   const redemptions = usePackageRedemptions();
+  const feedback = usePatientFeedback();
+  const updateFeedback = useUpdate("patient_feedback");
+
 
   const patientOf = (id: string) => patients.data?.find((p) => p.id === id);
   const providerName = (id: string | null) =>
