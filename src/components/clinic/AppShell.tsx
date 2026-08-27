@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   CalendarDays,
   CreditCard,
+  BarChart3,
   LayoutDashboard,
   LogOut,
   Settings,
@@ -21,6 +22,7 @@ const NAV = [
   { to: "/patients", label: "Patients", icon: Users },
   { to: "/leads", label: "Leads", icon: UserPlus },
   { to: "/billing", label: "Billing", icon: CreditCard },
+  { to: "/reports", label: "Reports", icon: BarChart3 },
   { to: "/automations", label: "Follow-ups", icon: Sparkles },
   { to: "/settings", label: "Settings", icon: Settings },
 ] as const;
