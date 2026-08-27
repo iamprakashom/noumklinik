@@ -38,6 +38,9 @@ async function run() {
     (outboxRes.data ?? []).map((m) => `${m.rule_id ?? ""}:${m.appointment_id ?? ""}`),
   );
 
+  const baseUrl = (
+    process.env["PUBLIC_SITE_URL"] ?? "https://beat-flow-dash.lovable.app"
+  ).replace(/\/$/, "");
   const now = Date.now();
   const horizon = now + 14 * 86_400_000;
   const rows: TablesInsert<"messages_outbox">[] = [];
@@ -64,7 +67,21 @@ async function run() {
       const provider = providers.find((p) => p.id === appt.provider_id);
       const service = services.find((s) => s.id === appt.service_id);
 
+      let confirmUrl = "";
+      if (/\{\{\s*confirm_link\s*\}\}/.test(`${template.body} ${template.subject ?? ""}`)) {
+        const token =
+          crypto.randomUUID().replace(/-/g, "") + crypto.randomUUID().slice(0, 8);
+        const { error: linkError } = await supabaseAdmin.from("patient_links").insert({
+          token,
+          patient_id: patient.id,
+          appointment_id: appt.id,
+          kind: "appointment",
+        });
+        if (!linkError) confirmUrl = `${baseUrl}/p/${token}`;
+      }
+
       const vars = {
+        confirm_link: confirmUrl,
         first_name: patient.first_name,
         last_name: patient.last_name,
         service: service?.name ?? "your treatment",
