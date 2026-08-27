@@ -19,6 +19,7 @@ export type OutboxMessage = Tables<"messages_outbox">;
 export type ServiceAddon = Tables<"service_addons">;
 export type AddonDiscountRule = Tables<"addon_discount_rules">;
 export type PaymentLink = Tables<"payment_links">;
+export type ClinicProfile = Tables<"clinic_profile">;
 
 export const APPOINTMENT_STATUSES = [
   "Booked",
