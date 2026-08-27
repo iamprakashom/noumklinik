@@ -143,9 +143,21 @@ function PatientLinkPage() {
         <p className="text-sm text-muted-foreground">
           {doneMessage ?? `Your details have been sent to ${data.clinicName}. You can close this page.`}
         </p>
+        {reviewLink ? (
+          <a
+            href={reviewLink}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={primaryButton}
+            onClick={() => void noteReviewClick({ data: { token } })}
+          >
+            Leave a Google review
+          </a>
+        ) : null}
       </Shell>
     );
   }
+
 
   return (
     <Shell>
