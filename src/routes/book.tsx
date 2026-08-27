@@ -7,7 +7,7 @@ import { CalendarCheck, CheckCircle2, Clock } from "lucide-react";
 import { Field, inputClass, textareaClass } from "@/components/clinic/bits";
 import { primaryButton } from "@/components/clinic/AppShell";
 import { getBookingOptions, requestBooking } from "@/lib/booking.functions";
-import { formatCurrency } from "@/data/clinic";
+import { money } from "@/data/clinic";
 
 export const Route = createFileRoute("/book")({
   head: () => ({
@@ -59,14 +59,14 @@ function BookingPage() {
     mutationFn: (values: Record<string, string>) =>
       send({
         data: {
-          full_name: values.full_name ?? "",
-          phone: values.phone ?? "",
-          email: values.email || null,
-          service_id: values.service_id || null,
-          provider_id: values.provider_id || null,
-          preferred_at: values.preferred_at ?? "",
-          alternate_at: values.alternate_at || null,
-          notes: values.notes || null,
+          full_name: values["full_name"] ?? "",
+          phone: values["phone"] ?? "",
+          email: values["email"] || null,
+          service_id: values["service_id"] || null,
+          provider_id: values["provider_id"] || null,
+          preferred_at: values["preferred_at"] ?? "",
+          alternate_at: values["alternate_at"] || null,
+          notes: values["notes"] || null,
         },
       }),
     onSuccess: () => setDone(true),
@@ -125,7 +125,7 @@ function BookingPage() {
             <option value="">Not sure — please advise</option>
             {options.data?.services.map((s) => (
               <option key={s.id} value={s.id}>
-                {s.name} · {s.duration_min} min · {formatCurrency(Number(s.price))}
+                {s.name} · {s.duration_min} min · {money(s.price)}
               </option>
             ))}
           </select>
