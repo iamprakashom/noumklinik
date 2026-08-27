@@ -94,6 +94,22 @@ export const useAppointmentRequests = () =>
 export const usePaymentLinks = () =>
   useList<PaymentLink>("payment_links", "payment_links", "created_at", false);
 
+export type PatientFeedback = {
+  id: string;
+  patient_id: string | null;
+  appointment_id: string | null;
+  rating: number;
+  comment: string | null;
+  is_complaint: boolean;
+  review_link_clicked: boolean;
+  resolved_at: string | null;
+  created_at: string;
+};
+
+export const usePatientFeedback = () =>
+  useList<PatientFeedback>("patient_feedback", "patient_feedback", "created_at", false);
+
+
 const RELATED: Record<string, string[]> = {
   patients: ["patients"],
   appointments: ["appointments", "outbox", "appointment_requests"],
