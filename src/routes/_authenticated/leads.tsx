@@ -149,7 +149,12 @@ function LeadsPage() {
       }
     >
       <div className="grid gap-4 lg:grid-cols-2">
-        <section className="rounded-xl border border-border bg-card p-4">
+        <button
+          type="button"
+          aria-pressed={followUp === "overdue"}
+          onClick={() => setFollowUp(followUp === "overdue" ? "all" : "overdue")}
+          className={`card-hover rounded-xl border bg-card p-4 text-left transition-colors ${followUp === "overdue" ? "border-primary" : "border-border"}`}
+        >
           <p className="text-xs font-medium text-muted-foreground">Overdue follow-ups</p>
           <p className="mt-1 text-2xl font-semibold tabular-nums">{overdue.length}</p>
           <ul className="mt-2 space-y-1">
@@ -165,8 +170,13 @@ function LeadsPage() {
               <li className="text-xs text-muted-foreground">Nothing overdue.</li>
             ) : null}
           </ul>
-        </section>
-        <section className="rounded-xl border border-border bg-card p-4">
+        </button>
+        <button
+          type="button"
+          aria-pressed={followUp === "scheduled"}
+          onClick={() => setFollowUp(followUp === "scheduled" ? "all" : "scheduled")}
+          className={`card-hover rounded-xl border bg-card p-4 text-left transition-colors ${followUp === "scheduled" ? "border-primary" : "border-border"}`}
+        >
           <p className="text-xs font-medium text-muted-foreground">Scheduled follow-ups</p>
           <p className="mt-1 text-2xl font-semibold tabular-nums">{scheduled.length}</p>
           <ul className="mt-2 space-y-1">
@@ -180,8 +190,9 @@ function LeadsPage() {
               <li className="text-xs text-muted-foreground">Nothing scheduled.</li>
             ) : null}
           </ul>
-        </section>
+        </button>
       </div>
+
 
       <div className="mt-6 flex flex-wrap items-center gap-2">
         <select value={stage} onChange={(e) => setStage(e.target.value)} className={`${inputClass} w-40`} aria-label="Filter by status">
