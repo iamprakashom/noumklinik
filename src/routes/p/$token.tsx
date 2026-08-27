@@ -10,8 +10,10 @@ import { primaryButton } from "@/components/clinic/AppShell";
 import {
   confirmAppointment,
   getPatientLink,
+  markReviewClicked,
   requestReschedule,
   submitConsent,
+  submitFeedback,
   submitIntake,
 } from "@/lib/patient-links.functions";
 
