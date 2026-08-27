@@ -328,7 +328,7 @@ function LeadsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {rows.map((l) => {
+              {pageRows.map((l) => {
                 const isOverdue = !!l.next_follow_up_at && l.next_follow_up_at < today;
                 return (
                   <tr key={l.id} className="transition-colors hover:bg-secondary/60">
@@ -425,7 +425,7 @@ function LeadsPage() {
         </div>
       ) : (
         <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-          {rows.map((l) => (
+          {pageRows.map((l) => (
             <article key={l.id} className="card-hover rounded-xl border border-border bg-card p-4">
               <div className="flex items-start justify-between gap-2">
                 <div>
