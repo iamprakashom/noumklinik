@@ -146,7 +146,7 @@ export function initials(name: string) {
 
 export function money(value: number | string | null | undefined) {
   const n = Number(value ?? 0);
-  return n.toLocaleString("en-US", { style: "currency", currency: "USD" });
+  return n.toLocaleString("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 });
 }
 
 export function formatTime(iso: string) {
