@@ -47,6 +47,12 @@ function Landing() {
           >
             Open clinic
           </Link>
+          <Link
+            to="/book"
+            className="inline-flex h-9 items-center rounded-md border border-border px-4 text-sm font-medium transition-colors hover:bg-secondary"
+          >
+            Book appointment
+          </Link>
         </div>
       </div>
     </main>
