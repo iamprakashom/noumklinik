@@ -235,24 +235,19 @@ function LeadsPage() {
 
       <LeadsToolbar
         query={query}
-        onQueryChange={setQuery}
+        onQueryChange={(q) => setSearch({ q })}
         shown={rows.length}
         total={all.length}
-        onClearAll={() => {
-          setQuery("");
-          setStage("all");
-          setTreatment("all");
-          setGroup("all");
-          setDoctor("all");
-          setFollowUp("all");
-        }}
+        onClearAll={() =>
+          setSearch({ q: "", stage: "all", treatment: "all", group: "all", doctor: "all", followUp: "all" })
+        }
         filters={[
           {
             key: "stage",
             label: "Status",
             allLabel: "All statuses",
             value: stage,
-            onChange: setStage,
+            onChange: (stage) => setSearch({ stage }),
             options: LEAD_STAGES.map((s) => ({ value: s, label: s })),
           },
           {
@@ -260,7 +255,7 @@ function LeadsPage() {
             label: "Treatment",
             allLabel: "All treatments",
             value: treatment,
-            onChange: setTreatment,
+            onChange: (treatment) => setSearch({ treatment }),
             options: (services.data ?? []).map((s) => ({ value: s.id, label: s.name })),
           },
           {
@@ -268,7 +263,7 @@ function LeadsPage() {
             label: "Source",
             allLabel: "All sources",
             value: group,
-            onChange: setGroup,
+            onChange: (group) => setSearch({ group }),
             options: LEAD_SOURCE_GROUPS.map((s) => ({ value: s, label: s })),
           },
           {
@@ -276,7 +271,7 @@ function LeadsPage() {
             label: "Doctor",
             allLabel: "All doctors",
             value: doctor,
-            onChange: setDoctor,
+            onChange: (doctor) => setSearch({ doctor }),
             options: [
               { value: "unassigned", label: "Unassigned" },
               ...(providers.data ?? []).map((p) => ({ value: p.id, label: p.name })),
@@ -287,7 +282,7 @@ function LeadsPage() {
             label: "Follow-up",
             allLabel: "Any follow-up",
             value: followUp,
-            onChange: setFollowUp,
+            onChange: (followUp) => setSearch({ followUp }),
             options: [
               { value: "overdue", label: "Overdue" },
               { value: "scheduled", label: "Scheduled" },
@@ -296,7 +291,7 @@ function LeadsPage() {
         ]}
         sort={{
           value: sort,
-          onChange: (v: string) => setSort(v as SortKey),
+          onChange: (v: string) => setSearch({ sort: v }),
           options: [
             { value: "oldest", label: "Ageing · oldest first" },
             { value: "newest", label: "Ageing · newest first" },
