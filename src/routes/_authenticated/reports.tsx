@@ -447,7 +447,7 @@ function ReportsPage() {
             <StatCard
               label="Happy (4–5★)"
               value={String(reviews.promoters)}
-              hint={reviews.total ? `${Math.round((reviews.promoters / reviews.total) * 100)}% of responses` : undefined}
+              hint={`${reviews.total ? Math.round((reviews.promoters / reviews.total) * 100) : 0}% of responses`}
             />
             <StatCard
               label="Review link opened"
