@@ -100,6 +100,21 @@ function PatientLinkPage() {
     },
     onError: (e: Error) => toast.error(e.message),
   });
+  const feedbackMut = useMutation({
+    mutationFn: (values: { rating: number; comment: string }) =>
+      doFeedback({ data: { token, rating: values.rating, comment: values.comment || null } }),
+    onSuccess: (res) => {
+      setReviewLink(res.reviewLink ?? null);
+      setDoneMessage(
+        res.happy
+          ? "Thank you — we're glad it went well."
+          : "Thank you for telling us. Our team will reach out to put this right.",
+      );
+      setDone(true);
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
 
   if (link.isLoading) return <Shell><p className="text-sm text-muted-foreground">Loading…</p></Shell>;
   const data = link.data;
