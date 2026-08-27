@@ -5,6 +5,7 @@ import { ArrowLeft, FileSignature, Lock, Plus } from "lucide-react";
 import { AppShell, ghostButton, primaryButton } from "@/components/clinic/AppShell";
 import { Avatar, Chip, EmptyState, Field, inputClass, textareaClass } from "@/components/clinic/bits";
 import { PatientPackages } from "@/components/clinic/PatientPackages";
+import { PatientPhotos } from "@/components/clinic/PatientPhotos";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Dialog,
@@ -166,11 +167,16 @@ function PatientDetail() {
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="visits">Visits</TabsTrigger>
           <TabsTrigger value="charts">Charts</TabsTrigger>
+          <TabsTrigger value="photos">Photos</TabsTrigger>
           <TabsTrigger value="consents">Consents</TabsTrigger>
           <TabsTrigger value="packages">Packages</TabsTrigger>
           <TabsTrigger value="billing">Billing</TabsTrigger>
           <TabsTrigger value="messages">Messages</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="photos" className="mt-4">
+          <PatientPhotos patientId={patient.id} />
+        </TabsContent>
 
         <TabsContent value="packages" className="mt-4">
           <PatientPackages patientId={patient.id} />
