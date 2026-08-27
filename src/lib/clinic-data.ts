@@ -71,12 +71,33 @@ export const useServiceAddons = () =>
   useList<ServiceAddon>("service_addons", "service_addons", "created_at");
 export const useAddonDiscountRules = () =>
   useList<AddonDiscountRule>("addon_discount_rules", "addon_discount_rules", "created_at");
+export type AppointmentRequest = {
+  id: string;
+  full_name: string;
+  phone: string;
+  email: string | null;
+  service_id: string | null;
+  provider_id: string | null;
+  preferred_at: string;
+  alternate_at: string | null;
+  notes: string | null;
+  kind: string;
+  appointment_id: string | null;
+  patient_id: string | null;
+  status: string;
+  created_at: string;
+};
+
+export const useAppointmentRequests = () =>
+  useList<AppointmentRequest>("appointment_requests", "appointment_requests", "preferred_at");
+
 export const usePaymentLinks = () =>
   useList<PaymentLink>("payment_links", "payment_links", "created_at", false);
 
 const RELATED: Record<string, string[]> = {
   patients: ["patients"],
-  appointments: ["appointments", "outbox"],
+  appointments: ["appointments", "outbox", "appointment_requests"],
+  appointment_requests: ["appointment_requests", "appointments"],
   leads: ["leads"],
   treatment_records: ["treatment_records"],
   patient_consents: ["patient_consents"],
