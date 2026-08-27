@@ -15,6 +15,11 @@ import type {
   Patient,
   PatientConsent,
   PaymentLink,
+  Package,
+  PackageItem,
+  PackageRedemption,
+  PatientPackage,
+  PatientPackageItem,
   Payment,
   Provider,
   Room,
@@ -85,6 +90,10 @@ const RELATED: Record<string, string[]> = {
   service_addons: ["service_addons"],
   addon_discount_rules: ["addon_discount_rules"],
   payment_links: ["payment_links", "invoices", "payments"],
+  packages: ["packages", "package_items"],
+  package_items: ["packages", "package_items"],
+  patient_packages: ["patient_packages", "patient_package_items"],
+  patient_package_items: ["patient_packages", "patient_package_items"],
 };
 
 function useInvalidate() {
@@ -324,4 +333,158 @@ export function useConvertLead() {
       invalidate("patients");
     },
   });
+}
+
+/* ---------------------------------- Packages --------------------------------- */
+
+export const usePackages = () => useList<Package>("packages", "packages", "name");
+export const usePackageItems = () =>
+  useList<PackageItem>("package_items", "package_items", "created_at");
+export const usePatientPackages = () =>
+  useList<PatientPackage>("patient_packages", "patient_packages", "created_at", false);
+export const usePatientPackageItems = () =>
+  useList<PatientPackageItem>("patient_package_items", "patient_package_items", "created_at");
+export const usePackageRedemptions = () =>
+  useList<PackageRedemption>("package_redemptions", "package_redemptions", "redeemed_at", false);
+
+/** Sells a package: raises the GST invoice and opens the patient's prepaid balance. */
+export function useSellPackage() {
+  const qc = useQueryClient();
+  const createInvoice = useCreateInvoice();
+  return useMutation({
+    mutationFn: async (input: {
+      patient_id: string;
+      pkg: Package;
+      lines: { service_id: string | null; service_name: string; sessions: number; list_price: number }[];
+      price: number;
+      gst_rate: number;
+      sac_code: string;
+      clinic: ClinicProfile | null;
+      placeOfSupply: string | null;
+    }) => {
+      const invoiceId = await createInvoice.mutateAsync({
+        patient_id: input.patient_id,
+        items: [
+          {
+            description: `Package — ${input.pkg.name}`,
+            quantity: 1,
+            unit_price: input.price,
+            gst_rate: input.gst_rate,
+            sac_code: input.sac_code,
+          },
+        ],
+        discount: 0,
+        clinic: input.clinic,
+        placeOfSupply: input.placeOfSupply,
+        notes: `Prepaid package sale · valid ${input.pkg.validity_days} days`,
+      });
+
+      const expires = new Date();
+      expires.setDate(expires.getDate() + input.pkg.validity_days);
+
+      const { data, error } = await supabase
+        .from("patient_packages")
+        .insert({
+          patient_id: input.patient_id,
+          package_id: input.pkg.id,
+          invoice_id: invoiceId,
+          name: input.pkg.name,
+          price_paid: input.price,
+          expires_at: expires.toISOString().slice(0, 10),
+          status: "Active",
+        })
+        .select("id")
+        .single();
+      if (error) throw error;
+
+      const listTotal = input.lines.reduce((s, l) => s + l.list_price * l.sessions, 0) || 1;
+      const { error: itemErr } = await supabase.from("patient_package_items").insert(
+        input.lines.map((l) => ({
+          patient_package_id: data.id,
+          service_id: l.service_id,
+          service_name: l.service_name,
+          sessions_total: l.sessions,
+          sessions_used: 0,
+          unit_value: Math.round((l.list_price / listTotal) * input.price),
+        })),
+      );
+      if (itemErr) throw itemErr;
+      return data.id;
+    },
+    onSuccess: () => {
+      for (const k of ["patient_packages", "patient_package_items", "invoices", "invoice_items"])
+        void qc.invalidateQueries({ queryKey: [k] });
+    },
+  });
+}
+
+/** Deducts one session from a patient's package and records the recognised revenue. */
+export function useRedeemSession() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: {
+      pkg: PatientPackage;
+      item: PatientPackageItem;
+      siblings: PatientPackageItem[];
+      appointment_id?: string | null;
+      provider_id?: string | null;
+    }) => {
+      if (new Date(input.pkg.expires_at) < new Date()) throw new Error("This package has expired");
+      if (input.item.sessions_used >= input.item.sessions_total)
+        throw new Error("No sessions left on this treatment");
+
+      const { error } = await supabase.from("package_redemptions").insert({
+        patient_package_id: input.pkg.id,
+        patient_package_item_id: input.item.id,
+        patient_id: input.pkg.patient_id,
+        appointment_id: input.appointment_id ?? null,
+        provider_id: input.provider_id ?? null,
+        service_name: input.item.service_name,
+        value_recognised: Number(input.item.unit_value),
+      });
+      if (error) throw error;
+
+      const { error: upErr } = await supabase
+        .from("patient_package_items")
+        .update({ sessions_used: input.item.sessions_used + 1 })
+        .eq("id", input.item.id);
+      if (upErr) throw upErr;
+
+      const allDone = input.siblings.every((s) =>
+        s.id === input.item.id
+          ? s.sessions_used + 1 >= s.sessions_total
+          : s.sessions_used >= s.sessions_total,
+      );
+      if (allDone) {
+        await supabase.from("patient_packages").update({ status: "Completed" }).eq("id", input.pkg.id);
+      }
+    },
+    onSuccess: () => {
+      for (const k of ["patient_packages", "patient_package_items", "package_redemptions"])
+        void qc.invalidateQueries({ queryKey: [k] });
+    },
+  });
+}
+
+/** Extends a package's validity with a recorded reason. */
+export function useExtendPackage() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, expires_at, reason }: { id: string; expires_at: string; reason: string }) => {
+      const { error } = await supabase
+        .from("patient_packages")
+        .update({ expires_at, extension_reason: reason, status: "Active" })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ["patient_packages"] }),
+  });
+}
+
+/** Unused prepaid value left on a package. */
+export function unusedValue(items: PatientPackageItem[]) {
+  return items.reduce(
+    (s, i) => s + Math.max(0, i.sessions_total - i.sessions_used) * Number(i.unit_value),
+    0,
+  );
 }
