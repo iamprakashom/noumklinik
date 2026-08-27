@@ -14,6 +14,7 @@ import type {
   OutboxMessage,
   Patient,
   PatientConsent,
+  PatientPhoto,
   PaymentLink,
   Package,
   PackageItem,
@@ -54,6 +55,8 @@ export const useConsentTemplates = () =>
   useList<ConsentTemplate>("consent_templates", "consent_templates", "name");
 export const usePatientConsents = () =>
   useList<PatientConsent>("patient_consents", "patient_consents", "signed_at", false);
+export const usePatientPhotos = () =>
+  useList<PatientPhoto>("patient_photos", "patient_photos", "created_at", false);
 export const useInvoices = () => useList<Invoice>("invoices", "invoices", "created_at", false);
 export const useInvoiceItems = () =>
   useList<InvoiceItem>("invoice_items", "invoice_items", "created_at");
@@ -77,6 +80,7 @@ const RELATED: Record<string, string[]> = {
   leads: ["leads"],
   treatment_records: ["treatment_records"],
   patient_consents: ["patient_consents"],
+  patient_photos: ["patient_photos"],
   consent_templates: ["consent_templates"],
   invoices: ["invoices", "invoice_items", "payments"],
   invoice_items: ["invoices", "invoice_items"],

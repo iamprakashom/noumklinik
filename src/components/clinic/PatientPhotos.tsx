@@ -41,13 +41,13 @@ export function PatientPhotos({ patientId }: { patientId: string }) {
   const [lightbox, setLightbox] = useState<string | null>(null);
 
   const photos = useMemo(
-    () => (all.data ?? []).filter((p) => p.patient_id === patientId),
+    () => (all.data ?? []).filter((p: PatientPhoto) => p.patient_id === patientId),
     [all.data, patientId],
   );
   const urls = usePhotoUrls(photos);
 
   useEffect(() => {
-    setCompare((c) => c.filter((id) => photos.some((p) => p.id === id)));
+    setCompare((c) => c.filter((id) => photos.some((p: PatientPhoto) => p.id === id)));
   }, [photos]);
 
   async function upload(files: FileList) {
@@ -89,7 +89,7 @@ export function PatientPhotos({ patientId }: { patientId: string }) {
   }
 
   const comparing = compare
-    .map((id) => photos.find((p) => p.id === id))
+    .map((id) => photos.find((p: PatientPhoto) => p.id === id))
     .filter((p): p is PatientPhoto => Boolean(p));
 
   return (
@@ -145,7 +145,7 @@ export function PatientPhotos({ patientId }: { patientId: string }) {
                   className="aspect-square w-full rounded-lg object-cover"
                 />
                 <figcaption className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <Chip tone={p.kind === "After" ? "completed" : "default"}>{p.kind}</Chip>
+                  <Chip tone={p.kind === "After" ? "completed" : "idle"}>{p.kind}</Chip>
                   {formatDate(p.created_at)}
                   {p.caption ? <span className="truncate">· {p.caption}</span> : null}
                 </figcaption>
@@ -159,7 +159,7 @@ export function PatientPhotos({ patientId }: { patientId: string }) {
         <EmptyState>No clinical photos yet. Upload before/after images to track progress.</EmptyState>
       ) : (
         <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-4">
-          {photos.map((p) => {
+          {photos.map((p: PatientPhoto) => {
             const selected = compare.includes(p.id);
             return (
               <figure
@@ -180,7 +180,7 @@ export function PatientPhotos({ patientId }: { patientId: string }) {
                 </button>
                 <figcaption className="space-y-1.5 p-3">
                   <div className="flex items-center gap-2">
-                    <Chip tone={p.kind === "After" ? "completed" : "default"}>{p.kind}</Chip>
+                    <Chip tone={p.kind === "After" ? "completed" : "idle"}>{p.kind}</Chip>
                     <span className="text-[11px] text-muted-foreground">{formatDate(p.created_at)}</span>
                   </div>
                   {p.caption ? <p className="truncate text-xs">{p.caption}</p> : null}
