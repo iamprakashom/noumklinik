@@ -194,46 +194,78 @@ function LeadsPage() {
       </div>
 
 
-      <div className="mt-6 flex flex-wrap items-center gap-2">
-        <select value={stage} onChange={(e) => setStage(e.target.value)} className={`${inputClass} w-40`} aria-label="Filter by status">
-          <option value="all">All statuses</option>
-          {LEAD_STAGES.map((s) => (
-            <option key={s} value={s}>
-              {s}
-            </option>
-          ))}
-        </select>
-        <select value={treatment} onChange={(e) => setTreatment(e.target.value)} className={`${inputClass} w-44`} aria-label="Filter by treatment">
-          <option value="all">All treatments</option>
-          {services.data?.map((s) => (
-            <option key={s.id} value={s.id}>
-              {s.name}
-            </option>
-          ))}
-        </select>
-        <select value={group} onChange={(e) => setGroup(e.target.value)} className={`${inputClass} w-40`} aria-label="Filter by source">
-          <option value="all">All sources</option>
-          {LEAD_SOURCE_GROUPS.map((s) => (
-            <option key={s} value={s}>
-              {s}
-            </option>
-          ))}
-        </select>
-        <select value={doctor} onChange={(e) => setDoctor(e.target.value)} className={`${inputClass} w-44`} aria-label="Filter by doctor">
-          <option value="all">All doctors</option>
-          <option value="unassigned">Unassigned</option>
-          {providers.data?.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.name}
-            </option>
-          ))}
-        </select>
-        <select value={sort} onChange={(e) => setSort(e.target.value as SortKey)} className={`${inputClass} w-48`} aria-label="Sort leads">
-          <option value="oldest">Ageing · oldest first</option>
-          <option value="newest">Ageing · newest first</option>
-          <option value="follow_up">Next follow-up</option>
-        </select>
-      </div>
+      <LeadsToolbar
+        query={query}
+        onQueryChange={setQuery}
+        shown={rows.length}
+        total={all.length}
+        onClearAll={() => {
+          setQuery("");
+          setStage("all");
+          setTreatment("all");
+          setGroup("all");
+          setDoctor("all");
+          setFollowUp("all");
+        }}
+        filters={[
+          {
+            key: "stage",
+            label: "Status",
+            allLabel: "All statuses",
+            value: stage,
+            onChange: setStage,
+            options: LEAD_STAGES.map((s) => ({ value: s, label: s })),
+          },
+          {
+            key: "treatment",
+            label: "Treatment",
+            allLabel: "All treatments",
+            value: treatment,
+            onChange: setTreatment,
+            options: (services.data ?? []).map((s) => ({ value: s.id, label: s.name })),
+          },
+          {
+            key: "group",
+            label: "Source",
+            allLabel: "All sources",
+            value: group,
+            onChange: setGroup,
+            options: LEAD_SOURCE_GROUPS.map((s) => ({ value: s, label: s })),
+          },
+          {
+            key: "doctor",
+            label: "Doctor",
+            allLabel: "All doctors",
+            value: doctor,
+            onChange: setDoctor,
+            options: [
+              { value: "unassigned", label: "Unassigned" },
+              ...(providers.data ?? []).map((p) => ({ value: p.id, label: p.name })),
+            ],
+          },
+          {
+            key: "followUp",
+            label: "Follow-up",
+            allLabel: "Any follow-up",
+            value: followUp,
+            onChange: setFollowUp,
+            options: [
+              { value: "overdue", label: "Overdue" },
+              { value: "scheduled", label: "Scheduled" },
+            ],
+          },
+        ]}
+        sort={{
+          value: sort,
+          onChange: (v) => setSort(v as SortKey),
+          options: [
+            { value: "oldest", label: "Ageing · oldest first" },
+            { value: "newest", label: "Ageing · newest first" },
+            { value: "follow_up", label: "Next follow-up" },
+          ],
+        }}
+      />
+
 
       {rows.length === 0 ? (
         <div className="mt-4">
