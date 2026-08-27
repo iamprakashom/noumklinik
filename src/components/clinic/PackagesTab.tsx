@@ -137,6 +137,7 @@ export function PackagesTab() {
                 {
                   onSuccess: (rows) => {
                     const created = (rows as { id: string }[])[0];
+                    if (!created) return;
                     addItems.mutate(
                       lines.map((l) => ({
                         package_id: created.id,
