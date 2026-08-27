@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { Plus } from "lucide-react";
 import { AppShell, ghostButton, primaryButton } from "@/components/clinic/AppShell";
 import { ClinicProfileTab } from "@/components/clinic/ClinicProfileTab";
+import { PackagesTab } from "@/components/clinic/PackagesTab";
 import { AddonsTab } from "@/components/clinic/AddonsTab";
 import { PaymentsTab } from "@/components/clinic/PaymentsTab";
 import { LeadCaptureTab } from "@/components/clinic/LeadCaptureTab";
@@ -82,6 +83,7 @@ function SettingsPage() {
           <TabsTrigger value="providers">Providers</TabsTrigger>
           <TabsTrigger value="rooms">Rooms</TabsTrigger>
           <TabsTrigger value="consents">Consent forms</TabsTrigger>
+          <TabsTrigger value="packages">Packages</TabsTrigger>
           <TabsTrigger value="addons">Add-ons</TabsTrigger>
           <TabsTrigger value="payments">Payments</TabsTrigger>
           <TabsTrigger value="lead-capture">Lead capture</TabsTrigger>
@@ -89,6 +91,9 @@ function SettingsPage() {
 
         <TabsContent value="clinic" className="mt-4">
           <ClinicProfileTab />
+        </TabsContent>
+        <TabsContent value="packages" className="mt-4">
+          <PackagesTab />
         </TabsContent>
         <TabsContent value="addons" className="mt-4">
           <AddonsTab />
