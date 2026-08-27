@@ -1,8 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { computeGstTotals, stateCode, type GstLine } from "@/lib/gst";
 import type {
   AddonDiscountRule,
   Appointment,
+  ClinicProfile,
   AutomationRule,
   ConsentTemplate,
   Invoice,
