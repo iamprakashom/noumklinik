@@ -81,6 +81,8 @@ export const Route = createFileRoute("/_authenticated/leads")({
 
 type SortKey = "oldest" | "newest" | "follow_up";
 
+const PAGE_SIZE = 25;
+
 function sourceGroupOf(lead: Lead) {
   return lead.source_group ?? SOURCE_GROUP_BY_SOURCE[lead.source] ?? "Organic";
 }
@@ -151,6 +153,10 @@ function LeadsPage() {
 
   const overdue = all.filter(isOverdueLead);
   const scheduled = all.filter(isScheduledLead);
+
+  const pageCount = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
+  const page = Math.min(Math.max(1, search.page), pageCount);
+  const pageRows = rows.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
 
   const providerName = (id: string | null) =>
