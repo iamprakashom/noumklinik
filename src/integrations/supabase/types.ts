@@ -518,6 +518,11 @@ export type Database = {
           id: string
           name: string
           subject: string | null
+          wa_category: string
+          wa_language: string
+          wa_status: string
+          wa_template_name: string | null
+          wa_variables: string[]
         }
         Insert: {
           body: string
@@ -526,6 +531,11 @@ export type Database = {
           id?: string
           name: string
           subject?: string | null
+          wa_category?: string
+          wa_language?: string
+          wa_status?: string
+          wa_template_name?: string | null
+          wa_variables?: string[]
         }
         Update: {
           body?: string
@@ -534,6 +544,11 @@ export type Database = {
           id?: string
           name?: string
           subject?: string | null
+          wa_category?: string
+          wa_language?: string
+          wa_status?: string
+          wa_template_name?: string | null
+          wa_variables?: string[]
         }
         Relationships: []
       }
@@ -1495,6 +1510,126 @@ export type Database = {
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
+        }
+        Relationships: []
+      }
+      whatsapp_messages: {
+        Row: {
+          body: string
+          contact_name: string | null
+          contact_wa_id: string
+          created_at: string
+          direction: string
+          error: string | null
+          id: string
+          lead_id: string | null
+          message_type: string
+          patient_id: string | null
+          provider_message_id: string | null
+          read_at: string | null
+          sent_at: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          body?: string
+          contact_name?: string | null
+          contact_wa_id: string
+          created_at?: string
+          direction?: string
+          error?: string | null
+          id?: string
+          lead_id?: string | null
+          message_type?: string
+          patient_id?: string | null
+          provider_message_id?: string | null
+          read_at?: string | null
+          sent_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          body?: string
+          contact_name?: string | null
+          contact_wa_id?: string
+          created_at?: string
+          direction?: string
+          error?: string | null
+          id?: string
+          lead_id?: string | null
+          message_type?: string
+          patient_id?: string | null
+          provider_message_id?: string | null
+          read_at?: string | null
+          sent_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_messages_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "whatsapp_messages_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      whatsapp_settings: {
+        Row: {
+          access_token: string | null
+          app_secret: string | null
+          created_at: string
+          display_name: string | null
+          enabled: boolean
+          error_message: string | null
+          id: string
+          phone_number: string | null
+          phone_number_id: string | null
+          singleton: boolean
+          status: string
+          updated_at: string
+          verify_token: string
+          waba_id: string | null
+        }
+        Insert: {
+          access_token?: string | null
+          app_secret?: string | null
+          created_at?: string
+          display_name?: string | null
+          enabled?: boolean
+          error_message?: string | null
+          id?: string
+          phone_number?: string | null
+          phone_number_id?: string | null
+          singleton?: boolean
+          status?: string
+          updated_at?: string
+          verify_token?: string
+          waba_id?: string | null
+        }
+        Update: {
+          access_token?: string | null
+          app_secret?: string | null
+          created_at?: string
+          display_name?: string | null
+          enabled?: boolean
+          error_message?: string | null
+          id?: string
+          phone_number?: string | null
+          phone_number_id?: string | null
+          singleton?: boolean
+          status?: string
+          updated_at?: string
+          verify_token?: string
+          waba_id?: string | null
         }
         Relationships: []
       }
