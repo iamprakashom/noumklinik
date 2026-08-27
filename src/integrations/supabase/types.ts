@@ -724,6 +724,156 @@ export type Database = {
           },
         ]
       }
+      package_items: {
+        Row: {
+          created_at: string
+          id: string
+          package_id: string
+          service_id: string
+          sessions: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          package_id: string
+          service_id: string
+          sessions?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          package_id?: string
+          service_id?: string
+          sessions?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "package_items_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "packages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "package_items_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      package_redemptions: {
+        Row: {
+          appointment_id: string | null
+          created_at: string
+          id: string
+          patient_id: string
+          patient_package_id: string
+          patient_package_item_id: string
+          provider_id: string | null
+          redeemed_at: string
+          service_name: string
+          value_recognised: number
+        }
+        Insert: {
+          appointment_id?: string | null
+          created_at?: string
+          id?: string
+          patient_id: string
+          patient_package_id: string
+          patient_package_item_id: string
+          provider_id?: string | null
+          redeemed_at?: string
+          service_name: string
+          value_recognised?: number
+        }
+        Update: {
+          appointment_id?: string | null
+          created_at?: string
+          id?: string
+          patient_id?: string
+          patient_package_id?: string
+          patient_package_item_id?: string
+          provider_id?: string | null
+          redeemed_at?: string
+          service_name?: string
+          value_recognised?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "package_redemptions_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "package_redemptions_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "package_redemptions_patient_package_id_fkey"
+            columns: ["patient_package_id"]
+            isOneToOne: false
+            referencedRelation: "patient_packages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "package_redemptions_patient_package_item_id_fkey"
+            columns: ["patient_package_item_id"]
+            isOneToOne: false
+            referencedRelation: "patient_package_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "package_redemptions_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "providers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      packages: {
+        Row: {
+          active: boolean
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          price: number
+          refundable: boolean
+          updated_at: string
+          validity_days: number
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          price?: number
+          refundable?: boolean
+          updated_at?: string
+          validity_days?: number
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          price?: number
+          refundable?: boolean
+          updated_at?: string
+          validity_days?: number
+        }
+        Relationships: []
+      }
       patient_consents: {
         Row: {
           created_at: string
@@ -765,6 +915,121 @@ export type Database = {
             columns: ["template_id"]
             isOneToOne: false
             referencedRelation: "consent_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      patient_package_items: {
+        Row: {
+          created_at: string
+          id: string
+          patient_package_id: string
+          service_id: string | null
+          service_name: string
+          sessions_total: number
+          sessions_used: number
+          unit_value: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          patient_package_id: string
+          service_id?: string | null
+          service_name: string
+          sessions_total?: number
+          sessions_used?: number
+          unit_value?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          patient_package_id?: string
+          service_id?: string | null
+          service_name?: string
+          sessions_total?: number
+          sessions_used?: number
+          unit_value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "patient_package_items_patient_package_id_fkey"
+            columns: ["patient_package_id"]
+            isOneToOne: false
+            referencedRelation: "patient_packages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "patient_package_items_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      patient_packages: {
+        Row: {
+          created_at: string
+          expires_at: string
+          extension_reason: string | null
+          id: string
+          invoice_id: string | null
+          name: string
+          package_id: string | null
+          patient_id: string
+          price_paid: number
+          purchased_at: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at: string
+          extension_reason?: string | null
+          id?: string
+          invoice_id?: string | null
+          name: string
+          package_id?: string | null
+          patient_id: string
+          price_paid?: number
+          purchased_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          extension_reason?: string | null
+          id?: string
+          invoice_id?: string | null
+          name?: string
+          package_id?: string | null
+          patient_id?: string
+          price_paid?: number
+          purchased_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "patient_packages_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "patient_packages_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "packages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "patient_packages_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
             referencedColumns: ["id"]
           },
         ]
