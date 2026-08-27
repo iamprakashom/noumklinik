@@ -62,6 +62,7 @@ type RangeKey = "today" | "upcoming" | "past" | "all";
 function AppointmentsPage() {
   const { new: openNew } = Route.useSearch();
   const [open, setOpen] = useState(openNew ?? false);
+  const [quickAdd, setQuickAdd] = useState(false);
   const [reschedule, setReschedule] = useState<Appointment | null>(null);
   const [range, setRange] = useState<RangeKey>("upcoming");
   const [sourceFilter, setSourceFilter] = useState("all");
@@ -82,6 +83,7 @@ function AppointmentsPage() {
     );
   };
   const createAppointment = useInsert("appointments");
+  const createPatient = useInsert("patients");
   const updateAppointment = useUpdate("appointments");
   const sendReminder = useServerFn(sendAppointmentReminder);
 
