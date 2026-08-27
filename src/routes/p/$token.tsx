@@ -7,7 +7,13 @@ import { CheckCircle2 } from "lucide-react";
 import { SignaturePad } from "@/components/clinic/SignaturePad";
 import { Field, inputClass, textareaClass } from "@/components/clinic/bits";
 import { primaryButton } from "@/components/clinic/AppShell";
-import { getPatientLink, submitConsent, submitIntake } from "@/lib/patient-links.functions";
+import {
+  confirmAppointment,
+  getPatientLink,
+  requestReschedule,
+  submitConsent,
+  submitIntake,
+} from "@/lib/patient-links.functions";
 
 export const Route = createFileRoute("/p/$token")({
   head: () => ({
@@ -46,7 +52,11 @@ function PatientLinkPage() {
   const fetchLink = useServerFn(getPatientLink);
   const intake = useServerFn(submitIntake);
   const consent = useServerFn(submitConsent);
+  const doConfirm = useServerFn(confirmAppointment);
+  const doReschedule = useServerFn(requestReschedule);
   const [done, setDone] = useState(false);
+  const [doneMessage, setDoneMessage] = useState<string | null>(null);
+  const [showReschedule, setShowReschedule] = useState(false);
   const [signature, setSignature] = useState<string | null>(null);
 
   const link = useQuery({
@@ -63,6 +73,24 @@ function PatientLinkPage() {
     mutationFn: (values: { signature_name: string }) =>
       consent({ data: { token, signature_name: values.signature_name, signature_data: signature } }),
     onSuccess: () => setDone(true),
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const confirmMut = useMutation({
+    mutationFn: () => doConfirm({ data: { token } }),
+    onSuccess: () => {
+      setDoneMessage("Your appointment is confirmed. See you at the clinic.");
+      setDone(true);
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+  const rescheduleMut = useMutation({
+    mutationFn: (values: { preferred_at: string; notes: string }) =>
+      doReschedule({ data: { token, ...values } }),
+    onSuccess: () => {
+      setDoneMessage("We have your new preferred time — the clinic will call to confirm.");
+      setDone(true);
+    },
     onError: (e: Error) => toast.error(e.message),
   });
 
@@ -91,7 +119,7 @@ function PatientLinkPage() {
         <CheckCircle2 className="size-8 text-primary" />
         <h1 className="text-xl font-semibold">Thank you, {data.patientName}</h1>
         <p className="text-sm text-muted-foreground">
-          Your details have been sent to {data.clinicName}. You can close this page.
+          {doneMessage ?? `Your details have been sent to ${data.clinicName}. You can close this page.`}
         </p>
       </Shell>
     );
@@ -102,16 +130,91 @@ function PatientLinkPage() {
       <header className="space-y-1">
         <p className="text-xs uppercase tracking-wide text-muted-foreground">{data.clinicName}</p>
         <h1 className="text-2xl font-semibold">
-          {data.kind === "intake" ? "Pre-visit details" : "Treatment consent"}
+          {data.kind === "intake"
+            ? "Pre-visit details"
+            : data.kind === "consent"
+              ? "Treatment consent"
+              : "Your appointment"}
         </h1>
         <p className="text-sm text-muted-foreground">
           {data.kind === "intake"
             ? "Confirm your details so we can prepare for your visit."
-            : "Please read and sign the consent form below."}
+            : data.kind === "consent"
+              ? "Please read and sign the consent form below."
+              : `Hello ${data.patientName}, please confirm you can make it.`}
         </p>
       </header>
 
-      {data.kind === "intake" ? (
+      {data.kind === "appointment" ? (
+        <div className="grid gap-4 rounded-xl border border-border bg-card p-5">
+          <div className="rounded-lg border border-border bg-background p-4 text-sm">
+            <p className="font-medium">
+              {data.appointment
+                ? new Date(data.appointment.starts_at).toLocaleString("en-IN", {
+                    weekday: "long",
+                    day: "numeric",
+                    month: "long",
+                    year: "numeric",
+                    hour: "numeric",
+                    minute: "2-digit",
+                  })
+                : "Appointment details unavailable"}
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {[data.appointment?.service, data.appointment?.provider].filter(Boolean).join(" · ") ||
+                "At the clinic"}
+            </p>
+          </div>
+
+          {showReschedule ? (
+            <form
+              className="grid gap-4"
+              onSubmit={(e) => {
+                e.preventDefault();
+                const fd = new FormData(e.currentTarget);
+                rescheduleMut.mutate({
+                  preferred_at: String(fd.get("preferred_at") ?? ""),
+                  notes: String(fd.get("notes") ?? ""),
+                });
+              }}
+            >
+              <Field label="New preferred date and time">
+                <input name="preferred_at" type="datetime-local" required className={inputClass} />
+              </Field>
+              <Field label="Reason (optional)">
+                <textarea name="notes" className={textareaClass} />
+              </Field>
+              <button className={primaryButton} disabled={rescheduleMut.isPending}>
+                {rescheduleMut.isPending ? "Sending…" : "Request new time"}
+              </button>
+              <button
+                type="button"
+                className="text-xs text-muted-foreground underline"
+                onClick={() => setShowReschedule(false)}
+              >
+                Back
+              </button>
+            </form>
+          ) : (
+            <div className="grid gap-2">
+              <button
+                className={primaryButton}
+                disabled={confirmMut.isPending}
+                onClick={() => confirmMut.mutate()}
+              >
+                {confirmMut.isPending ? "Confirming…" : "Yes, I will be there"}
+              </button>
+              <button
+                type="button"
+                className="rounded-lg border border-border px-3 py-2 text-sm"
+                onClick={() => setShowReschedule(true)}
+              >
+                I need a different time
+              </button>
+            </div>
+          )}
+        </div>
+      ) : data.kind === "intake" ? (
         <form
           className="grid gap-4 rounded-xl border border-border bg-card p-5"
           onSubmit={(e) => {

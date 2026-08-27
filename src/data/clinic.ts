@@ -36,6 +36,7 @@ export const APPOINTMENT_STATUSES = [
   "Booked",
   "Confirmed",
   "Checked-in",
+  "Reschedule requested",
   "Completed",
   "No-show",
   "Cancelled",
@@ -124,7 +125,8 @@ export type StatusTone = "completed" | "progress" | "overdue" | "idle";
 export function appointmentTone(status: string): StatusTone {
   if (status === "Completed") return "completed";
   if (status === "Checked-in" || status === "Confirmed") return "progress";
-  if (status === "No-show" || status === "Cancelled") return "overdue";
+  if (status === "No-show" || status === "Cancelled" || status === "Reschedule requested")
+    return "overdue";
   return "idle";
 }
 
