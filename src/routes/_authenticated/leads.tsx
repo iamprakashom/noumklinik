@@ -1,4 +1,6 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, stripSearchParams, useNavigate } from "@tanstack/react-router";
+import { zodValidator, fallback } from "@tanstack/zod-adapter";
+import { z } from "zod";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { LayoutGrid, Plus, Rows3, UserRoundCheck } from "lucide-react";
@@ -34,7 +36,31 @@ import {
   useUpdate,
 } from "@/lib/clinic-data";
 
+const leadsSearchSchema = z.object({
+  q: fallback(z.string(), "").default(""),
+  stage: fallback(z.string(), "all").default("all"),
+  treatment: fallback(z.string(), "all").default("all"),
+  group: fallback(z.string(), "all").default("all"),
+  doctor: fallback(z.string(), "all").default("all"),
+  followUp: fallback(z.string(), "all").default("all"),
+  sort: fallback(z.string(), "oldest").default("oldest"),
+  page: fallback(z.number().int(), 1).default(1),
+});
+
+const leadsSearchDefaults = {
+  q: "",
+  stage: "all",
+  treatment: "all",
+  group: "all",
+  doctor: "all",
+  followUp: "all",
+  sort: "oldest",
+  page: 1,
+};
+
 export const Route = createFileRoute("/_authenticated/leads")({
+  validateSearch: zodValidator(leadsSearchSchema),
+  search: { middlewares: [stripSearchParams(leadsSearchDefaults)] },
   head: () => ({
     meta: [
       { title: "Leads — Luma Aesthetics Clinic CRM" },
@@ -55,6 +81,21 @@ export const Route = createFileRoute("/_authenticated/leads")({
 
 type SortKey = "oldest" | "newest" | "follow_up";
 
+const PAGE_SIZE = 25;
+
+// Windowed page list: 1 … current±1 … last, with nulls as ellipsis gaps.
+function pageNumbers(page: number, pageCount: number): (number | null)[] {
+  if (pageCount <= 7) return Array.from({ length: pageCount }, (_, i) => i + 1);
+  const around = new Set([1, pageCount, page - 1, page, page + 1]);
+  const list = [...around].filter((p) => p >= 1 && p <= pageCount).sort((a, b) => a - b);
+  const out: (number | null)[] = [];
+  list.forEach((p, i) => {
+    if (i > 0 && p - (list[i - 1] ?? p) > 1) out.push(null);
+    out.push(p);
+  });
+  return out;
+}
+
 function sourceGroupOf(lead: Lead) {
   return lead.source_group ?? SOURCE_GROUP_BY_SOURCE[lead.source] ?? "Organic";
 }
@@ -62,13 +103,25 @@ function sourceGroupOf(lead: Lead) {
 function LeadsPage() {
   const [open, setOpen] = useState(false);
   const [view, setView] = useState<"table" | "cards">("table");
-  const [query, setQuery] = useState("");
-  const [stage, setStage] = useState("all");
-  const [treatment, setTreatment] = useState("all");
-  const [group, setGroup] = useState("all");
-  const [doctor, setDoctor] = useState("all");
-  const [followUp, setFollowUp] = useState("all");
-  const [sort, setSort] = useState<SortKey>("oldest");
+
+  const search = Route.useSearch();
+  const navigate = useNavigate({ from: Route.fullPath });
+
+  // Any filter/search/sort change resets to page 1.
+  const setSearch = (patch: Partial<typeof leadsSearchDefaults>) =>
+    void navigate({ search: (prev) => ({ ...prev, page: 1, ...patch }), replace: true });
+  const setPage = (page: number) =>
+    void navigate({ search: (prev) => ({ ...prev, page }) });
+
+  const query = search.q;
+  const stage = search.stage;
+  const treatment = search.treatment;
+  const group = search.group;
+  const doctor = search.doctor;
+  const followUp = search.followUp;
+  const sort = (["oldest", "newest", "follow_up"].includes(search.sort)
+    ? search.sort
+    : "oldest") as SortKey;
 
   const leads = useLeads();
   const providers = useProviders();
@@ -114,6 +167,10 @@ function LeadsPage() {
   const overdue = all.filter(isOverdueLead);
   const scheduled = all.filter(isScheduledLead);
 
+  const pageCount = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
+  const page = Math.min(Math.max(1, search.page), pageCount);
+  const pageRows = rows.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
 
   const providerName = (id: string | null) =>
     providers.data?.find((p) => p.id === id)?.name ?? "Unassigned";
@@ -153,7 +210,7 @@ function LeadsPage() {
         <button
           type="button"
           aria-pressed={followUp === "overdue"}
-          onClick={() => setFollowUp(followUp === "overdue" ? "all" : "overdue")}
+          onClick={() => setSearch({ followUp: followUp === "overdue" ? "all" : "overdue" })}
           className={`card-hover rounded-xl border bg-card p-4 text-left transition-colors ${followUp === "overdue" ? "border-primary" : "border-border"}`}
         >
           <p className="text-xs font-medium text-muted-foreground">Overdue follow-ups</p>
@@ -175,7 +232,7 @@ function LeadsPage() {
         <button
           type="button"
           aria-pressed={followUp === "scheduled"}
-          onClick={() => setFollowUp(followUp === "scheduled" ? "all" : "scheduled")}
+          onClick={() => setSearch({ followUp: followUp === "scheduled" ? "all" : "scheduled" })}
           className={`card-hover rounded-xl border bg-card p-4 text-left transition-colors ${followUp === "scheduled" ? "border-primary" : "border-border"}`}
         >
           <p className="text-xs font-medium text-muted-foreground">Scheduled follow-ups</p>
@@ -197,24 +254,19 @@ function LeadsPage() {
 
       <LeadsToolbar
         query={query}
-        onQueryChange={setQuery}
+        onQueryChange={(q) => setSearch({ q })}
         shown={rows.length}
         total={all.length}
-        onClearAll={() => {
-          setQuery("");
-          setStage("all");
-          setTreatment("all");
-          setGroup("all");
-          setDoctor("all");
-          setFollowUp("all");
-        }}
+        onClearAll={() =>
+          setSearch({ q: "", stage: "all", treatment: "all", group: "all", doctor: "all", followUp: "all" })
+        }
         filters={[
           {
             key: "stage",
             label: "Status",
             allLabel: "All statuses",
             value: stage,
-            onChange: setStage,
+            onChange: (stage) => setSearch({ stage }),
             options: LEAD_STAGES.map((s) => ({ value: s, label: s })),
           },
           {
@@ -222,7 +274,7 @@ function LeadsPage() {
             label: "Treatment",
             allLabel: "All treatments",
             value: treatment,
-            onChange: setTreatment,
+            onChange: (treatment) => setSearch({ treatment }),
             options: (services.data ?? []).map((s) => ({ value: s.id, label: s.name })),
           },
           {
@@ -230,7 +282,7 @@ function LeadsPage() {
             label: "Source",
             allLabel: "All sources",
             value: group,
-            onChange: setGroup,
+            onChange: (group) => setSearch({ group }),
             options: LEAD_SOURCE_GROUPS.map((s) => ({ value: s, label: s })),
           },
           {
@@ -238,7 +290,7 @@ function LeadsPage() {
             label: "Doctor",
             allLabel: "All doctors",
             value: doctor,
-            onChange: setDoctor,
+            onChange: (doctor) => setSearch({ doctor }),
             options: [
               { value: "unassigned", label: "Unassigned" },
               ...(providers.data ?? []).map((p) => ({ value: p.id, label: p.name })),
@@ -249,7 +301,7 @@ function LeadsPage() {
             label: "Follow-up",
             allLabel: "Any follow-up",
             value: followUp,
-            onChange: setFollowUp,
+            onChange: (followUp) => setSearch({ followUp }),
             options: [
               { value: "overdue", label: "Overdue" },
               { value: "scheduled", label: "Scheduled" },
@@ -258,7 +310,7 @@ function LeadsPage() {
         ]}
         sort={{
           value: sort,
-          onChange: (v: string) => setSort(v as SortKey),
+          onChange: (v: string) => setSearch({ sort: v }),
           options: [
             { value: "oldest", label: "Ageing · oldest first" },
             { value: "newest", label: "Ageing · newest first" },
@@ -289,7 +341,7 @@ function LeadsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {rows.map((l) => {
+              {pageRows.map((l) => {
                 const isOverdue = !!l.next_follow_up_at && l.next_follow_up_at < today;
                 return (
                   <tr key={l.id} className="transition-colors hover:bg-secondary/60">
@@ -386,7 +438,7 @@ function LeadsPage() {
         </div>
       ) : (
         <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-          {rows.map((l) => (
+          {pageRows.map((l) => (
             <article key={l.id} className="card-hover rounded-xl border border-border bg-card p-4">
               <div className="flex items-start justify-between gap-2">
                 <div>
@@ -425,6 +477,54 @@ function LeadsPage() {
           ))}
         </div>
       )}
+
+      {rows.length > 0 && pageCount > 1 ? (
+        <nav aria-label="Leads pages" className="mt-4 flex flex-wrap items-center justify-between gap-3">
+          <p className="text-xs tabular-nums text-muted-foreground">
+            Showing {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, rows.length)} of {rows.length}
+          </p>
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => setPage(page - 1)}
+              disabled={page <= 1}
+              className="h-8 rounded-md border border-border px-2.5 text-xs text-muted-foreground transition-colors hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 disabled:opacity-40 disabled:hover:bg-transparent"
+            >
+              Previous
+            </button>
+            {pageNumbers(page, pageCount).map((p, i) =>
+              p === null ? (
+                <span key={`gap-${i}`} className="px-1 text-xs text-muted-foreground" aria-hidden>
+                  …
+                </span>
+              ) : (
+                <button
+                  key={p}
+                  type="button"
+                  onClick={() => setPage(p)}
+                  aria-label={`Page ${p}`}
+                  aria-current={p === page ? "page" : undefined}
+                  className={`size-8 rounded-md text-xs tabular-nums transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 ${
+                    p === page
+                      ? "bg-primary text-primary-foreground"
+                      : "border border-border text-muted-foreground hover:bg-secondary"
+                  }`}
+                >
+                  {p}
+                </button>
+              ),
+            )}
+            <button
+              type="button"
+              onClick={() => setPage(page + 1)}
+              disabled={page >= pageCount}
+              className="h-8 rounded-md border border-border px-2.5 text-xs text-muted-foreground transition-colors hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 disabled:opacity-40 disabled:hover:bg-transparent"
+            >
+              Next
+            </button>
+          </div>
+        </nav>
+      ) : null}
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="sm:max-w-lg">
