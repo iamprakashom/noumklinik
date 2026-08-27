@@ -36,6 +36,7 @@ export const Route = createFileRoute("/_authenticated/patients/")({
 function PatientsPage() {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
+  const [ignoreDupe, setIgnoreDupe] = useState<string | null>(null);
   const patients = usePatients();
   const appointments = useAppointments();
   const createPatient = useInsert("patients");
@@ -66,6 +67,21 @@ function PatientsPage() {
 
   function submit(form: HTMLFormElement) {
     const fd = new FormData(form);
+    const digits = (v: string) => v.replace(/\D/g, "").slice(-10);
+    const phone = String(fd.get("phone") ?? "");
+    const email = String(fd.get("email") ?? "").trim().toLowerCase();
+    const dupe = (patients.data ?? []).find(
+      (p) =>
+        (phone.length >= 10 && digits(p.phone ?? "") === digits(phone)) ||
+        (email && (p.email ?? "").toLowerCase() === email),
+    );
+    if (dupe && dupe.id !== ignoreDupe) {
+      setIgnoreDupe(dupe.id);
+      toast.warning(`${patientName(dupe)} already exists with these contact details`, {
+        description: "Press Save again to create a separate record anyway.",
+      });
+      return;
+    }
     createPatient.mutate(
       {
         first_name: String(fd.get("first_name")),
@@ -82,6 +98,7 @@ function PatientsPage() {
       {
         onSuccess: () => {
           toast.success("Patient added");
+          setIgnoreDupe(null);
           setOpen(false);
         },
         onError: (e) => toast.error(e.message),
