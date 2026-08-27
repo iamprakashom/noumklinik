@@ -88,13 +88,25 @@ function sourceGroupOf(lead: Lead) {
 function LeadsPage() {
   const [open, setOpen] = useState(false);
   const [view, setView] = useState<"table" | "cards">("table");
-  const [query, setQuery] = useState("");
-  const [stage, setStage] = useState("all");
-  const [treatment, setTreatment] = useState("all");
-  const [group, setGroup] = useState("all");
-  const [doctor, setDoctor] = useState("all");
-  const [followUp, setFollowUp] = useState("all");
-  const [sort, setSort] = useState<SortKey>("oldest");
+
+  const search = Route.useSearch();
+  const navigate = useNavigate({ from: Route.fullPath });
+
+  // Any filter/search/sort change resets to page 1.
+  const setSearch = (patch: Partial<typeof leadsSearchDefaults>) =>
+    void navigate({ search: (prev) => ({ ...prev, page: 1, ...patch }), replace: true });
+  const setPage = (page: number) =>
+    void navigate({ search: (prev) => ({ ...prev, page }) });
+
+  const query = search.q;
+  const stage = search.stage;
+  const treatment = search.treatment;
+  const group = search.group;
+  const doctor = search.doctor;
+  const followUp = search.followUp;
+  const sort = (["oldest", "newest", "follow_up"].includes(search.sort)
+    ? search.sort
+    : "oldest") as SortKey;
 
   const leads = useLeads();
   const providers = useProviders();
