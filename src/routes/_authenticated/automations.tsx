@@ -169,9 +169,11 @@ function Automations() {
             )}
             <p className="mt-4 text-xs text-muted-foreground">
               Merge fields: {"{{first_name}}"}, {"{{service}}"}, {"{{provider}}"}, {"{{time}}"},{" "}
-              {"{{interest}}"}, {"{{confirm_link}}"} — the last one sends a private link where the
-              patient can confirm or ask to reschedule.
+              {"{{interest}}"}, {"{{confirm_link}}"} — a private link where the patient can confirm or
+              ask to reschedule — and {"{{feedback_link}}"} on an after-treatment rule, which asks for
+              a 1–5 rating and sends happy patients to your Google review page.
             </p>
+
           </Panel>
         </TabsContent>
 
