@@ -1,11 +1,14 @@
 import { createFileRoute, Link, useParams } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
-import { ArrowLeft, FileSignature, Lock, Plus } from "lucide-react";
+import { ArrowLeft, FileSignature, Link2, Lock, Plus } from "lucide-react";
 import { AppShell, ghostButton, primaryButton } from "@/components/clinic/AppShell";
 import { Avatar, Chip, EmptyState, Field, inputClass, textareaClass } from "@/components/clinic/bits";
 import { PatientPackages } from "@/components/clinic/PatientPackages";
-import { PatientPhotos } from "@/components/clinic/PatientPhotos";
+import { NotePhotos, PatientPhotos } from "@/components/clinic/PatientPhotos";
+import { SignaturePad } from "@/components/clinic/SignaturePad";
+import { createPatientLink } from "@/lib/patient-links.functions";
+import { useServerFn } from "@tanstack/react-start";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Dialog,
@@ -76,6 +79,23 @@ function PatientDetail() {
 
   const [chartOpen, setChartOpen] = useState(false);
   const [consentOpen, setConsentOpen] = useState(false);
+  const [signature, setSignature] = useState<string | null>(null);
+  const [serviceId, setServiceId] = useState("");
+  const [addendumFor, setAddendumFor] = useState<string | null>(null);
+  const makeLink = useServerFn(createPatientLink);
+
+  async function shareLink(kind: "intake" | "consent", consentTemplateId?: string | null) {
+    try {
+      const res = await makeLink({
+        data: { patient_id: patientId, kind, consent_template_id: consentTemplateId ?? null },
+      });
+      const url = `${window.location.origin}/p/${res.token}`;
+      await navigator.clipboard.writeText(url).catch(() => undefined);
+      toast.success("Patient link copied", { description: url });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not create link");
+    }
+  }
 
   const patient = patients.data?.find((p) => p.id === patientId);
 
@@ -106,6 +126,7 @@ function PatientDetail() {
   const signed = (consents.data ?? []).filter((c) => c.patient_id === patientId);
   const bills = (invoices.data ?? []).filter((i) => i.patient_id === patientId);
   const messages = (outbox.data ?? []).filter((m) => m.patient_id === patientId);
+  const selectedService = services.data?.find((s) => s.name === serviceId);
   const balance = bills
     .filter((i) => i.status === "Open")
     .reduce((s, i) => s + Number(i.total), 0);
@@ -318,6 +339,56 @@ function PatientDetail() {
                     ) : null,
                   )}
                 </dl>
+                {r.addendum ? (
+                  <div className="mt-3 rounded-lg border border-dashed border-border p-3 text-xs">
+                    <p className="text-muted-foreground">
+                      Addendum · {r.addendum_by} · {formatDate(r.addendum_at ?? r.created_at)}
+                    </p>
+                    <p className="mt-1">{r.addendum}</p>
+                  </div>
+                ) : null}
+                <NotePhotos patientId={patientId} recordId={r.id} />
+                {r.signed_at && !r.addendum ? (
+                  addendumFor === r.id ? (
+                    <form
+                      className="mt-3 space-y-2"
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        const text = String(new FormData(e.currentTarget).get("addendum") ?? "");
+                        const provider =
+                          providers.data?.find((p) => p.id === r.provider_id)?.name ?? "Clinician";
+                        updateRecord.mutate(
+                          {
+                            id: r.id,
+                            values: {
+                              addendum: text,
+                              addendum_by: provider,
+                              addendum_at: new Date().toISOString(),
+                            },
+                          },
+                          {
+                            onSuccess: () => {
+                              toast.success("Addendum added");
+                              setAddendumFor(null);
+                            },
+                          },
+                        );
+                      }}
+                    >
+                      <textarea name="addendum" required className={textareaClass} placeholder="Addendum to a locked note" />
+                      <div className="flex gap-2">
+                        <button className={primaryButton}>Save addendum</button>
+                        <button type="button" className={ghostButton} onClick={() => setAddendumFor(null)}>
+                          Cancel
+                        </button>
+                      </div>
+                    </form>
+                  ) : (
+                    <button className={`${ghostButton} mt-3`} onClick={() => setAddendumFor(r.id)}>
+                      <Plus className="size-3.5" /> Add addendum
+                    </button>
+                  )
+                ) : null}
                 {!r.signed_at ? (
                   <button
                     className={`${ghostButton} mt-4`}
@@ -342,9 +413,22 @@ function PatientDetail() {
         </TabsContent>
 
         <TabsContent value="consents" className="mt-4 space-y-4">
-          <button className={primaryButton} onClick={() => setConsentOpen(true)}>
-            <Plus className="size-3.5" /> Capture consent
-          </button>
+          <div className="flex flex-wrap gap-2">
+            <button className={primaryButton} onClick={() => setConsentOpen(true)}>
+              <Plus className="size-3.5" /> Capture consent
+            </button>
+            <button
+              className={ghostButton}
+              onClick={() =>
+                void shareLink("consent", consentTemplates.data?.[0]?.id ?? null)
+              }
+            >
+              <Link2 className="size-3.5" /> Send consent link
+            </button>
+            <button className={ghostButton} onClick={() => void shareLink("intake")}>
+              <Link2 className="size-3.5" /> Send intake link
+            </button>
+          </div>
           {signed.length === 0 ? (
             <EmptyState>No consents on file.</EmptyState>
           ) : (
@@ -352,7 +436,12 @@ function PatientDetail() {
               {signed.map((c) => (
                 <li key={c.id} className="flex items-center gap-3 px-5 py-3">
                   <span className="flex-1 text-sm">{c.template_name}</span>
-                  <span className="text-xs text-muted-foreground">{c.signature_name}</span>
+                  {c.signature_data ? (
+                    <img src={c.signature_data} alt="Signature" className="h-7 w-20 object-contain" />
+                  ) : null}
+                  <span className="text-xs text-muted-foreground">
+                    {c.signature_name} · {c.signed_via}
+                  </span>
                   <Chip tone="completed">{formatDate(c.signed_at)}</Chip>
                 </li>
               ))}
@@ -423,7 +512,20 @@ function PatientDetail() {
             }}
           >
             <Field label="Service">
-              <input name="service_name" required className={inputClass} />
+              <select
+                name="service_name"
+                required
+                className={inputClass}
+                value={serviceId}
+                onChange={(e) => setServiceId(e.target.value)}
+              >
+                <option value="">Select a service…</option>
+                {services.data?.map((s) => (
+                  <option key={s.id} value={s.name}>
+                    {s.name}
+                  </option>
+                ))}
+              </select>
             </Field>
             <Field label="Provider">
               <select name="provider_id" className={inputClass}>
@@ -445,13 +547,32 @@ function PatientDetail() {
               </select>
             </Field>
             <Field label="Product">
-              <input name="product" className={inputClass} placeholder="Botox Cosmetic" />
+              <input
+                key={`product-${serviceId}`}
+                name="product"
+                defaultValue={selectedService?.default_product ?? ""}
+                className={inputClass}
+                placeholder="Botox Cosmetic"
+              />
             </Field>
             <Field label="Units">
-              <input name="units" type="number" step="0.5" className={inputClass} />
+              <input
+                key={`units-${serviceId}`}
+                name="units"
+                type="number"
+                step="0.5"
+                defaultValue={selectedService?.default_units ?? ""}
+                className={inputClass}
+              />
             </Field>
             <Field label="Device settings" className="sm:col-span-2">
-              <input name="device_settings" className={inputClass} placeholder="Fluence, pulse width…" />
+              <input
+                key={`device-${serviceId}`}
+                name="device_settings"
+                defaultValue={selectedService?.default_device_settings ?? ""}
+                className={inputClass}
+                placeholder="Fluence, pulse width…"
+              />
             </Field>
             <Field label="Subjective" className="sm:col-span-2">
               <textarea name="subjective" className={textareaClass} />
@@ -497,6 +618,8 @@ function PatientDetail() {
                   template_id: template?.id ?? null,
                   template_name: template?.name ?? "Consent",
                   signature_name: String(fd.get("signature_name")),
+                  signature_data: signature,
+                  signed_via: "In clinic",
                   signed_at: new Date().toISOString(),
                 },
                 {
@@ -526,8 +649,11 @@ function PatientDetail() {
                 className={inputClass}
               />
             </Field>
+            <Field label="Signature">
+              <SignaturePad onChange={setSignature} />
+            </Field>
             <p className="text-xs text-muted-foreground">
-              Signing records the patient's name and a timestamp against this consent form.
+              Signing records the patient's name, drawn signature and a timestamp against this consent form.
             </p>
           </form>
           <DialogFooter>

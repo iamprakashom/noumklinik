@@ -223,3 +223,70 @@ export function PatientPhotos({ patientId }: { patientId: string }) {
     </div>
   );
 }
+
+/** Compact photo strip attached to one treatment note. */
+export function NotePhotos({ patientId, recordId }: { patientId: string; recordId: string }) {
+  const all = usePatientPhotos();
+  const addPhoto = useInsert("patient_photos");
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [busy, setBusy] = useState(false);
+
+  const photos = useMemo(
+    () => (all.data ?? []).filter((p: PatientPhoto) => p.treatment_record_id === recordId),
+    [all.data, recordId],
+  );
+  const urls = usePhotoUrls(photos);
+
+  async function upload(files: FileList) {
+    setBusy(true);
+    try {
+      for (const file of Array.from(files)) {
+        const ext = file.name.split(".").pop() ?? "jpg";
+        const path = `${patientId}/${crypto.randomUUID()}.${ext}`;
+        const { error } = await supabase.storage.from(BUCKET).upload(path, file, {
+          contentType: file.type || "image/jpeg",
+        });
+        if (error) throw error;
+        await addPhoto.mutateAsync({
+          patient_id: patientId,
+          treatment_record_id: recordId,
+          storage_path: path,
+          kind: "Progress",
+          caption: null,
+        });
+      }
+      toast.success("Attached to note");
+      void urls.refetch();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Upload failed");
+    } finally {
+      setBusy(false);
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  }
+
+  return (
+    <div className="mt-4 flex flex-wrap items-center gap-2">
+      {photos.map((p: PatientPhoto) => (
+        <img
+          key={p.id}
+          src={urls.data?.[p.storage_path]}
+          alt={p.caption ?? "Treatment photo"}
+          loading="lazy"
+          className="size-14 rounded-md border border-border object-cover"
+        />
+      ))}
+      <input
+        ref={fileRef}
+        type="file"
+        accept="image/*"
+        multiple
+        className="hidden"
+        onChange={(e) => e.target.files?.length && void upload(e.target.files)}
+      />
+      <button type="button" className={ghostButton} disabled={busy} onClick={() => fileRef.current?.click()}>
+        <ImagePlus className="size-3.5" /> {busy ? "Uploading…" : "Attach photos"}
+      </button>
+    </div>
+  );
+}
