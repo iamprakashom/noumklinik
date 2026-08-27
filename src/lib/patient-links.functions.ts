@@ -97,12 +97,18 @@ export const submitIntake = createServerFn({ method: "POST" })
     if (!link || link.kind !== "intake" || link.completed_at || new Date(link.expires_at) < new Date()) {
       throw new Error("This link is no longer valid.");
     }
-    const values: Record<string, unknown> = {};
-    if (data.email) values['email'] = data.email;
-    if (data.phone) values['phone'] = data.phone;
-    if (data.birth_date) values['birth_date'] = data.birth_date;
-    if (data.allergies !== undefined) values['allergies'] = data.allergies;
-    if (data.notes !== undefined) values['notes'] = data.notes;
+    const values: {
+      email?: string;
+      phone?: string;
+      birth_date?: string;
+      allergies?: string | null;
+      notes?: string | null;
+    } = {};
+    if (data.email) values.email = data.email;
+    if (data.phone) values.phone = data.phone;
+    if (data.birth_date) values.birth_date = data.birth_date;
+    if (data.allergies !== undefined) values.allergies = data.allergies ?? null;
+    if (data.notes !== undefined) values.notes = data.notes ?? null;
     if (Object.keys(values).length > 0) {
       await supabaseAdmin.from("patients").update(values).eq("id", link.patient_id!);
     }
