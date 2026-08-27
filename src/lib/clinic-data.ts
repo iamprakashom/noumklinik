@@ -90,6 +90,10 @@ const RELATED: Record<string, string[]> = {
   service_addons: ["service_addons"],
   addon_discount_rules: ["addon_discount_rules"],
   payment_links: ["payment_links", "invoices", "payments"],
+  packages: ["packages", "package_items"],
+  package_items: ["packages", "package_items"],
+  patient_packages: ["patient_packages", "patient_package_items"],
+  patient_package_items: ["patient_packages", "patient_package_items"],
 };
 
 function useInvalidate() {
