@@ -11,7 +11,7 @@ export const createPatientLink = createServerFn({ method: "POST" })
     z
       .object({
         patient_id: z.string().uuid(),
-        kind: z.enum(["intake", "consent", "appointment"]),
+        kind: z.enum(["intake", "consent", "appointment", "feedback"]),
         consent_template_id: z.string().uuid().nullable().optional(),
         appointment_id: z.string().uuid().nullable().optional(),
       })
@@ -62,12 +62,12 @@ export const getPatientLink = createServerFn({ method: "GET" })
 
     const { data: clinic } = await supabaseAdmin
       .from("clinic_profile")
-      .select("trade_name, legal_name")
+      .select("trade_name, legal_name, google_review_link")
       .limit(1)
       .maybeSingle();
 
     let appointment: { starts_at: string; service: string | null; provider: string | null } | null = null;
-    if (link.kind === "appointment" && link.appointment_id) {
+    if ((link.kind === "appointment" || link.kind === "feedback") && link.appointment_id) {
       const { data: appt } = await supabaseAdmin
         .from("appointments")
         .select("starts_at, status, services(name), providers(name)")
@@ -84,12 +84,80 @@ export const getPatientLink = createServerFn({ method: "GET" })
 
     return {
       status: "ok" as const,
-      kind: link.kind as "intake" | "consent" | "appointment",
+      kind: link.kind as "intake" | "consent" | "appointment" | "feedback",
       appointment,
       patientName: patient ? `${patient.first_name} ${patient.last_name}`.trim() : "Patient",
       clinicName: clinic?.trade_name ?? clinic?.legal_name ?? "Our clinic",
+      googleReviewLink: clinic?.google_review_link ?? null,
       consent,
     };
+  });
+
+/** Public: patient leaves a 1–5 rating after their visit. */
+export const submitFeedback = createServerFn({ method: "POST" })
+  .inputValidator((data: unknown) =>
+    z
+      .object({
+        token: z.string().min(10),
+        rating: z.number().int().min(1).max(5),
+        comment: z.string().max(2000).nullable().optional(),
+      })
+      .parse(data),
+  )
+  .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: link } = await supabaseAdmin
+      .from("patient_links")
+      .select("id, kind, patient_id, appointment_id, expires_at, completed_at")
+      .eq("token", data.token)
+      .maybeSingle();
+    if (!link || link.kind !== "feedback" || link.completed_at || new Date(link.expires_at) < new Date()) {
+      throw new Error("This link is no longer valid.");
+    }
+
+    const happy = data.rating >= 4;
+    const { error } = await supabaseAdmin.from("patient_feedback").insert({
+      patient_id: link.patient_id,
+      appointment_id: link.appointment_id,
+      rating: data.rating,
+      comment: data.comment ?? null,
+      is_complaint: !happy,
+    });
+    if (error) throw new Error(error.message);
+
+    await supabaseAdmin
+      .from("patient_links")
+      .update({ completed_at: new Date().toISOString() })
+      .eq("id", link.id);
+
+    const { data: clinic } = await supabaseAdmin
+      .from("clinic_profile")
+      .select("google_review_link")
+      .limit(1)
+      .maybeSingle();
+
+    return {
+      ok: true,
+      happy,
+      reviewLink: happy ? (clinic?.google_review_link ?? null) : null,
+    };
+  });
+
+/** Public: records that the patient opened the Google review link. */
+export const markReviewClicked = createServerFn({ method: "POST" })
+  .inputValidator((data: unknown) => tokenSchema.parse(data))
+  .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: link } = await supabaseAdmin
+      .from("patient_links")
+      .select("appointment_id, patient_id, kind")
+      .eq("token", data.token)
+      .maybeSingle();
+    if (!link || link.kind !== "feedback") return { ok: false };
+    const query = supabaseAdmin.from("patient_feedback").update({ review_link_clicked: true });
+    if (link.appointment_id) await query.eq("appointment_id", link.appointment_id);
+    else if (link.patient_id) await query.eq("patient_id", link.patient_id);
+    return { ok: true };
   });
 
 /** Public: patient submits their pre-visit intake answers. */

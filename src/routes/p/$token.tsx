@@ -10,8 +10,10 @@ import { primaryButton } from "@/components/clinic/AppShell";
 import {
   confirmAppointment,
   getPatientLink,
+  markReviewClicked,
   requestReschedule,
   submitConsent,
+  submitFeedback,
   submitIntake,
 } from "@/lib/patient-links.functions";
 
@@ -54,10 +56,15 @@ function PatientLinkPage() {
   const consent = useServerFn(submitConsent);
   const doConfirm = useServerFn(confirmAppointment);
   const doReschedule = useServerFn(requestReschedule);
+  const doFeedback = useServerFn(submitFeedback);
+  const noteReviewClick = useServerFn(markReviewClicked);
   const [done, setDone] = useState(false);
   const [doneMessage, setDoneMessage] = useState<string | null>(null);
+  const [reviewLink, setReviewLink] = useState<string | null>(null);
   const [showReschedule, setShowReschedule] = useState(false);
   const [signature, setSignature] = useState<string | null>(null);
+  const [rating, setRating] = useState(0);
+
 
   const link = useQuery({
     queryKey: ["patient_link", token],
@@ -93,6 +100,21 @@ function PatientLinkPage() {
     },
     onError: (e: Error) => toast.error(e.message),
   });
+  const feedbackMut = useMutation({
+    mutationFn: (values: { rating: number; comment: string }) =>
+      doFeedback({ data: { token, rating: values.rating, comment: values.comment || null } }),
+    onSuccess: (res) => {
+      setReviewLink(res.reviewLink ?? null);
+      setDoneMessage(
+        res.happy
+          ? "Thank you — we're glad it went well."
+          : "Thank you for telling us. Our team will reach out to put this right.",
+      );
+      setDone(true);
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
 
   if (link.isLoading) return <Shell><p className="text-sm text-muted-foreground">Loading…</p></Shell>;
   const data = link.data;
@@ -121,9 +143,21 @@ function PatientLinkPage() {
         <p className="text-sm text-muted-foreground">
           {doneMessage ?? `Your details have been sent to ${data.clinicName}. You can close this page.`}
         </p>
+        {reviewLink ? (
+          <a
+            href={reviewLink}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={primaryButton}
+            onClick={() => void noteReviewClick({ data: { token } })}
+          >
+            Leave a Google review
+          </a>
+        ) : null}
       </Shell>
     );
   }
+
 
   return (
     <Shell>
@@ -134,18 +168,69 @@ function PatientLinkPage() {
             ? "Pre-visit details"
             : data.kind === "consent"
               ? "Treatment consent"
-              : "Your appointment"}
+              : data.kind === "feedback"
+                ? "How was your visit?"
+                : "Your appointment"}
         </h1>
         <p className="text-sm text-muted-foreground">
           {data.kind === "intake"
             ? "Confirm your details so we can prepare for your visit."
             : data.kind === "consent"
               ? "Please read and sign the consent form below."
-              : `Hello ${data.patientName}, please confirm you can make it.`}
+              : data.kind === "feedback"
+                ? `Hello ${data.patientName}, a quick rating helps us look after you better.`
+                : `Hello ${data.patientName}, please confirm you can make it.`}
         </p>
       </header>
 
-      {data.kind === "appointment" ? (
+      {data.kind === "feedback" ? (
+        <form
+          className="grid gap-5 rounded-xl border border-border bg-card p-5"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (rating === 0) {
+              toast.error("Please pick a rating first");
+              return;
+            }
+            const fd = new FormData(e.currentTarget);
+            feedbackMut.mutate({ rating, comment: String(fd.get("comment") ?? "") });
+          }}
+        >
+          <div
+            role="radiogroup"
+            aria-label="Rate your visit from 1 to 5"
+            className="flex items-center justify-between gap-2"
+          >
+            {[1, 2, 3, 4, 5].map((n) => (
+              <button
+                key={n}
+                type="button"
+                role="radio"
+                aria-checked={rating === n}
+                aria-label={`${n} star${n === 1 ? "" : "s"}`}
+                onClick={() => setRating(n)}
+                className={`flex size-12 items-center justify-center rounded-full border text-lg transition-colors ${
+                  rating >= n
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : "border-border text-muted-foreground hover:border-primary"
+                }`}
+              >
+                ★
+              </button>
+            ))}
+          </div>
+          <p className="-mt-3 text-center text-xs text-muted-foreground">
+            {rating === 0 ? "Tap a star" : rating >= 4 ? "Glad to hear it!" : "Sorry to hear that — tell us more."}
+          </p>
+          <Field label={rating > 0 && rating < 4 ? "What went wrong?" : "Anything to add? (optional)"}>
+            <textarea name="comment" className={textareaClass} />
+          </Field>
+          <button className={primaryButton} disabled={feedbackMut.isPending}>
+            {feedbackMut.isPending ? "Sending…" : "Send feedback"}
+          </button>
+        </form>
+      ) : data.kind === "appointment" ? (
+
         <div className="grid gap-4 rounded-xl border border-border bg-card p-5">
           <div className="rounded-lg border border-border bg-background p-4 text-sm">
             <p className="font-medium">

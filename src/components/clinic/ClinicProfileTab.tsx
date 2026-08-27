@@ -17,6 +17,7 @@ const FIELDS = [
   "phone",
   "email",
   "invoice_prefix",
+  "google_review_link",
   "declaration",
 ] as const;
 
@@ -160,7 +161,21 @@ export function ClinicProfileTab() {
               onChange={(e) => set("invoice_prefix")(e.target.value.toUpperCase())}
             />
           </Field>
+          <Field label="Google review link">
+            <input
+              type="url"
+              placeholder="https://g.page/r/…/review"
+              className={inputClass}
+              value={form.google_review_link}
+              onChange={(e) => set("google_review_link")(e.target.value)}
+            />
+          </Field>
         </div>
+        <p className="-mt-1 text-xs text-muted-foreground">
+          Patients who rate you 4–5 after a visit are sent straight to this link. Lower ratings stay
+          in-house as a complaint for the front desk.
+        </p>
+
 
         <Field label="Declaration">
           <textarea

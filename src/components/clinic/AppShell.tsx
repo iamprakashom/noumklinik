@@ -8,6 +8,7 @@ import {
   BarChart3,
   LayoutDashboard,
   LogOut,
+  Search,
   Settings,
   Sparkles,
   Stethoscope,
@@ -16,6 +17,7 @@ import {
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
+import { CommandPalette } from "@/components/clinic/CommandPalette";
 
 const NAV = [
   { to: "/dashboard", label: "Today", icon: LayoutDashboard },
@@ -99,13 +101,28 @@ export function AppShell({
               <p className="mt-0.5 text-xs text-muted-foreground">{subtitle}</p>
             ) : null}
           </div>
-          <div className="flex items-center gap-2">{actions}</div>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() =>
+                window.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true }))
+              }
+              className="hidden items-center gap-2 rounded-md border border-border bg-card px-2.5 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-secondary sm:inline-flex"
+            >
+              <Search className="size-3.5" />
+              Search
+              <kbd className="rounded border border-border px-1 text-[10px]">⌘K</kbd>
+            </button>
+            {actions}
+          </div>
         </header>
         <main className="min-w-0 flex-1 p-8">{children}</main>
       </div>
+      <CommandPalette />
     </div>
   );
 }
+
 
 export const primaryButton =
   "inline-flex h-9 items-center gap-1.5 rounded-md bg-primary px-3.5 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90";

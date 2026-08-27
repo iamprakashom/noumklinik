@@ -52,13 +52,17 @@ export const Route = createFileRoute("/_authenticated/appointments")({
       },
     ],
   }),
+  validateSearch: (search: Record<string, unknown>): { new?: boolean } =>
+    search["new"] === true || search["new"] === "true" ? { new: true } : {},
   component: AppointmentsPage,
 });
 
 type RangeKey = "today" | "upcoming" | "past" | "all";
 
 function AppointmentsPage() {
-  const [open, setOpen] = useState(false);
+  const { new: openNew } = Route.useSearch();
+  const [open, setOpen] = useState(openNew ?? false);
+  const [quickAdd, setQuickAdd] = useState(false);
   const [reschedule, setReschedule] = useState<Appointment | null>(null);
   const [range, setRange] = useState<RangeKey>("upcoming");
   const [sourceFilter, setSourceFilter] = useState("all");
@@ -79,6 +83,7 @@ function AppointmentsPage() {
     );
   };
   const createAppointment = useInsert("appointments");
+  const createPatient = useInsert("patients");
   const updateAppointment = useUpdate("appointments");
   const sendReminder = useServerFn(sendAppointmentReminder);
 
@@ -115,12 +120,46 @@ function AppointmentsPage() {
   const patch = (id: string, values: Record<string, unknown>, msg = "Appointment updated") =>
     updateAppointment.mutate({ id, values }, { onSuccess: () => toast.success(msg) });
 
-  function submit(form: HTMLFormElement) {
+  async function submit(form: HTMLFormElement) {
     const fd = new FormData(form);
     const service = services.data?.find((s) => s.id === String(fd.get("service_id")));
+
+    let patientId = String(fd.get("patient_id") ?? "");
+    if (quickAdd) {
+      const name = String(fd.get("new_patient_name") ?? "").trim();
+      const phone = String(fd.get("new_patient_phone") ?? "").trim();
+      if (!name || !phone) {
+        toast.error("New patient needs a name and mobile number");
+        return;
+      }
+      const existing = patients.data?.find((p) => (p.phone ?? "").replace(/\D/g, "") === phone.replace(/\D/g, ""));
+      if (existing) {
+        patientId = existing.id;
+        toast.info(`${patientName(existing)} already exists — booking against that record`);
+      } else {
+        const [first, ...rest] = name.split(" ");
+        try {
+          const rows = (await createPatient.mutateAsync({
+            first_name: first ?? name,
+            last_name: rest.join(" ") || "—",
+            phone,
+            source: "Walk-in",
+          })) as { id: string }[];
+          patientId = rows[0]?.id ?? "";
+        } catch (e) {
+          toast.error((e as Error).message);
+          return;
+        }
+      }
+    }
+    if (!patientId) {
+      toast.error("Pick a patient first");
+      return;
+    }
+
     createAppointment.mutate(
       {
-        patient_id: String(fd.get("patient_id")),
+        patient_id: patientId,
         provider_id: String(fd.get("provider_id")) || null,
         room_id: String(fd.get("room_id")) || null,
         service_id: service?.id ?? null,
@@ -134,12 +173,14 @@ function AppointmentsPage() {
       {
         onSuccess: () => {
           toast.success("Appointment booked");
+          setQuickAdd(false);
           setOpen(false);
         },
         onError: (e) => toast.error(e.message),
       },
     );
   }
+
 
   return (
     <AppShell
@@ -435,18 +476,39 @@ function AppointmentsPage() {
             className="grid gap-4 sm:grid-cols-2"
             onSubmit={(e) => {
               e.preventDefault();
-              submit(e.currentTarget);
+              void submit(e.currentTarget);
             }}
           >
-            <Field label="Patient" className="sm:col-span-2">
-              <select name="patient_id" required className={inputClass}>
-                {patients.data?.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {patientName(p)}
-                  </option>
-                ))}
-              </select>
-            </Field>
+            <div className="sm:col-span-2">
+              {quickAdd ? (
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <Field label="New patient name">
+                    <input name="new_patient_name" required className={inputClass} autoFocus />
+                  </Field>
+                  <Field label="Mobile number">
+                    <input name="new_patient_phone" inputMode="tel" required className={inputClass} />
+                  </Field>
+                </div>
+              ) : (
+                <Field label="Patient">
+                  <select name="patient_id" required className={inputClass}>
+                    {patients.data?.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {patientName(p)}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+              )}
+              <button
+                type="button"
+                className="mt-1.5 text-xs text-primary underline"
+                onClick={() => setQuickAdd((v) => !v)}
+              >
+                {quickAdd ? "Choose an existing patient" : "New patient — add name & mobile only"}
+              </button>
+            </div>
+
             <Field label="Treatment type">
               <select name="service_id" className={inputClass}>
                 {services.data?.map((s) => (

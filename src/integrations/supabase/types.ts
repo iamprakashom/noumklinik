@@ -279,6 +279,7 @@ export type Database = {
           created_at: string
           declaration: string
           email: string | null
+          google_review_link: string | null
           gstin: string | null
           id: string
           invoice_prefix: string
@@ -298,6 +299,7 @@ export type Database = {
           created_at?: string
           declaration?: string
           email?: string | null
+          google_review_link?: string | null
           gstin?: string | null
           id?: string
           invoice_prefix?: string
@@ -317,6 +319,7 @@ export type Database = {
           created_at?: string
           declaration?: string
           email?: string | null
+          google_review_link?: string | null
           gstin?: string | null
           id?: string
           invoice_prefix?: string
@@ -1022,6 +1025,63 @@ export type Database = {
             columns: ["template_id"]
             isOneToOne: false
             referencedRelation: "consent_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      patient_feedback: {
+        Row: {
+          appointment_id: string | null
+          comment: string | null
+          created_at: string
+          id: string
+          is_complaint: boolean
+          patient_id: string | null
+          rating: number
+          resolved_at: string | null
+          resolved_by: string | null
+          review_link_clicked: boolean
+          updated_at: string
+        }
+        Insert: {
+          appointment_id?: string | null
+          comment?: string | null
+          created_at?: string
+          id?: string
+          is_complaint?: boolean
+          patient_id?: string | null
+          rating: number
+          resolved_at?: string | null
+          resolved_by?: string | null
+          review_link_clicked?: boolean
+          updated_at?: string
+        }
+        Update: {
+          appointment_id?: string | null
+          comment?: string | null
+          created_at?: string
+          id?: string
+          is_complaint?: boolean
+          patient_id?: string | null
+          rating?: number
+          resolved_at?: string | null
+          resolved_by?: string | null
+          review_link_clicked?: boolean
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "patient_feedback_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "patient_feedback_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
             referencedColumns: ["id"]
           },
         ]

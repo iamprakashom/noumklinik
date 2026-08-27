@@ -8,11 +8,15 @@ import {
   useAppointments,
   useInvoices,
   usePackageRedemptions,
+  usePatientFeedback,
   usePatients,
   usePayments,
   useProviders,
   useServices,
+  useUpdate,
 } from "@/lib/clinic-data";
+import { toast } from "sonner";
+
 
 export const Route = createFileRoute("/_authenticated/reports")({
   head: () => ({
@@ -75,6 +79,9 @@ function ReportsPage() {
   const services = useServices();
   const appointments = useAppointments();
   const redemptions = usePackageRedemptions();
+  const feedback = usePatientFeedback();
+  const updateFeedback = useUpdate("patient_feedback");
+
 
   const patientOf = (id: string) => patients.data?.find((p) => p.id === id);
   const providerName = (id: string | null) =>
@@ -191,6 +198,27 @@ function ReportsPage() {
     };
   }, [invoices.data, appointments.data, redemptions.data, services.data, from, to]);
 
+  /* ----------------------------- Feedback ------------------------------ */
+  const reviews = useMemo(() => {
+    const rows = (feedback.data ?? []).filter((f) => {
+      const d = f.created_at.slice(0, 10);
+      return d >= from && d <= to;
+    });
+    const total = rows.length;
+    const avg = total ? rows.reduce((s, r) => s + r.rating, 0) / total : 0;
+    const promoters = rows.filter((r) => r.rating >= 4).length;
+    const complaints = rows.filter((r) => r.is_complaint);
+    return {
+      rows,
+      total,
+      avg,
+      promoters,
+      clicked: rows.filter((r) => r.review_link_clicked).length,
+      openComplaints: complaints.filter((c) => !c.resolved_at),
+      complaints,
+    };
+  }, [feedback.data, from, to]);
+
   return (
     <AppShell title="Reports" subtitle="Day close, outstanding dues and revenue attribution">
       <Tabs defaultValue="day-close">
@@ -198,7 +226,9 @@ function ReportsPage() {
           <TabsTrigger value="day-close">Day close</TabsTrigger>
           <TabsTrigger value="dues">Outstanding dues</TabsTrigger>
           <TabsTrigger value="incentives">Doctor & service revenue</TabsTrigger>
+          <TabsTrigger value="feedback">Feedback & reviews</TabsTrigger>
         </TabsList>
+
 
         {/* --------------------------- Day close --------------------------- */}
         <TabsContent value="day-close" className="mt-4 space-y-6">
@@ -396,6 +426,105 @@ function ReportsPage() {
             </Panel>
           </div>
         </TabsContent>
+
+        {/* --------------------------- Feedback --------------------------- */}
+        <TabsContent value="feedback" className="mt-4 space-y-6">
+          <div className="flex flex-wrap items-end gap-3">
+            <Field label="From" className="w-44">
+              <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className={inputClass} />
+            </Field>
+            <Field label="To" className="w-44">
+              <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className={inputClass} />
+            </Field>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <StatCard
+              label="Average rating"
+              value={reviews.total ? reviews.avg.toFixed(1) : "—"}
+              hint={`${reviews.total} response${reviews.total === 1 ? "" : "s"}`}
+            />
+            <StatCard
+              label="Happy (4–5★)"
+              value={String(reviews.promoters)}
+              hint={`${reviews.total ? Math.round((reviews.promoters / reviews.total) * 100) : 0}% of responses`}
+            />
+            <StatCard
+              label="Review link opened"
+              value={String(reviews.clicked)}
+              hint="Patients sent to Google"
+            />
+            <StatCard
+              label="Open complaints"
+              value={String(reviews.openComplaints.length)}
+              hint="1–3★ awaiting a call back"
+            />
+          </div>
+
+          <Panel title="Complaints to handle">
+            {reviews.complaints.length === 0 ? (
+              <EmptyState>No low ratings in this range.</EmptyState>
+            ) : (
+              <ul className="divide-y divide-border">
+                {reviews.complaints.map((f) => {
+                  const pt = f.patient_id ? patientOf(f.patient_id) : undefined;
+                  return (
+                    <li key={f.id} className="flex items-start gap-3 py-3 first:pt-0 last:pb-0">
+                      <Chip tone={f.rating <= 2 ? "overdue" : "progress"}>{f.rating}★</Chip>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium">{pt ? patientName(pt) : "Patient"}</p>
+                        {f.comment ? (
+                          <p className="mt-0.5 text-xs text-muted-foreground">{f.comment}</p>
+                        ) : null}
+                        <p className="mt-0.5 text-[11px] text-muted-foreground">
+                          {formatDate(f.created_at)}
+                          {pt?.phone ? ` · ${pt.phone}` : ""}
+                        </p>
+                      </div>
+                      {f.resolved_at ? (
+                        <Chip tone="completed">Resolved</Chip>
+                      ) : (
+                        <button
+                          className="h-8 shrink-0 rounded-md border border-border px-3 text-xs hover:bg-secondary"
+                          onClick={() =>
+                            updateFeedback.mutate(
+                              { id: f.id, values: { resolved_at: new Date().toISOString() } },
+                              { onSuccess: () => toast.success("Marked resolved") },
+                            )
+                          }
+                        >
+                          Mark resolved
+                        </button>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </Panel>
+
+          <Panel title="All responses">
+            {reviews.rows.length === 0 ? (
+              <EmptyState>No feedback collected yet. Add {"{{feedback_link}}"} to a post-treatment automation.</EmptyState>
+            ) : (
+              <ul className="divide-y divide-border">
+                {reviews.rows.map((f) => {
+                  const pt = f.patient_id ? patientOf(f.patient_id) : undefined;
+                  return (
+                    <Row
+                      key={f.id}
+                      label={pt ? patientName(pt) : "Patient"}
+                      hint={`${formatDate(f.created_at)}${f.comment ? ` · ${f.comment}` : ""}`}
+                      value={`${f.rating}★`}
+                      tone={f.rating >= 4 ? "completed" : f.rating === 3 ? "progress" : "overdue"}
+                    />
+                  );
+                })}
+              </ul>
+            )}
+          </Panel>
+        </TabsContent>
+
       </Tabs>
     </AppShell>
   );
