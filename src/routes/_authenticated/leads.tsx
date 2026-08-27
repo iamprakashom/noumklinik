@@ -90,7 +90,7 @@ function pageNumbers(page: number, pageCount: number): (number | null)[] {
   const list = [...around].filter((p) => p >= 1 && p <= pageCount).sort((a, b) => a - b);
   const out: (number | null)[] = [];
   list.forEach((p, i) => {
-    if (i > 0 && p - list[i - 1] > 1) out.push(null);
+    if (i > 0 && p - (list[i - 1] ?? p) > 1) out.push(null);
     out.push(p);
   });
   return out;
