@@ -258,7 +258,7 @@ function LeadsPage() {
         ]}
         sort={{
           value: sort,
-          onChange: (v) => setSort(v as SortKey),
+          onChange: (v: string) => setSort(v as SortKey),
           options: [
             { value: "oldest", label: "Ageing · oldest first" },
             { value: "newest", label: "Ageing · newest first" },
