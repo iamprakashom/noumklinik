@@ -198,6 +198,27 @@ function ReportsPage() {
     };
   }, [invoices.data, appointments.data, redemptions.data, services.data, from, to]);
 
+  /* ----------------------------- Feedback ------------------------------ */
+  const reviews = useMemo(() => {
+    const rows = (feedback.data ?? []).filter((f) => {
+      const d = f.created_at.slice(0, 10);
+      return d >= from && d <= to;
+    });
+    const total = rows.length;
+    const avg = total ? rows.reduce((s, r) => s + r.rating, 0) / total : 0;
+    const promoters = rows.filter((r) => r.rating >= 4).length;
+    const complaints = rows.filter((r) => r.is_complaint);
+    return {
+      rows,
+      total,
+      avg,
+      promoters,
+      clicked: rows.filter((r) => r.review_link_clicked).length,
+      openComplaints: complaints.filter((c) => !c.resolved_at),
+      complaints,
+    };
+  }, [feedback.data, from, to]);
+
   return (
     <AppShell title="Reports" subtitle="Day close, outstanding dues and revenue attribution">
       <Tabs defaultValue="day-close">
@@ -205,7 +226,9 @@ function ReportsPage() {
           <TabsTrigger value="day-close">Day close</TabsTrigger>
           <TabsTrigger value="dues">Outstanding dues</TabsTrigger>
           <TabsTrigger value="incentives">Doctor & service revenue</TabsTrigger>
+          <TabsTrigger value="feedback">Feedback & reviews</TabsTrigger>
         </TabsList>
+
 
         {/* --------------------------- Day close --------------------------- */}
         <TabsContent value="day-close" className="mt-4 space-y-6">
