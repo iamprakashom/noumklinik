@@ -20,6 +20,7 @@ import { Route as AuthenticatedInboxRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedLeadsRouteImport } from './routes/_authenticated/leads'
 import { Route as AuthenticatedReportsRouteImport } from './routes/_authenticated/reports'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
+import { Route as PTokenRouteImport } from './routes/p/$token'
 import { Route as AuthenticatedPatientsIndexRouteImport } from './routes/_authenticated/patients/index'
 import { Route as AuthenticatedPatientsPatientIdRouteImport } from './routes/_authenticated/patients/$patientId'
 import { Route as ApiPublicHooksCashfreeRouteImport } from './routes/api/public/hooks/cashfree'
@@ -85,6 +86,11 @@ const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const PTokenRoute = PTokenRouteImport.update({
+  id: '/p/$token',
+  path: '/p/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedPatientsIndexRoute =
   AuthenticatedPatientsIndexRouteImport.update({
     id: '/patients/',
@@ -141,6 +147,7 @@ export interface FileRoutesByFullPath {
   '/leads': typeof AuthenticatedLeadsRoute
   '/reports': typeof AuthenticatedReportsRoute
   '/settings': typeof AuthenticatedSettingsRoute
+  '/p/$token': typeof PTokenRoute
   '/patients/$patientId': typeof AuthenticatedPatientsPatientIdRoute
   '/patients/': typeof AuthenticatedPatientsIndexRoute
   '/api/public/hooks/cashfree': typeof ApiPublicHooksCashfreeRoute
@@ -161,6 +168,7 @@ export interface FileRoutesByTo {
   '/leads': typeof AuthenticatedLeadsRoute
   '/reports': typeof AuthenticatedReportsRoute
   '/settings': typeof AuthenticatedSettingsRoute
+  '/p/$token': typeof PTokenRoute
   '/patients/$patientId': typeof AuthenticatedPatientsPatientIdRoute
   '/patients': typeof AuthenticatedPatientsIndexRoute
   '/api/public/hooks/cashfree': typeof ApiPublicHooksCashfreeRoute
@@ -183,6 +191,7 @@ export interface FileRoutesById {
   '/_authenticated/leads': typeof AuthenticatedLeadsRoute
   '/_authenticated/reports': typeof AuthenticatedReportsRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
+  '/p/$token': typeof PTokenRoute
   '/_authenticated/patients/$patientId': typeof AuthenticatedPatientsPatientIdRoute
   '/_authenticated/patients/': typeof AuthenticatedPatientsIndexRoute
   '/api/public/hooks/cashfree': typeof ApiPublicHooksCashfreeRoute
@@ -205,6 +214,7 @@ export interface FileRouteTypes {
     | '/leads'
     | '/reports'
     | '/settings'
+    | '/p/$token'
     | '/patients/$patientId'
     | '/patients/'
     | '/api/public/hooks/cashfree'
@@ -225,6 +235,7 @@ export interface FileRouteTypes {
     | '/leads'
     | '/reports'
     | '/settings'
+    | '/p/$token'
     | '/patients/$patientId'
     | '/patients'
     | '/api/public/hooks/cashfree'
@@ -246,6 +257,7 @@ export interface FileRouteTypes {
     | '/_authenticated/leads'
     | '/_authenticated/reports'
     | '/_authenticated/settings'
+    | '/p/$token'
     | '/_authenticated/patients/$patientId'
     | '/_authenticated/patients/'
     | '/api/public/hooks/cashfree'
@@ -260,6 +272,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  PTokenRoute: typeof PTokenRoute
   ApiPublicHooksCashfreeRoute: typeof ApiPublicHooksCashfreeRoute
   ApiPublicHooksMetaLeadsRoute: typeof ApiPublicHooksMetaLeadsRoute
   ApiPublicHooksMetaOauthCallbackRoute: typeof ApiPublicHooksMetaOauthCallbackRoute
@@ -346,6 +359,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/settings'
       preLoaderRoute: typeof AuthenticatedSettingsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/p/$token': {
+      id: '/p/$token'
+      path: '/p/$token'
+      fullPath: '/p/$token'
+      preLoaderRoute: typeof PTokenRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_authenticated/patients/': {
       id: '/_authenticated/patients/'
@@ -439,6 +459,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  PTokenRoute: PTokenRoute,
   ApiPublicHooksCashfreeRoute: ApiPublicHooksCashfreeRoute,
   ApiPublicHooksMetaLeadsRoute: ApiPublicHooksMetaLeadsRoute,
   ApiPublicHooksMetaOauthCallbackRoute: ApiPublicHooksMetaOauthCallbackRoute,
