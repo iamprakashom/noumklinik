@@ -273,7 +273,7 @@ function Automations() {
                   trigger_type: String(fd.get("trigger_type")),
                   offset_hours: Number(fd.get("offset_hours")) || 0,
                   channel: String(fd.get("channel")),
-                  template_id: String(fd.get("template_id")) || null,
+                  template_id: (fd.get("template_id") as string | null)?.trim() || null,
                   enabled: true,
                 },
                 {
@@ -311,7 +311,8 @@ function Automations() {
               </select>
             </Field>
             <Field label="Template">
-              <select name="template_id" className={inputClass}>
+              <select name="template_id" className={inputClass} defaultValue="">
+                <option value="">No template</option>
                 {templates.data?.map((t) => (
                   <option key={t.id} value={t.id}>
                     {t.name}
@@ -346,7 +347,7 @@ function Automations() {
                 {
                   name: String(fd.get("name")),
                   channel: String(fd.get("channel")),
-                  subject: String(fd.get("subject")) || null,
+                  subject: (fd.get("subject") as string | null)?.trim() || null,
                   body: String(fd.get("body")),
                 },
                 {
