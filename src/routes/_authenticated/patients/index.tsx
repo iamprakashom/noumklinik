@@ -219,7 +219,11 @@ function PatientsPage() {
               <input name="birth_date" type="date" className={inputClass} />
             </Field>
             <Field label="Gender">
-              <input name="gender" className={inputClass} />
+              <select name="gender" className={inputClass} defaultValue="">
+                <option value="">Not specified</option>
+                <option value="Female">Female</option>
+                <option value="Male">Male</option>
+              </select>
             </Field>
             <Field label="Source">
               <select name="source" className={inputClass}>
