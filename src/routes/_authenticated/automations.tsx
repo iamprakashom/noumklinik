@@ -311,7 +311,8 @@ function Automations() {
               </select>
             </Field>
             <Field label="Template">
-              <select name="template_id" className={inputClass}>
+              <select name="template_id" className={inputClass} defaultValue="">
+                <option value="">No template</option>
                 {templates.data?.map((t) => (
                   <option key={t.id} value={t.id}>
                     {t.name}
