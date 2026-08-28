@@ -273,7 +273,7 @@ function Automations() {
                   trigger_type: String(fd.get("trigger_type")),
                   offset_hours: Number(fd.get("offset_hours")) || 0,
                   channel: String(fd.get("channel")),
-                  template_id: String(fd.get("template_id")) || null,
+                  template_id: (fd.get("template_id") as string | null)?.trim() || null,
                   enabled: true,
                 },
                 {
@@ -346,7 +346,7 @@ function Automations() {
                 {
                   name: String(fd.get("name")),
                   channel: String(fd.get("channel")),
-                  subject: String(fd.get("subject")) || null,
+                  subject: (fd.get("subject") as string | null)?.trim() || null,
                   body: String(fd.get("body")),
                 },
                 {
