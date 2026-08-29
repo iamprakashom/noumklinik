@@ -1,20 +1,29 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
-/** Public: everything the self-serve booking page needs to render. */
-export const getBookingOptions = createServerFn({ method: "GET" }).handler(async () => {
+/** Public: everything the self-serve booking page needs to render, for one clinic. */
+export const getBookingOptions = createServerFn({ method: "GET" })
+  .inputValidator((data: unknown) => z.object({ clinicId: z.string().uuid() }).parse(data))
+  .handler(async ({ data }) => {
+  const clinicId = data.clinicId;
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const [servicesRes, providersRes, clinicRes] = await Promise.all([
     supabaseAdmin
       .from("services")
       .select("id, name, category, duration_min, price")
+      .eq("clinic_id", clinicId)
       .eq("active", true)
       .order("name"),
-    supabaseAdmin.from("providers").select("id, name, title").eq("active", true).order("name"),
+    supabaseAdmin
+      .from("providers")
+      .select("id, name, title")
+      .eq("clinic_id", clinicId)
+      .eq("active", true)
+      .order("name"),
     supabaseAdmin
       .from("clinic_profile")
       .select("trade_name, legal_name, phone, city")
-      .limit(1)
+      .eq("clinic_id", clinicId)
       .maybeSingle(),
   ]);
 
@@ -34,6 +43,7 @@ export const requestBooking = createServerFn({ method: "POST" })
   .inputValidator((data: unknown) =>
     z
       .object({
+        clinicId: z.string().uuid(),
         full_name: z.string().min(2).max(120),
         phone: z.string().min(6).max(20),
         email: z.string().email().nullable().optional(),
@@ -58,12 +68,14 @@ export const requestBooking = createServerFn({ method: "POST" })
       const { data: existing } = await supabaseAdmin
         .from("patients")
         .select("id, phone")
+        .eq("clinic_id", data.clinicId)
         .ilike("phone", `%${digits}%`)
         .limit(1);
       patientId = existing?.[0]?.id ?? null;
     }
 
     const { error } = await supabaseAdmin.from("appointment_requests").insert({
+      clinic_id: data.clinicId,
       full_name: data.full_name,
       phone: data.phone,
       email: data.email ?? null,
