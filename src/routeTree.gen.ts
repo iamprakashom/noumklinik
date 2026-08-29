@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as BookRouteImport } from './routes/book'
+import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as AuthenticatedAppointmentsRouteImport } from './routes/_authenticated/appointments'
 import { Route as AuthenticatedAutomationsRouteImport } from './routes/_authenticated/automations'
 import { Route as AuthenticatedBillingRouteImport } from './routes/_authenticated/billing'
@@ -48,6 +49,11 @@ const AuthRoute = AuthRouteImport.update({
 const BookRoute = BookRouteImport.update({
   id: '/book',
   path: '/book',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OnboardingRoute = OnboardingRouteImport.update({
+  id: '/onboarding',
+  path: '/onboarding',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedAppointmentsRoute =
@@ -146,6 +152,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/book': typeof BookRoute
+  '/onboarding': typeof OnboardingRoute
   '/appointments': typeof AuthenticatedAppointmentsRoute
   '/automations': typeof AuthenticatedAutomationsRoute
   '/billing': typeof AuthenticatedBillingRoute
@@ -168,6 +175,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/book': typeof BookRoute
+  '/onboarding': typeof OnboardingRoute
   '/appointments': typeof AuthenticatedAppointmentsRoute
   '/automations': typeof AuthenticatedAutomationsRoute
   '/billing': typeof AuthenticatedBillingRoute
@@ -192,6 +200,7 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/book': typeof BookRoute
+  '/onboarding': typeof OnboardingRoute
   '/_authenticated/appointments': typeof AuthenticatedAppointmentsRoute
   '/_authenticated/automations': typeof AuthenticatedAutomationsRoute
   '/_authenticated/billing': typeof AuthenticatedBillingRoute
@@ -216,6 +225,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/book'
+    | '/onboarding'
     | '/appointments'
     | '/automations'
     | '/billing'
@@ -238,6 +248,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/book'
+    | '/onboarding'
     | '/appointments'
     | '/automations'
     | '/billing'
@@ -261,6 +272,7 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/auth'
     | '/book'
+    | '/onboarding'
     | '/_authenticated/appointments'
     | '/_authenticated/automations'
     | '/_authenticated/billing'
@@ -285,6 +297,7 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
   BookRoute: typeof BookRoute
+  OnboardingRoute: typeof OnboardingRoute
   PTokenRoute: typeof PTokenRoute
   ApiPublicHooksCashfreeRoute: typeof ApiPublicHooksCashfreeRoute
   ApiPublicHooksMetaLeadsRoute: typeof ApiPublicHooksMetaLeadsRoute
@@ -322,6 +335,13 @@ declare module '@tanstack/react-router' {
       path: '/book'
       fullPath: '/book'
       preLoaderRoute: typeof BookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/onboarding': {
+      id: '/onboarding'
+      path: '/onboarding'
+      fullPath: '/onboarding'
+      preLoaderRoute: typeof OnboardingRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/appointments': {
@@ -480,6 +500,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
   BookRoute: BookRoute,
+  OnboardingRoute: OnboardingRoute,
   PTokenRoute: PTokenRoute,
   ApiPublicHooksCashfreeRoute: ApiPublicHooksCashfreeRoute,
   ApiPublicHooksMetaLeadsRoute: ApiPublicHooksMetaLeadsRoute,
