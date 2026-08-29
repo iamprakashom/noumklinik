@@ -203,9 +203,9 @@ export const updateTeamMember = createServerFn({ method: "POST" })
       if ((count ?? 0) <= 1) throw new Error("A clinic needs at least one admin");
     }
 
-    const values: Record<string, unknown> = {};
-    if (data.role) values['role'] = data.role;
-    if (data.status) values['status'] = data.status;
+    const values: { role?: "admin" | "provider" | "front_desk"; status?: string } = {};
+    if (data.role) values.role = data.role;
+    if (data.status) values.status = data.status;
 
     const { error } = await context.supabase.from("clinic_members").update(values).eq("id", data.id);
     if (error) {
