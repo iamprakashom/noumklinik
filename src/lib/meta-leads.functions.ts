@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { requireClinicId } from "@/lib/clinic.server";
 
 async function assertAdmin(context: { supabase: { rpc: Function }; userId: string }, action: string) {
   const { data: isAdmin, error } = await (context.supabase as never as {
@@ -15,8 +16,9 @@ export const getLeadCaptureStatus = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await assertAdmin(context, "view lead capture settings");
+    const clinicId = await requireClinicId(context.supabase);
     const m = await import("@/lib/meta-leads.server");
-    const conn = await m.loadConnection();
+    const conn = await m.loadConnection(clinicId);
     const configured = m.metaAppConfig().configured;
     if (!conn) return { configured, connection: null, forms: [], recentLeads: 0 };
 
@@ -25,6 +27,7 @@ export const getLeadCaptureStatus = createServerFn({ method: "GET" })
     const { count } = await supabaseAdmin
       .from("leads")
       .select("id", { count: "exact", head: true })
+      .eq("clinic_id", clinicId)
       .eq("source_group", "Meta Ads")
       .gte("created_at", since);
 
@@ -63,12 +66,13 @@ export const startMetaConnect = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => z.object({ origin: z.string().url() }).parse(input))
   .handler(async ({ data, context }) => {
     await assertAdmin(context, "connect a Facebook page");
+    const clinicId = await requireClinicId(context.supabase);
     const m = await import("@/lib/meta-leads.server");
     if (!m.metaAppConfig().configured) {
       throw new Error("Facebook app credentials are not configured yet.");
     }
     const redirectUri = `${data.origin}/api/public/hooks/meta-oauth-callback`;
-    return { url: m.loginUrl(redirectUri, await m.signState()) };
+    return { url: m.loginUrl(redirectUri, await m.signState(clinicId)) };
   });
 
 /** Pages the connected Facebook user manages. */
@@ -76,8 +80,9 @@ export const listMetaPages = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await assertAdmin(context, "view Facebook pages");
+    const clinicId = await requireClinicId(context.supabase);
     const m = await import("@/lib/meta-leads.server");
-    const conn = await m.loadConnection();
+    const conn = await m.loadConnection(clinicId);
     if (!conn?.user_access_token) return [];
     const pages = await m.listPages(conn.user_access_token);
     return pages.map((p) => ({ id: p.id, name: p.name, picture: p.picture }));
@@ -89,8 +94,9 @@ export const selectMetaPage = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => z.object({ pageId: z.string().min(1) }).parse(input))
   .handler(async ({ data, context }) => {
     await assertAdmin(context, "connect a Facebook page");
+    const clinicId = await requireClinicId(context.supabase);
     const m = await import("@/lib/meta-leads.server");
-    const conn = await m.loadConnection();
+    const conn = await m.loadConnection(clinicId);
     if (!conn?.user_access_token) throw new Error("Connect Facebook first.");
 
     const page = (await m.listPages(conn.user_access_token)).find((p) => p.id === data.pageId);
@@ -98,6 +104,7 @@ export const selectMetaPage = createServerFn({ method: "POST" })
 
     await m.subscribePage(page.id, page.token);
     await m.saveConnection(
+      clinicId,
       {
         page_id: page.id,
         page_name: page.name,
@@ -110,10 +117,10 @@ export const selectMetaPage = createServerFn({ method: "POST" })
     );
 
     const forms = await m.fetchForms(page.id, page.token);
-    await m.saveForms(conn.id, forms);
+    await m.saveForms(clinicId, conn.id, forms);
 
     const stored = await m.loadForms(conn.id);
-    const refreshed = await m.loadConnection();
+    const refreshed = await m.loadConnection(clinicId);
     let imported = 0;
     if (refreshed) {
       for (const form of stored.filter((f) => f.enabled)) {
@@ -143,6 +150,7 @@ export const saveFormSettings = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     await assertAdmin(context, "change lead capture settings");
+    const clinicId = await requireClinicId(context.supabase);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const m = await import("@/lib/meta-leads.server");
 
@@ -150,6 +158,7 @@ export const saveFormSettings = createServerFn({ method: "POST" })
       .from("meta_lead_forms")
       .select("questions, field_confidence, confirmed_keys")
       .eq("id", data.id)
+      .eq("clinic_id", clinicId)
       .maybeSingle();
 
     const questions = ((row?.questions as { key: string }[] | null) ?? []) as { key: string }[];
@@ -173,7 +182,8 @@ export const saveFormSettings = createServerFn({ method: "POST" })
         needs_review: summary.needsReview,
         ...(data.auto_apply === undefined ? {} : { auto_apply: data.auto_apply }),
       })
-      .eq("id", data.id);
+      .eq("id", data.id)
+      .eq("clinic_id", clinicId);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -183,11 +193,12 @@ export const refreshMetaForms = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await assertAdmin(context, "refresh lead forms");
+    const clinicId = await requireClinicId(context.supabase);
     const m = await import("@/lib/meta-leads.server");
-    const conn = await m.loadConnection();
+    const conn = await m.loadConnection(clinicId);
     if (!conn?.page_access_token || !conn.page_id) throw new Error("Connect a page first.");
     const forms = await m.fetchForms(conn.page_id, conn.page_access_token);
-    await m.saveForms(conn.id, forms);
+    await m.saveForms(clinicId, conn.id, forms);
     return { ok: true, count: forms.length };
   });
 
@@ -197,8 +208,9 @@ export const sendTestLead = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => z.object({ formId: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     await assertAdmin(context, "send a test lead");
+    const clinicId = await requireClinicId(context.supabase);
     const m = await import("@/lib/meta-leads.server");
-    const conn = await m.loadConnection();
+    const conn = await m.loadConnection(clinicId);
     if (!conn) throw new Error("Connect Facebook first.");
     const form = (await m.loadForms(conn.id)).find((f) => f.id === data.formId);
     if (!form) throw new Error("Form not found.");
@@ -212,7 +224,7 @@ export const sendTestLead = createServerFn({ method: "POST" })
       formName: `${form.form_name} (test)`,
       platform: "fb",
     });
-    await m.insertLead(row);
+    await m.insertLead(clinicId, row);
     return { ok: true };
   });
 
@@ -230,9 +242,10 @@ export const disconnectMeta = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await assertAdmin(context, "disconnect Facebook");
+    const clinicId = await requireClinicId(context.supabase);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const m = await import("@/lib/meta-leads.server");
-    const conn = await m.loadConnection();
+    const conn = await m.loadConnection(clinicId);
     if (conn) await supabaseAdmin.from("meta_connections").delete().eq("id", conn.id);
     return { ok: true };
   });
@@ -251,9 +264,11 @@ export const saveManualConnection = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     await assertAdmin(context, "connect a Facebook page");
+    const clinicId = await requireClinicId(context.supabase);
     const m = await import("@/lib/meta-leads.server");
-    const conn = await m.loadConnection();
+    const conn = await m.loadConnection(clinicId);
     const id = await m.saveConnection(
+      clinicId,
       {
         page_id: data.pageId,
         page_name: data.pageName,
@@ -266,9 +281,9 @@ export const saveManualConnection = createServerFn({ method: "POST" })
     try {
       await m.subscribePage(data.pageId, data.pageToken);
       const forms = await m.fetchForms(data.pageId, data.pageToken);
-      await m.saveForms(id, forms);
+      await m.saveForms(clinicId, id, forms);
     } catch (e) {
-      await m.saveConnection({ error_message: (e as Error).message }, id);
+      await m.saveConnection(clinicId, { error_message: (e as Error).message }, id);
       throw e;
     }
     return { ok: true };

@@ -23,15 +23,17 @@ export const Route = createFileRoute("/api/public/hooks/meta-oauth-callback")({
         if (!code || !state) return closingPage("Facebook sign-in was cancelled.", false);
 
         const m = await import("@/lib/meta-leads.server");
-        if (!(await m.verifyState(state))) {
+        const clinicId = await m.verifyState(state);
+        if (!clinicId) {
           return closingPage("This sign-in link expired. Please try again.", false);
         }
 
         try {
           const redirectUri = `${url.origin}/api/public/hooks/meta-oauth-callback`;
           const userToken = await m.exchangeCodeForUserToken(code, redirectUri);
-          const existing = await m.loadConnection();
+          const existing = await m.loadConnection(clinicId);
           await m.saveConnection(
+            clinicId,
             { user_access_token: userToken, status: "choose_page", error_message: null },
             existing?.id,
           );
