@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { z } from "zod";
 import { useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -10,6 +11,7 @@ import { getBookingOptions, requestBooking } from "@/lib/booking.functions";
 import { money } from "@/data/clinic";
 
 export const Route = createFileRoute("/book")({
+  validateSearch: z.object({ c: z.string().uuid().optional() }),
   head: () => ({
     meta: [
       { title: "Book an appointment — Luma Aesthetics Clinic" },
@@ -49,16 +51,22 @@ function Shell({ children }: { children: React.ReactNode }) {
 }
 
 function BookingPage() {
+  const { c: clinicId } = Route.useSearch();
   const fetchOptions = useServerFn(getBookingOptions);
   const send = useServerFn(requestBooking);
   const [done, setDone] = useState(false);
 
-  const options = useQuery({ queryKey: ["booking_options"], queryFn: () => fetchOptions() });
+  const options = useQuery({
+    queryKey: ["booking_options", clinicId],
+    queryFn: () => fetchOptions({ data: { clinicId: clinicId! } }),
+    enabled: Boolean(clinicId),
+  });
 
   const submit = useMutation({
     mutationFn: (values: Record<string, string>) =>
       send({
         data: {
+          clinicId: clinicId!,
           full_name: values["full_name"] ?? "",
           phone: values["phone"] ?? "",
           email: values["email"] || null,
@@ -74,6 +82,17 @@ function BookingPage() {
   });
 
   const clinic = options.data?.clinic;
+
+  if (!clinicId) {
+    return (
+      <Shell>
+        <h1 className="text-xl font-semibold">Booking link incomplete</h1>
+        <p className="text-sm text-muted-foreground">
+          Please use the booking link your clinic shared with you.
+        </p>
+      </Shell>
+    );
+  }
 
   if (done) {
     return (
