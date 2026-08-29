@@ -9,8 +9,11 @@ export const Route = createFileRoute("/api/public/hooks/cashfree")({
         const signature = request.headers.get("x-webhook-signature") ?? "";
         const timestamp = request.headers.get("x-webhook-timestamp") ?? "";
 
-        const { loadGateway, settleLink } = await import("@/lib/payments.server");
-        const gateway = await loadGateway();
+        const { loadGatewayByProviderRef, settleLink } = await import("@/lib/payments.server");
+        const early = JSON.parse(body || "{}") as { data?: { link_id?: string } };
+        const linkRef = early.data?.link_id;
+        // The link row identifies the clinic whose webhook secret must sign this call.
+        const gateway = linkRef ? await loadGatewayByProviderRef(linkRef) : null;
         if (!gateway?.webhook_secret) {
           return new Response("Gateway not configured", { status: 503 });
         }

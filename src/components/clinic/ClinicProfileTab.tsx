@@ -44,6 +44,12 @@ export function ClinicProfileTab() {
 
   const gstinBad = form.gstin.length > 0 && !isValidGstin(form.gstin);
 
+  const clinicId = (profile.data as { clinic_id?: string } | undefined)?.clinic_id;
+  const bookingUrl =
+    clinicId && typeof window !== "undefined"
+      ? `${window.location.origin}/book?c=${clinicId}`
+      : null;
+
   return (
     <Panel title="Clinic profile">
       <form
@@ -190,6 +196,29 @@ export function ClinicProfileTab() {
           Save clinic profile
         </button>
       </form>
+
+      {bookingUrl ? (
+        <div className="mt-6 border-t border-border pt-4">
+          <p className="text-sm font-medium">Your booking link</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Share this with patients — requests land in Appointments → Booking requests for this
+            clinic only.
+          </p>
+          <div className="mt-2 flex items-center gap-2">
+            <input readOnly className={inputClass} value={bookingUrl} />
+            <button
+              type="button"
+              className={primaryButton}
+              onClick={() => {
+                void navigator.clipboard.writeText(bookingUrl);
+                toast.success("Booking link copied");
+              }}
+            >
+              Copy
+            </button>
+          </div>
+        </div>
+      ) : null}
     </Panel>
   );
 }

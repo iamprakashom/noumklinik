@@ -37,7 +37,7 @@ export const getPatientLink = createServerFn({ method: "GET" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: link } = await supabaseAdmin
       .from("patient_links")
-      .select("id, kind, patient_id, consent_template_id, appointment_id, expires_at, completed_at")
+      .select("id, kind, clinic_id, patient_id, consent_template_id, appointment_id, expires_at, completed_at")
       .eq("token", data.token)
       .maybeSingle();
     if (!link) return { status: "invalid" as const };
@@ -63,7 +63,7 @@ export const getPatientLink = createServerFn({ method: "GET" })
     const { data: clinic } = await supabaseAdmin
       .from("clinic_profile")
       .select("trade_name, legal_name, google_review_link")
-      .limit(1)
+      .eq("clinic_id", link.clinic_id)
       .maybeSingle();
 
     let appointment: { starts_at: string; service: string | null; provider: string | null } | null = null;
@@ -108,7 +108,7 @@ export const submitFeedback = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: link } = await supabaseAdmin
       .from("patient_links")
-      .select("id, kind, patient_id, appointment_id, expires_at, completed_at")
+      .select("id, kind, clinic_id, patient_id, appointment_id, expires_at, completed_at")
       .eq("token", data.token)
       .maybeSingle();
     if (!link || link.kind !== "feedback" || link.completed_at || new Date(link.expires_at) < new Date()) {
@@ -117,6 +117,7 @@ export const submitFeedback = createServerFn({ method: "POST" })
 
     const happy = data.rating >= 4;
     const { error } = await supabaseAdmin.from("patient_feedback").insert({
+      clinic_id: link.clinic_id,
       patient_id: link.patient_id,
       appointment_id: link.appointment_id,
       rating: data.rating,
@@ -133,7 +134,7 @@ export const submitFeedback = createServerFn({ method: "POST" })
     const { data: clinic } = await supabaseAdmin
       .from("clinic_profile")
       .select("google_review_link")
-      .limit(1)
+      .eq("clinic_id", link.clinic_id)
       .maybeSingle();
 
     return {
@@ -221,7 +222,7 @@ export const submitConsent = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: link } = await supabaseAdmin
       .from("patient_links")
-      .select("id, patient_id, consent_template_id, expires_at, completed_at, kind")
+      .select("id, clinic_id, patient_id, consent_template_id, expires_at, completed_at, kind")
       .eq("token", data.token)
       .maybeSingle();
     if (!link || link.kind !== "consent" || link.completed_at || new Date(link.expires_at) < new Date()) {
@@ -237,6 +238,7 @@ export const submitConsent = createServerFn({ method: "POST" })
       templateName = tpl?.name ?? templateName;
     }
     const { error } = await supabaseAdmin.from("patient_consents").insert({
+      clinic_id: link.clinic_id,
       patient_id: link.patient_id!,
       template_id: link.consent_template_id,
       template_name: templateName,
@@ -292,7 +294,7 @@ export const requestReschedule = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: link } = await supabaseAdmin
       .from("patient_links")
-      .select("id, kind, patient_id, appointment_id, expires_at")
+      .select("id, kind, clinic_id, patient_id, appointment_id, expires_at")
       .eq("token", data.token)
       .maybeSingle();
     if (!link || link.kind !== "appointment" || !link.appointment_id || new Date(link.expires_at) < new Date()) {
@@ -304,6 +306,7 @@ export const requestReschedule = createServerFn({ method: "POST" })
       .eq("id", link.patient_id!)
       .maybeSingle();
     const { error } = await supabaseAdmin.from("appointment_requests").insert({
+      clinic_id: link.clinic_id,
       full_name: patient ? `${patient.first_name} ${patient.last_name}`.trim() : "Patient",
       phone: patient?.phone ?? "",
       email: patient?.email ?? null,

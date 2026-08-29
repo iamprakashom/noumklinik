@@ -5,6 +5,7 @@ const notification = z.object({
   entry: z
     .array(
       z.object({
+        id: z.string().optional(),
         changes: z
           .array(
             z.object({
@@ -55,14 +56,20 @@ export const Route = createFileRoute("/api/public/hooks/meta-leads")({
 
         let captured = 0;
         for (const entry of parsed.data.entry ?? []) {
+          // entry.id is the Facebook page id, which resolves the owning clinic.
+          const conn = entry.id ? await m.loadConnectionByPageId(entry.id) : null;
+          if (!conn) continue;
           for (const change of entry.changes ?? []) {
             const leadId = change.value?.leadgen_id;
             if (!leadId) continue;
             try {
-              if (await m.captureLeadById(leadId, change.value?.platform)) captured++;
+              if (await m.captureLeadById(conn, leadId, change.value?.platform)) captured++;
             } catch (e) {
-              const conn = await m.loadConnection();
-              if (conn) await m.saveConnection({ error_message: (e as Error).message }, conn.id);
+              await m.saveConnection(
+                conn.clinic_id,
+                { error_message: (e as Error).message },
+                conn.id,
+              );
             }
           }
         }

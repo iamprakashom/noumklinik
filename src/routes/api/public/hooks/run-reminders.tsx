@@ -3,6 +3,7 @@ import type { TablesInsert } from "@/integrations/supabase/types";
 
 type Rule = {
   id: string;
+  clinic_id: string;
   trigger_type: string;
   offset_hours: number;
   channel: string;
@@ -50,6 +51,8 @@ async function run() {
     if (!template) continue;
 
     for (const appt of appointments) {
+      // Rules only ever act on their own clinic's appointments.
+      if (appt.clinic_id !== rule.clinic_id) continue;
       if (rule.trigger_type === "before_appointment" && appt.status === "Cancelled") continue;
       if (rule.trigger_type === "after_treatment" && appt.status !== "Completed") continue;
       if (rule.trigger_type === "no_show" && appt.status !== "No-show") continue;
@@ -70,6 +73,7 @@ async function run() {
       const mintLink = async (kind: "appointment" | "feedback") => {
         const token = crypto.randomUUID().replace(/-/g, "") + crypto.randomUUID().slice(0, 8);
         const { error: linkError } = await supabaseAdmin.from("patient_links").insert({
+          clinic_id: appt.clinic_id,
           token,
           patient_id: patient.id,
           appointment_id: appt.id,
@@ -102,6 +106,7 @@ async function run() {
       };
 
       rows.push({
+        clinic_id: appt.clinic_id,
         patient_id: patient.id,
         appointment_id: appt.id,
         rule_id: rule.id,

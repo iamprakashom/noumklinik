@@ -1,6 +1,7 @@
 /** Server-only message delivery over WhatsApp, SMS and email. */
 
 export type SendInput = {
+  clinicId: string;
   channel: string;
   recipient: string;
   subject: string | null;
@@ -15,7 +16,7 @@ export type SendResult = {
 
 async function sendWhatsApp(input: SendInput): Promise<SendResult> {
   const { sendText } = await import("@/lib/whatsapp.server");
-  const result = await sendText(input.recipient, input.body);
+  const result = await sendText(input.clinicId, input.recipient, input.body);
   return result.ok
     ? { ok: true, providerId: result.providerId }
     : { ok: false, error: result.error };
@@ -85,6 +86,7 @@ export async function flushOutbox(limit = 50) {
   let failed = 0;
   for (const row of data ?? []) {
     const result = await deliver({
+      clinicId: row.clinic_id,
       channel: row.channel,
       recipient: row.recipient ?? "",
       subject: row.subject,

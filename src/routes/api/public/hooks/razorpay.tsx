@@ -8,8 +8,13 @@ export const Route = createFileRoute("/api/public/hooks/razorpay")({
         const body = await request.text();
         const signature = request.headers.get("x-razorpay-signature") ?? "";
 
-        const { loadGateway, settleLink } = await import("@/lib/payments.server");
-        const gateway = await loadGateway();
+        const { loadGatewayByProviderRef, settleLink } = await import("@/lib/payments.server");
+        const early = JSON.parse(body || "{}") as {
+          payload?: { payment_link?: { entity?: { id?: string } } };
+        };
+        const linkRef = early.payload?.payment_link?.entity?.id;
+        // The link row identifies the clinic whose webhook secret must sign this call.
+        const gateway = linkRef ? await loadGatewayByProviderRef(linkRef) : null;
         if (!gateway?.webhook_secret) {
           return new Response("Gateway not configured", { status: 503 });
         }

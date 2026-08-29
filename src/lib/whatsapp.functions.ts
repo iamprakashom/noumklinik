@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { requireClinicId } from "@/lib/clinic.server";
 
 type RoleCtx = {
   supabase: {
@@ -38,8 +39,9 @@ export const getWhatsAppSettings = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await assertStaff(context);
+    const clinicId = await requireClinicId(context.supabase);
     const { loadSettings, maskSecret } = await import("@/lib/whatsapp.server");
-    const s = await loadSettings();
+    const s = await loadSettings(clinicId);
     return {
       display_name: s.display_name,
       phone_number: s.phone_number,
@@ -71,7 +73,7 @@ export const saveWhatsAppSettings = createServerFn({ method: "POST" })
     await assertAdmin(context);
     const { loadSettings } = await import("@/lib/whatsapp.server");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const existing = await loadSettings();
+    const existing = await loadSettings(await requireClinicId(context.supabase));
     await supabaseAdmin
       .from("whatsapp_settings")
       .update({
@@ -90,7 +92,7 @@ export const testWhatsAppConnection = createServerFn({ method: "POST" })
   .handler(async ({ context }) => {
     await assertAdmin(context);
     const { checkConnection } = await import("@/lib/whatsapp.server");
-    const result = await checkConnection();
+    const result = await checkConnection(await requireClinicId(context.supabase));
     if (!result.ok) throw new Error(result.error);
     return result;
   });
@@ -101,7 +103,7 @@ export const listWhatsAppTemplates = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     await assertStaff(context);
     const { fetchRemoteTemplates } = await import("@/lib/whatsapp.server");
-    return await fetchRemoteTemplates();
+    return await fetchRemoteTemplates(await requireClinicId(context.supabase));
   });
 
 /** Inbox conversation list: newest message per contact with unread counts. */
@@ -190,11 +192,13 @@ export const sendWhatsAppReply = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     await assertStaff(context);
+    const clinicId = await requireClinicId(context.supabase);
     const { sendText, normaliseNumber } = await import("@/lib/whatsapp.server");
-    const result = await sendText(data.waId, data.body);
+    const result = await sendText(clinicId, data.waId, data.body);
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     await supabaseAdmin.from("whatsapp_messages").insert({
+      clinic_id: clinicId,
       contact_wa_id: normaliseNumber(data.waId),
       patient_id: data.patientId ?? null,
       lead_id: data.leadId ?? null,
@@ -226,11 +230,19 @@ export const startWhatsAppConversation = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     await assertStaff(context);
+    const clinicId = await requireClinicId(context.supabase);
     const { sendTemplate, normaliseNumber } = await import("@/lib/whatsapp.server");
-    const result = await sendTemplate(data.phone, data.templateName, data.language, data.variables);
+    const result = await sendTemplate(
+      clinicId,
+      data.phone,
+      data.templateName,
+      data.language,
+      data.variables,
+    );
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     await supabaseAdmin.from("whatsapp_messages").insert({
+      clinic_id: clinicId,
       contact_wa_id: normaliseNumber(data.phone),
       patient_id: data.patientId ?? null,
       direction: "outgoing",
