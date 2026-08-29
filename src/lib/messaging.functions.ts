@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { requireClinicId } from "@/lib/clinic.server";
 
 /** Sends a single queued outbox message immediately. */
 export const sendOutboxMessage = createServerFn({ method: "POST" })
@@ -16,6 +17,7 @@ export const sendOutboxMessage = createServerFn({ method: "POST" })
 
     const { deliver } = await import("@/lib/messaging.server");
     const result = await deliver({
+      clinicId: row.clinic_id,
       channel: row.channel,
       recipient: row.recipient ?? "",
       subject: row.subject,
@@ -89,7 +91,9 @@ export const sendAppointmentReminder = createServerFn({ method: "POST" })
     } on ${when}${provider?.name ? ` with ${provider.name}` : ""}. Reply here to reschedule.`;
 
     const { deliver } = await import("@/lib/messaging.server");
+    const clinicId = await requireClinicId(context.supabase);
     const result = await deliver({
+      clinicId,
       channel,
       recipient: recipient ?? "",
       subject: "Your upcoming appointment",
@@ -98,6 +102,7 @@ export const sendAppointmentReminder = createServerFn({ method: "POST" })
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     await supabaseAdmin.from("messages_outbox").insert({
+      clinic_id: clinicId,
       patient_id: patient.id,
       appointment_id: appt.id,
       channel,

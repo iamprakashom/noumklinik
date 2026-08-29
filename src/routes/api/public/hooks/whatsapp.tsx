@@ -10,6 +10,7 @@ const payload = z.object({
             z.object({
               value: z
                 .object({
+                  metadata: z.object({ phone_number_id: z.string().optional() }).optional(),
                   contacts: z
                     .array(
                       z.object({
@@ -45,14 +46,16 @@ export const Route = createFileRoute("/api/public/hooks/whatsapp")({
       // Meta webhook verification handshake
       GET: async ({ request }) => {
         const url = new URL(request.url);
-        const { loadSettings } = await import("@/lib/whatsapp.server");
-        const settings = await loadSettings();
-        const expected = settings.verify_token;
-        if (
-          url.searchParams.get("hub.mode") === "subscribe" &&
-          expected &&
-          url.searchParams.get("hub.verify_token") === expected
-        ) {
+        const token = url.searchParams.get("hub.verify_token");
+        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+        const { data: match } = token
+          ? await supabaseAdmin
+              .from("whatsapp_settings")
+              .select("id")
+              .eq("verify_token", token)
+              .maybeSingle()
+          : { data: null };
+        if (url.searchParams.get("hub.mode") === "subscribe" && match) {
           return new Response(url.searchParams.get("hub.challenge") ?? "", { status: 200 });
         }
         return new Response("Forbidden", { status: 403 });
@@ -61,11 +64,25 @@ export const Route = createFileRoute("/api/public/hooks/whatsapp")({
         const raw = await request.text();
         const wa = await import("@/lib/whatsapp.server");
 
-        const valid = await wa.verifySignature(request.headers.get("x-hub-signature-256"), raw);
-        if (!valid) return new Response("Invalid signature", { status: 401 });
-
         const parsed = payload.safeParse(JSON.parse(raw || "{}"));
         if (!parsed.success) return Response.json({ error: "Invalid payload" }, { status: 400 });
+
+        // Which clinic owns this business number decides the credentials we verify against.
+        const phoneNumberId = parsed.data.entry
+          ?.flatMap((e) => e.changes ?? [])
+          .map((c) => c.value?.metadata?.phone_number_id)
+          .find(Boolean);
+        if (!phoneNumberId) return Response.json({ received: 0, updated: 0 });
+
+        const settings = await wa.loadSettingsByPhoneId(phoneNumberId);
+        if (!settings) return new Response("Unknown business number", { status: 404 });
+
+        const valid = await wa.verifySignature(
+          settings,
+          request.headers.get("x-hub-signature-256"),
+          raw,
+        );
+        if (!valid) return new Response("Invalid signature", { status: 401 });
 
         const inbound: {
           from: string;
@@ -94,8 +111,8 @@ export const Route = createFileRoute("/api/public/hooks/whatsapp")({
           }
         }
 
-        const received = await wa.recordInbound(inbound);
-        const updated = await wa.recordStatuses(statuses);
+        const received = await wa.recordInbound(settings.clinic_id, inbound);
+        const updated = await wa.recordStatuses(settings.clinic_id, statuses);
         return Response.json({ received, updated });
       },
     },
