@@ -49,18 +49,36 @@ async function graph<T>(path: string, params: Record<string, string>): Promise<T
 
 /* ---------------------------------------------------------------- connection */
 
-export async function loadConnection(): Promise<MetaConnection | null> {
+export async function loadConnection(clinicId: string): Promise<MetaConnection | null> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data } = await supabaseAdmin
     .from("meta_connections")
     .select("*")
+    .eq("clinic_id", clinicId)
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
   return (data as MetaConnection | null) ?? null;
 }
 
-export async function saveConnection(values: Record<string, string | null>, id?: string) {
+/** Webhooks arrive with a page id, which is what tells us the owning clinic. */
+export async function loadConnectionByPageId(pageId: string): Promise<MetaConnection | null> {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data } = await supabaseAdmin
+    .from("meta_connections")
+    .select("*")
+    .eq("page_id", pageId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  return (data as MetaConnection | null) ?? null;
+}
+
+export async function saveConnection(
+  clinicId: string,
+  values: Record<string, string | null>,
+  id?: string,
+) {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   if (id) {
     const { error } = await supabaseAdmin.from("meta_connections").update(values as never).eq("id", id);
@@ -69,7 +87,7 @@ export async function saveConnection(values: Record<string, string | null>, id?:
   }
   const { data, error } = await supabaseAdmin
     .from("meta_connections")
-    .insert({ singleton: true, page_id: "", page_name: "", ...values } as never)
+    .insert({ clinic_id: clinicId, singleton: true, page_id: "", page_name: "", ...values } as never)
     .select("id")
     .single();
   if (error) throw new Error(error.message);
@@ -79,19 +97,23 @@ export async function saveConnection(values: Record<string, string | null>, id?:
 /* --------------------------------------------------------------------- oauth */
 
 /** Signed, time-bounded state so the popup callback can't be forged. */
-export async function signState(): Promise<string> {
+export async function signState(clinicId: string): Promise<string> {
   const { appSecret } = metaAppConfig();
-  const payload = `${Date.now()}`;
+  const payload = `${Date.now()}~${clinicId}`;
   const sig = await hmacHex(appSecret ?? "dev", payload);
   return `${payload}.${sig}`;
 }
 
-export async function verifyState(state: string): Promise<boolean> {
+/** Returns the clinic the popup started from, or null when the state is not ours. */
+export async function verifyState(state: string): Promise<string | null> {
   const [payload, sig] = state.split(".");
-  if (!payload || !sig) return false;
-  if (Date.now() - Number(payload) > 15 * 60_000) return false;
+  if (!payload || !sig) return null;
+  const [issued, clinicId] = payload.split("~");
+  if (!issued || !clinicId) return null;
+  if (Date.now() - Number(issued) > 15 * 60_000) return null;
   const { appSecret } = metaAppConfig();
-  return timingSafeEqualHex(await hmacHex(appSecret ?? "dev", payload), sig);
+  const ok = timingSafeEqualHex(await hmacHex(appSecret ?? "dev", payload), sig);
+  return ok ? clinicId : null;
 }
 
 async function hmacHex(secret: string, body: string) {
@@ -371,18 +393,23 @@ export function reviewSummary(
   return { total: questions.length, unsure: unsure.length, needsReview: unsure.length > 0 };
 }
 
-async function activeServiceNames(): Promise<string[]> {
+async function activeServiceNames(clinicId: string): Promise<string[]> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const { data } = await supabaseAdmin.from("services").select("name").eq("active", true);
+  const { data } = await supabaseAdmin
+    .from("services")
+    .select("name")
+    .eq("clinic_id", clinicId)
+    .eq("active", true);
   return (data ?? []).map((s) => s.name as string);
 }
 
 export async function saveForms(
+  clinicId: string,
   connectionId: string,
   forms: { form_id: string; form_name: string; questions: { key: string; label: string; options?: string[] }[] }[],
 ) {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const services = await activeServiceNames();
+  const services = await activeServiceNames(clinicId);
   const { data: existing } = await supabaseAdmin
     .from("meta_lead_forms")
     .select("id, form_id, field_map, field_confidence, confirmed_keys, auto_apply")
@@ -403,6 +430,7 @@ export async function saveForms(
       }
       const summary = reviewSummary(f.questions, field_confidence, []);
       return {
+        clinic_id: clinicId,
         connection_id: connectionId,
         form_id: f.form_id,
         form_name: f.form_name,
@@ -540,15 +568,16 @@ export async function fetchLead(leadId: string, token: string) {
 }
 
 /** Inserts a lead, ignoring Meta redeliveries (unique external_id). */
-export async function insertLead(row: Record<string, unknown>) {
+export async function insertLead(clinicId: string, row: Record<string, unknown>) {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const { error } = await supabaseAdmin.from("leads").insert(row as never);
+  const { error } = await supabaseAdmin
+    .from("leads")
+    .insert({ clinic_id: clinicId, ...row } as never);
   if (error && !error.message.includes("duplicate key")) throw new Error(error.message);
   return !error;
 }
 
-export async function captureLeadById(leadId: string, platform?: string) {
-  const conn = await loadConnection();
+export async function captureLeadById(conn: MetaConnection, leadId: string, platform?: string) {
   if (!conn?.page_access_token) throw new Error("No connected Facebook page");
   const lead = await fetchLead(leadId, conn.page_access_token);
   const forms = await loadForms(conn.id);
@@ -560,9 +589,13 @@ export async function captureLeadById(leadId: string, platform?: string) {
     platform: platform ?? lead.platform,
     createdAt: lead.created_time,
   });
-  const inserted = await insertLead(row);
+  const inserted = await insertLead(conn.clinic_id, row);
   if (inserted) {
-    await saveConnection({ last_lead_at: new Date().toISOString(), error_message: null }, conn.id);
+    await saveConnection(
+      conn.clinic_id,
+      { last_lead_at: new Date().toISOString(), error_message: null },
+      conn.id,
+    );
   }
   return inserted;
 }
@@ -588,7 +621,7 @@ export async function backfillForm(conn: MetaConnection, form: LeadForm, sinceDa
       platform: lead.platform,
       createdAt: lead.created_time,
     });
-    if (await insertLead(row)) count++;
+    if (await insertLead(conn.clinic_id, row)) count++;
   }
   return count;
 }
