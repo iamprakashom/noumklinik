@@ -35,7 +35,13 @@ function AuthPage() {
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
-      if (data.session) navigate({ to: "/dashboard", replace: true });
+      if (!data.session) return;
+      const pending = sessionStorage.getItem("pending_invite_token");
+      if (pending) {
+        navigate({ to: "/join", search: { token: pending }, replace: true });
+        return;
+      }
+      navigate({ to: "/dashboard", replace: true });
     });
   }, [navigate]);
 
@@ -46,7 +52,9 @@ function AuthPage() {
       if (mode === "signin") {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
-        navigate({ to: "/dashboard", replace: true });
+        const pending = sessionStorage.getItem("pending_invite_token");
+        if (pending) navigate({ to: "/join", search: { token: pending }, replace: true });
+        else navigate({ to: "/dashboard", replace: true });
       } else {
         const { error } = await supabase.auth.signUp({
           email,
