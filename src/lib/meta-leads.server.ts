@@ -4,6 +4,7 @@ const GRAPH = "https://graph.facebook.com/v20.0";
 
 export type MetaConnection = {
   id: string;
+  clinic_id: string;
   page_id: string;
   page_name: string;
   page_picture_url: string | null;
