@@ -21,22 +21,35 @@ export function maskSecret(value: string | null | undefined) {
   return `••••${value.slice(-4)}`;
 }
 
-/** Loads the single WhatsApp connection row, creating it on first use. */
-export async function loadSettings(): Promise<WhatsAppSettings> {
+/** Loads a clinic's WhatsApp connection row, creating it on first use. */
+export async function loadSettings(clinicId: string): Promise<WhatsAppSettings> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data } = await supabaseAdmin
     .from("whatsapp_settings")
     .select("*")
-    .eq("singleton", true)
+    .eq("clinic_id", clinicId)
     .maybeSingle();
   if (data) return data as WhatsAppSettings;
   const { data: created, error } = await supabaseAdmin
     .from("whatsapp_settings")
-    .insert({ singleton: true })
+    .insert({ clinic_id: clinicId, singleton: true })
     .select("*")
     .single();
   if (error) throw new Error(error.message);
   return created as WhatsAppSettings;
+}
+
+/** Resolves which clinic an inbound webhook belongs to, from the business phone number ID. */
+export async function loadSettingsByPhoneId(
+  phoneNumberId: string,
+): Promise<(WhatsAppSettings & { clinic_id: string }) | null> {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data } = await supabaseAdmin
+    .from("whatsapp_settings")
+    .select("*")
+    .eq("phone_number_id", phoneNumberId)
+    .maybeSingle();
+  return (data as (WhatsAppSettings & { clinic_id: string }) | null) ?? null;
 }
 
 function credentials(s: WhatsAppSettings) {
@@ -56,8 +69,12 @@ type SendOk = { ok: true; providerId?: string | undefined };
 type SendErr = { ok: false; error: string };
 
 /** Sends a free-form session message to a WhatsApp contact. */
-export async function sendText(to: string, body: string): Promise<SendOk | SendErr> {
-  const settings = await loadSettings();
+export async function sendText(
+  clinicId: string,
+  to: string,
+  body: string,
+): Promise<SendOk | SendErr> {
+  const settings = await loadSettings(clinicId);
   if (!settings.enabled) return { ok: false, error: "WhatsApp is switched off in settings" };
   const { token, phoneId } = credentials(settings);
   if (!token || !phoneId) return { ok: false, error: "WhatsApp is not connected" };
@@ -84,12 +101,13 @@ export async function sendText(to: string, body: string): Promise<SendOk | SendE
 
 /** Sends an approved template message (required outside the 24h session window). */
 export async function sendTemplate(
+  clinicId: string,
   to: string,
   templateName: string,
   language: string,
   variables: string[],
 ): Promise<SendOk | SendErr> {
-  const settings = await loadSettings();
+  const settings = await loadSettings(clinicId);
   if (!settings.enabled) return { ok: false, error: "WhatsApp is switched off in settings" };
   const { token, phoneId } = credentials(settings);
   if (!token || !phoneId) return { ok: false, error: "WhatsApp is not connected" };
@@ -128,8 +146,8 @@ export async function sendTemplate(
 }
 
 /** Verifies the connection by reading the business phone number from Meta. */
-export async function checkConnection() {
-  const settings = await loadSettings();
+export async function checkConnection(clinicId: string) {
+  const settings = await loadSettings(clinicId);
   const { token, phoneId } = credentials(settings);
   if (!token || !phoneId) return { ok: false as const, error: "Add a token and phone number ID" };
   const res = await fetch(
@@ -166,8 +184,8 @@ export async function checkConnection() {
 }
 
 /** Pulls approved message templates from the WhatsApp Business Account. */
-export async function fetchRemoteTemplates() {
-  const settings = await loadSettings();
+export async function fetchRemoteTemplates(clinicId: string) {
+  const settings = await loadSettings(clinicId);
   const token = settings.access_token ?? process.env["WHATSAPP_TOKEN"];
   if (!token || !settings.waba_id) return [];
   const res = await fetch(
@@ -182,9 +200,12 @@ export async function fetchRemoteTemplates() {
 }
 
 /** Validates the X-Hub-Signature-256 header on an inbound webhook body. */
-export async function verifySignature(header: string | null, raw: string) {
-  const settings = await loadSettings();
-  const secret = settings.app_secret ?? process.env["META_APP_SECRET"];
+export async function verifySignature(
+  settings: Pick<WhatsAppSettings, "app_secret"> | null,
+  header: string | null,
+  raw: string,
+) {
+  const secret = settings?.app_secret ?? process.env["META_APP_SECRET"];
   if (!secret) return true; // no secret configured yet — verify token already gated the hook
   if (!header?.startsWith("sha256=")) return false;
   const { createHmac, timingSafeEqual } = await import("crypto");
@@ -197,13 +218,13 @@ export async function verifySignature(header: string | null, raw: string) {
 type InboundMessage = { from: string; text: string; type: string; id: string; name?: string };
 
 /** Stores inbound messages and links them to a patient or lead by phone number. */
-export async function recordInbound(messages: InboundMessage[]) {
+export async function recordInbound(clinicId: string, messages: InboundMessage[]) {
   if (!messages.length) return 0;
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
   const [{ data: patients }, { data: leads }] = await Promise.all([
-    supabaseAdmin.from("patients").select("id, phone"),
-    supabaseAdmin.from("leads").select("id, phone"),
+    supabaseAdmin.from("patients").select("id, phone").eq("clinic_id", clinicId),
+    supabaseAdmin.from("leads").select("id, phone").eq("clinic_id", clinicId),
   ]);
   const patientByPhone = new Map(
     (patients ?? []).filter((p) => p.phone).map((p) => [normaliseNumber(p.phone!), p.id]),
@@ -215,6 +236,7 @@ export async function recordInbound(messages: InboundMessage[]) {
   const rows = messages.map((m) => {
     const wa = normaliseNumber(m.from);
     return {
+      clinic_id: clinicId,
       contact_wa_id: wa,
       contact_name: m.name ?? null,
       patient_id: patientByPhone.get(wa) ?? null,
@@ -232,7 +254,7 @@ export async function recordInbound(messages: InboundMessage[]) {
 }
 
 /** Applies delivery receipts from Meta to previously sent messages. */
-export async function recordStatuses(statuses: { id: string; status: string }[]) {
+export async function recordStatuses(clinicId: string, statuses: { id: string; status: string }[]) {
   if (!statuses.length) return 0;
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   for (const s of statuses) {
@@ -247,10 +269,12 @@ export async function recordStatuses(statuses: { id: string; status: string }[])
     await supabaseAdmin
       .from("whatsapp_messages")
       .update({ status })
+      .eq("clinic_id", clinicId)
       .eq("provider_message_id", s.id);
     await supabaseAdmin
       .from("messages_outbox")
       .update({ status: status === "Failed" ? "Failed" : "Sent" })
+      .eq("clinic_id", clinicId)
       .eq("provider_message_id", s.id);
   }
   return statuses.length;

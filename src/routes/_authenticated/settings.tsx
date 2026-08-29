@@ -9,6 +9,7 @@ import { AddonsTab } from "@/components/clinic/AddonsTab";
 import { PaymentsTab } from "@/components/clinic/PaymentsTab";
 import { WhatsAppTab } from "@/components/clinic/WhatsAppTab";
 import { LeadCaptureTab } from "@/components/clinic/LeadCaptureTab";
+import { TeamTab } from "@/components/clinic/TeamTab";
 import { Chip, EmptyState, Field, Panel, inputClass, textareaClass } from "@/components/clinic/bits";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -89,6 +90,7 @@ function SettingsPage() {
           <TabsTrigger value="payments">Payments</TabsTrigger>
           <TabsTrigger value="whatsapp">WhatsApp</TabsTrigger>
           <TabsTrigger value="lead-capture">Lead capture</TabsTrigger>
+          <TabsTrigger value="team">Team</TabsTrigger>
         </TabsList>
 
         <TabsContent value="clinic" className="mt-4">
@@ -108,6 +110,9 @@ function SettingsPage() {
         </TabsContent>
         <TabsContent value="lead-capture" className="mt-4">
           <LeadCaptureTab />
+        </TabsContent>
+        <TabsContent value="team" className="mt-4">
+          <TeamTab />
         </TabsContent>
 
 
