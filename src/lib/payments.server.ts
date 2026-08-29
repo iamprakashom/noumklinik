@@ -2,6 +2,7 @@
 
 export type GatewaySettings = {
   id: string;
+  clinic_id: string;
   provider: string;
   mode: string;
   key_id: string | null;
@@ -12,14 +13,28 @@ export type GatewaySettings = {
   allow_emi: boolean;
 };
 
-export async function loadGateway(): Promise<GatewaySettings | null> {
+export async function loadGateway(clinicId: string): Promise<GatewaySettings | null> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data } = await supabaseAdmin
     .from("payment_gateway_settings")
     .select("*")
-    .limit(1)
+    .eq("clinic_id", clinicId)
     .maybeSingle();
   return (data as GatewaySettings | null) ?? null;
+}
+
+/** Webhooks only know the gateway reference, so the link row tells us whose clinic it is. */
+export async function loadGatewayByProviderRef(
+  providerRef: string,
+): Promise<GatewaySettings | null> {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data: link } = await supabaseAdmin
+    .from("payment_links")
+    .select("clinic_id")
+    .eq("provider_ref", providerRef)
+    .maybeSingle();
+  if (!link?.clinic_id) return null;
+  return loadGateway(link.clinic_id);
 }
 
 export function maskKey(value: string | null | undefined) {
@@ -103,7 +118,7 @@ export async function settleLink(providerRef: string, amount: number, method: st
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data: link } = await supabaseAdmin
     .from("payment_links")
-    .select("id, invoice_id, status")
+    .select("id, invoice_id, status, clinic_id")
     .eq("provider_ref", providerRef)
     .maybeSingle();
   if (!link || link.status === "paid") return false;
@@ -113,6 +128,7 @@ export async function settleLink(providerRef: string, amount: number, method: st
     .update({ status: "paid", paid_at: new Date().toISOString() })
     .eq("id", link.id);
   await supabaseAdmin.from("payments").insert({
+    clinic_id: link.clinic_id,
     invoice_id: link.invoice_id,
     amount,
     method,

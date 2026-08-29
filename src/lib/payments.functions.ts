@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { requireClinicId } from "@/lib/clinic.server";
 
 const configSchema = z.object({
   provider: z.enum(["razorpay", "cashfree"]),
@@ -22,8 +23,9 @@ export const getGatewayConfig = createServerFn({ method: "GET" })
     });
     if (roleError) throw new Error(`Could not verify your role: ${roleError.message}`);
     if (!isAdmin) throw new Error("Only clinic admins can view payment settings");
+    const clinicId = await requireClinicId(context.supabase);
     const { loadGateway, maskKey } = await import("@/lib/payments.server");
-    const g = await loadGateway();
+    const g = await loadGateway(clinicId);
     if (!g) return null;
     return {
       provider: g.provider,
@@ -48,9 +50,10 @@ export const saveGatewayConfig = createServerFn({ method: "POST" })
     if (roleError) throw new Error(`Could not verify your role: ${roleError.message}`);
     if (!isAdmin) throw new Error("Only clinic admins can change payment settings");
 
+    const clinicId = await requireClinicId(context.supabase);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { loadGateway } = await import("@/lib/payments.server");
-    const existing = await loadGateway();
+    const existing = await loadGateway(clinicId);
 
     const values = {
       provider: data.provider,
@@ -73,7 +76,7 @@ export const saveGatewayConfig = createServerFn({ method: "POST" })
     } else {
       const { error } = await supabaseAdmin
         .from("payment_gateway_settings")
-        .insert({ ...values, singleton: true });
+        .insert({ ...values, clinic_id: clinicId, singleton: true });
       if (error) throw new Error(error.message);
     }
     return { ok: true };
@@ -100,7 +103,8 @@ export const createInvoicePaymentLink = createServerFn({ method: "POST" })
     const { loadGateway, createRazorpayLink, createCashfreeLink } = await import(
       "@/lib/payments.server"
     );
-    const gateway = await loadGateway();
+    const clinicId = await requireClinicId(context.supabase);
+    const gateway = await loadGateway(clinicId);
     if (!gateway || !gateway.enabled || !gateway.key_id || !gateway.key_secret) {
       throw new Error("Connect a payment gateway in Clinic setup → Payments first");
     }
@@ -123,6 +127,7 @@ export const createInvoicePaymentLink = createServerFn({ method: "POST" })
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     await supabaseAdmin.from("payment_links").insert({
+      clinic_id: clinicId,
       invoice_id: invoice.id,
       provider: gateway.provider,
       provider_ref: link.ref,
