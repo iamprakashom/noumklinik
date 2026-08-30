@@ -235,9 +235,10 @@
   }
 
   /* Only the subtree containing the invoice prints. */
-  body > *:not(:has(.invoice-print-shell)) {
+  body > *:not(:has(.invoice-print-shell)):not(.invoice-print-shell) {
     display: none !important;
   }
+
 
   [data-radix-popper-content-wrapper] {
     display: none !important;
@@ -255,6 +256,11 @@
     position: static !important;
     inset: auto !important;
     transform: none !important;
+    translate: none !important;
+    rotate: none !important;
+    scale: none !important;
+    left: auto !important;
+    top: auto !important;
     max-width: none !important;
     max-height: none !important;
     width: 100% !important;
