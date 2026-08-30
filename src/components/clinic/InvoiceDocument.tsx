@@ -30,7 +30,7 @@ export function InvoiceDocument({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-3xl">
+      <DialogContent className="invoice-print-shell max-h-[90vh] overflow-y-auto sm:max-w-3xl">
         <div className="flex items-center justify-between gap-2 print:hidden">
           <h2 className="text-sm font-semibold">
             {isCredit ? "Credit note" : "Tax invoice"} {invoice.number}
