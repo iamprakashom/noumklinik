@@ -234,21 +234,22 @@
     background: #fff !important;
   }
 
-  /* Hide app chrome; only the invoice portal subtree prints. */
-  body > *:not([data-radix-portal]):not([data-invoice-portal]) {
+  /* Only the subtree containing the invoice prints. */
+  body > *:not(:has(.invoice-print-shell)) {
     display: none !important;
   }
 
-  [data-radix-popper-content-wrapper],
-  [data-radix-portal]:not(:has(.invoice-print-shell)) {
+  [data-radix-popper-content-wrapper] {
     display: none !important;
   }
 
-  /* Dialog backdrop and toolbar. */
-  [data-radix-dialog-overlay],
+  /* Dialog backdrop, close button and toolbar. */
+  .invoice-dialog-overlay,
+  .invoice-print-shell > button[type="button"]:not(#invoice-print button),
   .print\:hidden {
     display: none !important;
   }
+
 
   /* Detach the invoice dialog from its centred, clipped modal box. */
   .invoice-print-shell {
