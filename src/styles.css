@@ -235,9 +235,10 @@
   }
 
   /* Only the subtree containing the invoice prints. */
-  body > *:not(:has(.invoice-print-shell)) {
+  body > *:not(:has(.invoice-print-shell)):not(.invoice-print-shell) {
     display: none !important;
   }
+
 
   [data-radix-popper-content-wrapper] {
     display: none !important;
