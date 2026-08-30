@@ -33,16 +33,28 @@ function AuthPage() {
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
 
+  const goAfterAuth = async (userId: string) => {
+    const pending = sessionStorage.getItem("pending_invite_token");
+    if (pending) {
+      navigate({ to: "/join", search: { token: pending }, replace: true });
+      return;
+    }
+    const { data: membership } = await supabase
+      .from("clinic_members")
+      .select("clinic_id")
+      .eq("user_id", userId)
+      .eq("status", "active")
+      .limit(1)
+      .maybeSingle();
+    navigate({ to: membership ? "/dashboard" : "/onboarding", replace: true });
+  };
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       if (!data.session) return;
-      const pending = sessionStorage.getItem("pending_invite_token");
-      if (pending) {
-        navigate({ to: "/join", search: { token: pending }, replace: true });
-        return;
-      }
-      navigate({ to: "/dashboard", replace: true });
+      void goAfterAuth(data.session.user.id);
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [navigate]);
 
   async function submit(e: React.FormEvent) {
@@ -50,18 +62,21 @@ function AuthPage() {
     setBusy(true);
     try {
       if (mode === "signin") {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
-        const pending = sessionStorage.getItem("pending_invite_token");
-        if (pending) navigate({ to: "/join", search: { token: pending }, replace: true });
-        else navigate({ to: "/dashboard", replace: true });
+        if (data.user) await goAfterAuth(data.user.id);
       } else {
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: { emailRedirectTo: window.location.origin },
         });
         if (error) throw error;
+        if (data.session?.user) {
+          // Signed in immediately — send them straight into clinic setup.
+          await goAfterAuth(data.session.user.id);
+          return;
+        }
         toast.success("Account created — you can sign in now.");
         setMode("signin");
       }
@@ -71,6 +86,7 @@ function AuthPage() {
       setBusy(false);
     }
   }
+
 
   async function google() {
     const result = await lovable.auth.signInWithOAuth("google", {
