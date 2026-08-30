@@ -56,27 +56,27 @@ export function ClinicProfileTab() {
         className="grid gap-4"
         onSubmit={(e) => {
           e.preventDefault();
-          const id = profile.data?.id;
-          if (!id) return;
           if (gstinBad) {
             toast.error("That GSTIN doesn't look valid");
             return;
           }
+          const id = profile.data?.id ?? null;
+          const values: Record<string, unknown> = {
+            ...form,
+            gstin: form.gstin.toUpperCase() || null,
+            state: form.state || "Karnataka",
+            state_code: stateCode(form.state) ?? "",
+            invoice_prefix: form.invoice_prefix || "INV",
+          };
           update.mutate(
-            {
-              id,
-              values: {
-                ...form,
-                gstin: form.gstin.toUpperCase() || null,
-                state_code: stateCode(form.state) ?? "",
-              },
-            },
+            { id, values },
             {
               onSuccess: () => toast.success("Clinic profile saved"),
               onError: (err) => toast.error(err.message),
             },
           );
         }}
+
       >
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Legal name">
