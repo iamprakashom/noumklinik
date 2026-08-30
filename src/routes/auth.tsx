@@ -97,7 +97,9 @@ function AuthPage() {
       return;
     }
     if (result.redirected) return;
-    navigate({ to: "/dashboard", replace: true });
+    const { data } = await supabase.auth.getSession();
+    if (data.session?.user) await goAfterAuth(data.session.user.id);
+
   }
 
   return (
