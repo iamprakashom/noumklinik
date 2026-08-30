@@ -256,6 +256,11 @@
     position: static !important;
     inset: auto !important;
     transform: none !important;
+    translate: none !important;
+    rotate: none !important;
+    scale: none !important;
+    left: auto !important;
+    top: auto !important;
     max-width: none !important;
     max-height: none !important;
     width: 100% !important;
