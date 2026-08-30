@@ -405,10 +405,16 @@ function SettingsPage() {
             <button type="button" className={ghostButton} onClick={close}>
               Cancel
             </button>
-            <button type="submit" form="setup-form" className={primaryButton}>
-              Save
+            <button
+              type="submit"
+              form="setup-form"
+              className={primaryButton}
+              disabled={saving}
+            >
+              {saving ? "Saving…" : "Save"}
             </button>
           </DialogFooter>
+
         </DialogContent>
       </Dialog>
     </AppShell>
