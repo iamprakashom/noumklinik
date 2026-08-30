@@ -243,12 +243,11 @@
     display: none !important;
   }
 
-  /* Dialog backdrop, close button and toolbar. */
-  .invoice-dialog-overlay,
-  .invoice-print-shell > button[type="button"]:not(#invoice-print button),
+  /* Toolbar row above the document. */
   .print\:hidden {
     display: none !important;
   }
+
 
 
   /* Detach the invoice dialog from its centred, clipped modal box. */
