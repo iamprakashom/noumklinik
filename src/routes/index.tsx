@@ -1,5 +1,7 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Stethoscope } from "lucide-react";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -23,6 +25,42 @@ export const Route = createFileRoute("/")({
 });
 
 function Landing() {
+  const navigate = useNavigate();
+  const [checking, setChecking] = useState(true);
+
+  // A signed-in visitor (including the OAuth return, which lands here with a
+  // leftover "#") goes straight into the app — clinic setup first if needed.
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const { data } = await supabase.auth.getSession();
+      const user = data.session?.user;
+      if (!user) {
+        if (!cancelled) setChecking(false);
+        return;
+      }
+      if (window.location.hash) {
+        window.history.replaceState(null, "", window.location.pathname + window.location.search);
+      }
+      const pending = sessionStorage.getItem("pending_invite_token");
+      if (pending) {
+        navigate({ to: "/join", search: { token: pending }, replace: true });
+        return;
+      }
+      const { data: membership } = await supabase
+        .from("clinic_members")
+        .select("clinic_id")
+        .eq("user_id", user.id)
+        .eq("status", "active")
+        .limit(1)
+        .maybeSingle();
+      navigate({ to: membership ? "/dashboard" : "/onboarding", replace: true });
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [navigate]);
+
   return (
     <main className="flex min-h-screen items-center justify-center bg-background px-6">
       <div className="max-w-md text-center">
@@ -39,13 +77,7 @@ function Landing() {
             to="/auth"
             className="inline-flex h-9 items-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
           >
-            Sign in
-          </Link>
-          <Link
-            to="/dashboard"
-            className="inline-flex h-9 items-center rounded-md border border-border px-4 text-sm font-medium transition-colors hover:bg-secondary"
-          >
-            Open clinic
+            {checking ? "Loading…" : "Sign in"}
           </Link>
         </div>
       </div>
