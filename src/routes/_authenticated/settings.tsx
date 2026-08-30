@@ -280,6 +280,8 @@ function SettingsPage() {
             className="grid gap-4 sm:grid-cols-2"
             onSubmit={(e) => {
               e.preventDefault();
+              if (saving) return;
+
               const fd = new FormData(e.currentTarget);
               if (dialog === "service") {
                 addService.mutate(
