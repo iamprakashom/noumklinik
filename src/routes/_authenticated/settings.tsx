@@ -70,11 +70,14 @@ function SettingsPage() {
   const updateConsent = useUpdate("consent_templates");
 
   const close = () => setDialog(null);
+  const saving =
+    addService.isPending || addProvider.isPending || addRoom.isPending || addConsent.isPending;
   const ok = (msg: string) => {
     toast.success(msg);
     close();
   };
   const fail = (e: Error) => toast.error(e.message);
+
 
   return (
     <AppShell title="Clinic setup" subtitle="Treatment menu, team, rooms and consent forms">
