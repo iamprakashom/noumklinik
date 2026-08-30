@@ -200,16 +200,23 @@ export function useClinicProfile() {
 export function useUpdateClinicProfile() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, values }: { id: string; values: Record<string, unknown> }) => {
-      const { error } = await supabase
-        .from("clinic_profile")
-        .update(values as never)
-        .eq("id", id);
+    mutationFn: async ({ id, values }: { id?: string | null; values: Record<string, unknown> }) => {
+      if (id) {
+        const { error } = await supabase
+          .from("clinic_profile")
+          .update(values as never)
+          .eq("id", id);
+        if (error) throw error;
+        return;
+      }
+      // No profile row for this clinic yet — create it.
+      const { error } = await supabase.from("clinic_profile").insert(values as never);
       if (error) throw error;
     },
     onSuccess: () => void qc.invalidateQueries({ queryKey: ["clinic_profile"] }),
   });
 }
+
 
 /** Creates a GST invoice with its line-level tax breakup in one go. */
 export function useCreateInvoice() {
