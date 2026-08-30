@@ -222,17 +222,70 @@
 }
 
 @media print {
-  body * {
-    visibility: hidden;
+  @page {
+    size: A4;
+    margin: 12mm;
   }
+
+  html,
+  body {
+    height: auto !important;
+    overflow: visible !important;
+    background: #fff !important;
+  }
+
+  /* Hide app chrome; only the invoice portal subtree prints. */
+  body > *:not([data-radix-portal]):not([data-invoice-portal]) {
+    display: none !important;
+  }
+
+  [data-radix-popper-content-wrapper],
+  [data-radix-portal]:not(:has(.invoice-print-shell)) {
+    display: none !important;
+  }
+
+  /* Dialog backdrop and toolbar. */
+  [data-radix-dialog-overlay],
+  .print\:hidden {
+    display: none !important;
+  }
+
+  /* Detach the invoice dialog from its centred, clipped modal box. */
+  .invoice-print-shell {
+    position: static !important;
+    inset: auto !important;
+    transform: none !important;
+    max-width: none !important;
+    max-height: none !important;
+    width: 100% !important;
+    overflow: visible !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    gap: 0 !important;
+    background: #fff !important;
+    animation: none !important;
+  }
+
+  #invoice-print {
+    position: static !important;
+    width: 100% !important;
+    border: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    background: #fff !important;
+  }
+
   #invoice-print,
   #invoice-print * {
-    visibility: visible;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
-  #invoice-print {
-    position: absolute;
-    inset: 0;
-    border: 0;
-    padding: 0;
+
+  #invoice-print tr,
+  #invoice-print thead,
+  #invoice-print footer {
+    break-inside: avoid;
   }
 }
+
