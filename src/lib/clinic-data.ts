@@ -146,6 +146,16 @@ function useInvalidate() {
   };
 }
 
+/** Turns the raw Postgres RLS rejection into something a clinic user can act on. */
+function friendlyError(error: { message: string }): Error {
+  if (/row-level security/i.test(error.message)) {
+    return new Error(
+      "Your clinic workspace isn't set up yet — finish clinic setup, then try again.",
+    );
+  }
+  return new Error(error.message);
+}
+
 export function useInsert<T extends Record<string, unknown>>(table: string) {
   const invalidate = useInvalidate();
   return useMutation({
@@ -154,12 +164,13 @@ export function useInsert<T extends Record<string, unknown>>(table: string) {
         .from(table as never)
         .insert(values as never)
         .select("*");
-      if (error) throw error;
+      if (error) throw friendlyError(error);
       return (data ?? []) as unknown[];
     },
     onSuccess: () => invalidate(table),
   });
 }
+
 
 export function useUpdate<T extends Record<string, unknown>>(table: string) {
   const invalidate = useInvalidate();
@@ -200,16 +211,23 @@ export function useClinicProfile() {
 export function useUpdateClinicProfile() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, values }: { id: string; values: Record<string, unknown> }) => {
-      const { error } = await supabase
-        .from("clinic_profile")
-        .update(values as never)
-        .eq("id", id);
+    mutationFn: async ({ id, values }: { id?: string | null; values: Record<string, unknown> }) => {
+      if (id) {
+        const { error } = await supabase
+          .from("clinic_profile")
+          .update(values as never)
+          .eq("id", id);
+        if (error) throw error;
+        return;
+      }
+      // No profile row for this clinic yet — create it.
+      const { error } = await supabase.from("clinic_profile").insert(values as never);
       if (error) throw error;
     },
     onSuccess: () => void qc.invalidateQueries({ queryKey: ["clinic_profile"] }),
   });
 }
+
 
 /** Creates a GST invoice with its line-level tax breakup in one go. */
 export function useCreateInvoice() {

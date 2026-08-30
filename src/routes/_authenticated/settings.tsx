@@ -70,11 +70,14 @@ function SettingsPage() {
   const updateConsent = useUpdate("consent_templates");
 
   const close = () => setDialog(null);
+  const saving =
+    addService.isPending || addProvider.isPending || addRoom.isPending || addConsent.isPending;
   const ok = (msg: string) => {
     toast.success(msg);
     close();
   };
   const fail = (e: Error) => toast.error(e.message);
+
 
   return (
     <AppShell title="Clinic setup" subtitle="Treatment menu, team, rooms and consent forms">
@@ -277,6 +280,8 @@ function SettingsPage() {
             className="grid gap-4 sm:grid-cols-2"
             onSubmit={(e) => {
               e.preventDefault();
+              if (saving) return;
+
               const fd = new FormData(e.currentTarget);
               if (dialog === "service") {
                 addService.mutate(
@@ -405,10 +410,16 @@ function SettingsPage() {
             <button type="button" className={ghostButton} onClick={close}>
               Cancel
             </button>
-            <button type="submit" form="setup-form" className={primaryButton}>
-              Save
+            <button
+              type="submit"
+              form="setup-form"
+              className={primaryButton}
+              disabled={saving}
+            >
+              {saving ? "Saving…" : "Save"}
             </button>
           </DialogFooter>
+
         </DialogContent>
       </Dialog>
     </AppShell>

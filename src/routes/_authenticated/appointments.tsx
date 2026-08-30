@@ -510,14 +510,21 @@ function AppointmentsPage() {
             </div>
 
             <Field label="Treatment type">
-              <select name="service_id" className={inputClass}>
+              <select name="service_id" className={inputClass} defaultValue="">
+                <option value="">Select a treatment…</option>
                 {services.data?.map((s) => (
                   <option key={s.id} value={s.id}>
                     {s.name}
                   </option>
                 ))}
               </select>
+              {(services.data?.length ?? 0) === 0 ? (
+                <p className="mt-1.5 text-xs text-muted-foreground">
+                  No treatments yet — add them in Clinic setup → Services.
+                </p>
+              ) : null}
             </Field>
+
             <Field label="Doctor">
               <select name="provider_id" className={inputClass}>
                 <option value="">Unassigned</option>
