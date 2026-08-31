@@ -251,14 +251,16 @@
 
 
 
-  /* Detach the invoice dialog from its centred, clipped modal box. */
+  /* Detach the invoice dialog from its centred, clipped modal box.
+     NOTE: keep translate/rotate/scale as individual properties and do NOT add
+     `transform` here — Lightning CSS would collapse them into a `transform`
+     shorthand, which does not reset the dialog's `translate: -50% -50%`. */
   .invoice-print-shell {
     position: static !important;
     inset: auto !important;
-    transform: none !important;
-    translate: none !important;
-    rotate: none !important;
-    scale: none !important;
+    translate: 0 0 !important;
+    rotate: 0deg !important;
+    scale: 1 1 !important;
     left: auto !important;
     top: auto !important;
     max-width: none !important;
