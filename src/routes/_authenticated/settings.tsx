@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Plus } from "lucide-react";
+import { Pencil, Plus, Trash2, Undo2 } from "lucide-react";
 import { AppShell, ghostButton, primaryButton } from "@/components/clinic/AppShell";
 import { ClinicProfileTab } from "@/components/clinic/ClinicProfileTab";
 import { PackagesTab } from "@/components/clinic/PackagesTab";
@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { money } from "@/data/clinic";
+import type { Service } from "@/data/clinic";
 import {
   useConsentTemplates,
   useInsert,
@@ -53,6 +54,7 @@ type DialogKind = "service" | "provider" | "room" | "consent" | null;
 
 function SettingsPage() {
   const [dialog, setDialog] = useState<DialogKind>(null);
+  const [editingService, setEditingService] = useState<Service | null>(null);
 
   const services = useServices();
   const providers = useProviders();
@@ -69,9 +71,16 @@ function SettingsPage() {
   const updateRoom = useUpdate("rooms");
   const updateConsent = useUpdate("consent_templates");
 
-  const close = () => setDialog(null);
+  const close = () => {
+    setDialog(null);
+    setEditingService(null);
+  };
   const saving =
-    addService.isPending || addProvider.isPending || addRoom.isPending || addConsent.isPending;
+    addService.isPending ||
+    addProvider.isPending ||
+    addRoom.isPending ||
+    addConsent.isPending ||
+    updateService.isPending;
   const ok = (msg: string) => {
     toast.success(msg);
     close();
@@ -124,7 +133,13 @@ function SettingsPage() {
           <Panel
             title="Treatment menu"
             action={
-              <button className={primaryButton} onClick={() => setDialog("service")}>
+              <button
+                className={primaryButton}
+                onClick={() => {
+                  setEditingService(null);
+                  setDialog("service");
+                }}
+              >
                 <Plus className="size-3.5" /> New service
               </button>
             }
@@ -134,22 +149,70 @@ function SettingsPage() {
             ) : (
               <ul className="divide-y divide-border">
                 {services.data?.map((s) => (
-                  <li key={s.id} className="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
+                  <li
+                    key={s.id}
+                    className={`flex items-center gap-3 py-3 first:pt-0 last:pb-0 ${s.active ? "" : "opacity-60"}`}
+                  >
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium">{s.name}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-medium">{s.name}</p>
+                        {s.active ? null : <Chip>Archived</Chip>}
+                      </div>
                       <p className="text-xs text-muted-foreground">
                         {s.category ?? "General"} · {s.duration_min} min · SAC {s.sac_code} · GST {s.gst_rate}% ·{" "}
                         {s.followup_days ? `${s.followup_days}d follow-up` : "no follow-up"}
                       </p>
                     </div>
                     <span className="text-sm tabular-nums">{money(s.price)}</span>
-                    <Switch
-                      checked={s.active}
-                      onCheckedChange={(v) =>
-                        updateService.mutate({ id: s.id, values: { active: v } })
-                      }
-                      aria-label="Toggle service"
-                    />
+                    <button
+                      type="button"
+                      className={ghostButton}
+                      aria-label={`Edit ${s.name}`}
+                      title="Edit service"
+                      onClick={() => {
+                        setEditingService(s);
+                        setDialog("service");
+                      }}
+                    >
+                      <Pencil className="size-3.5" />
+                    </button>
+                    {s.active ? (
+                      <button
+                        type="button"
+                        className={ghostButton}
+                        aria-label={`Archive ${s.name}`}
+                        title="Archive service"
+                        onClick={() => {
+                          if (
+                            window.confirm(
+                              `Archive "${s.name}"? It will be hidden from booking and billing, but past records are kept.`,
+                            )
+                          ) {
+                            updateService.mutate(
+                              { id: s.id, values: { active: false } },
+                              { onSuccess: () => toast.success("Service archived"), onError: fail },
+                            );
+                          }
+                        }}
+                      >
+                        <Trash2 className="size-3.5" />
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        className={ghostButton}
+                        aria-label={`Restore ${s.name}`}
+                        title="Restore service"
+                        onClick={() =>
+                          updateService.mutate(
+                            { id: s.id, values: { active: true } },
+                            { onSuccess: () => toast.success("Service restored"), onError: fail },
+                          )
+                        }
+                      >
+                        <Undo2 className="size-3.5" />
+                      </button>
+                    )}
                   </li>
                 ))}
               </ul>
@@ -266,7 +329,9 @@ function SettingsPage() {
           <DialogHeader>
             <DialogTitle>
               {dialog === "service"
-                ? "New service"
+                ? editingService
+                  ? "Edit service"
+                  : "New service"
                 : dialog === "provider"
                   ? "New provider"
                   : dialog === "room"
@@ -276,6 +341,7 @@ function SettingsPage() {
           </DialogHeader>
 
           <form
+            key={`${dialog ?? "none"}-${editingService?.id ?? "new"}`}
             id="setup-form"
             className="grid gap-4 sm:grid-cols-2"
             onSubmit={(e) => {
@@ -284,23 +350,30 @@ function SettingsPage() {
 
               const fd = new FormData(e.currentTarget);
               if (dialog === "service") {
-                addService.mutate(
-                  {
-                    name: String(fd.get("name")),
-                    category: String(fd.get("category")) || null,
-                    duration_min: Number(fd.get("duration_min")) || 30,
-                    price: Number(fd.get("price")) || 0,
-                    followup_days: Number(fd.get("followup_days")) || null,
-                    sac_code: String(fd.get("sac_code")) || "999722",
-                    gst_rate: Number(fd.get("gst_rate")) || 18,
-                    default_product: String(fd.get("default_product")) || null,
-                    default_units: fd.get("default_units") ? Number(fd.get("default_units")) : null,
-                    default_device_settings: String(fd.get("default_device_settings")) || null,
-                    consent_template_id: String(fd.get("consent_template_id")) || null,
-                    active: true,
-                  },
-                  { onSuccess: () => ok("Service added"), onError: fail },
-                );
+                const values = {
+                  name: String(fd.get("name")),
+                  category: String(fd.get("category")) || null,
+                  duration_min: Number(fd.get("duration_min")) || 30,
+                  price: Number(fd.get("price")) || 0,
+                  followup_days: Number(fd.get("followup_days")) || null,
+                  sac_code: String(fd.get("sac_code")) || "999722",
+                  gst_rate: Number(fd.get("gst_rate")) || 18,
+                  default_product: String(fd.get("default_product")) || null,
+                  default_units: fd.get("default_units") ? Number(fd.get("default_units")) : null,
+                  default_device_settings: String(fd.get("default_device_settings")) || null,
+                  consent_template_id: String(fd.get("consent_template_id")) || null,
+                };
+                if (editingService) {
+                  updateService.mutate(
+                    { id: editingService.id, values },
+                    { onSuccess: () => ok("Service updated"), onError: fail },
+                  );
+                } else {
+                  addService.mutate(
+                    { ...values, active: true },
+                    { onSuccess: () => ok("Service added"), onError: fail },
+                  );
+                }
               } else if (dialog === "provider") {
                 addProvider.mutate(
                   {
@@ -334,40 +407,91 @@ function SettingsPage() {
             }}
           >
             <Field label="Name" className="sm:col-span-2">
-              <input name="name" required className={inputClass} />
+              <input name="name" required defaultValue={editingService?.name ?? ""} className={inputClass} />
             </Field>
 
             {dialog === "service" ? (
               <>
                 <Field label="Category">
-                  <input name="category" className={inputClass} placeholder="Injectables" />
+                  <input
+                    name="category"
+                    defaultValue={editingService?.category ?? ""}
+                    className={inputClass}
+                    placeholder="Injectables"
+                  />
                 </Field>
                 <Field label="Duration (min)">
-                  <input name="duration_min" type="number" defaultValue={30} className={inputClass} />
+                  <input
+                    name="duration_min"
+                    type="number"
+                    defaultValue={editingService?.duration_min ?? 30}
+                    className={inputClass}
+                  />
                 </Field>
                 <Field label="Price">
-                  <input name="price" type="number" step="0.01" defaultValue={0} className={inputClass} />
+                  <input
+                    name="price"
+                    type="number"
+                    step="0.01"
+                    defaultValue={editingService?.price ?? 0}
+                    className={inputClass}
+                  />
                 </Field>
                 <Field label="Follow-up after (days)">
-                  <input name="followup_days" type="number" defaultValue={14} className={inputClass} />
+                  <input
+                    name="followup_days"
+                    type="number"
+                    defaultValue={editingService ? (editingService.followup_days ?? "") : 14}
+                    className={inputClass}
+                  />
                 </Field>
                 <Field label="SAC code">
-                  <input name="sac_code" defaultValue="999722" className={inputClass} />
+                  <input
+                    name="sac_code"
+                    defaultValue={editingService?.sac_code ?? "999722"}
+                    className={inputClass}
+                  />
                 </Field>
                 <Field label="GST rate (%)">
-                  <input name="gst_rate" type="number" step="0.1" defaultValue={18} className={inputClass} />
+                  <input
+                    name="gst_rate"
+                    type="number"
+                    step="0.1"
+                    defaultValue={editingService?.gst_rate ?? 18}
+                    className={inputClass}
+                  />
                 </Field>
                 <Field label="Default product">
-                  <input name="default_product" className={inputClass} placeholder="Botox Cosmetic" />
+                  <input
+                    name="default_product"
+                    defaultValue={editingService?.default_product ?? ""}
+                    className={inputClass}
+                    placeholder="Botox Cosmetic"
+                  />
                 </Field>
                 <Field label="Default units">
-                  <input name="default_units" type="number" step="0.5" className={inputClass} />
+                  <input
+                    name="default_units"
+                    type="number"
+                    step="0.5"
+                    defaultValue={editingService?.default_units ?? ""}
+                    className={inputClass}
+                  />
                 </Field>
                 <Field label="Default device settings" className="sm:col-span-2">
-                  <input name="default_device_settings" className={inputClass} placeholder="Fluence, pulse width…" />
+                  <input
+                    name="default_device_settings"
+                    defaultValue={editingService?.default_device_settings ?? ""}
+                    className={inputClass}
+                    placeholder="Fluence, pulse width…"
+                  />
                 </Field>
                 <Field label="Required consent form" className="sm:col-span-2">
-                  <select name="consent_template_id" className={inputClass}>
+                  <select
+                    name="consent_template_id"
+                    defaultValue={editingService?.consent_template_id ?? ""}
+                    className={inputClass}
+                  >
                     <option value="">None</option>
                     {consents.data?.map((t) => (
                       <option key={t.id} value={t.id}>
