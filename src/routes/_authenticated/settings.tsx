@@ -54,6 +54,7 @@ type DialogKind = "service" | "provider" | "room" | "consent" | null;
 
 function SettingsPage() {
   const [dialog, setDialog] = useState<DialogKind>(null);
+  const [editingService, setEditingService] = useState<Service | null>(null);
 
   const services = useServices();
   const providers = useProviders();
