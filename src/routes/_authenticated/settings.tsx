@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { money } from "@/data/clinic";
-import type { Service } from "@/lib/clinic-data";
+import type { Service } from "@/data/clinic";
 import {
   useConsentTemplates,
   useInsert,
