@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Plus } from "lucide-react";
+import { Pencil, Plus, Trash2, Undo2 } from "lucide-react";
 import { AppShell, ghostButton, primaryButton } from "@/components/clinic/AppShell";
 import { ClinicProfileTab } from "@/components/clinic/ClinicProfileTab";
 import { PackagesTab } from "@/components/clinic/PackagesTab";
@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { money } from "@/data/clinic";
+import type { Service } from "@/lib/clinic-data";
 import {
   useConsentTemplates,
   useInsert,
