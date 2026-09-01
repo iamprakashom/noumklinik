@@ -71,9 +71,16 @@ function SettingsPage() {
   const updateRoom = useUpdate("rooms");
   const updateConsent = useUpdate("consent_templates");
 
-  const close = () => setDialog(null);
+  const close = () => {
+    setDialog(null);
+    setEditingService(null);
+  };
   const saving =
-    addService.isPending || addProvider.isPending || addRoom.isPending || addConsent.isPending;
+    addService.isPending ||
+    addProvider.isPending ||
+    addRoom.isPending ||
+    addConsent.isPending ||
+    updateService.isPending;
   const ok = (msg: string) => {
     toast.success(msg);
     close();
