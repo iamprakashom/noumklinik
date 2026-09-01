@@ -441,7 +441,7 @@ function SettingsPage() {
                   <input
                     name="followup_days"
                     type="number"
-                    defaultValue={editingService?.followup_days ?? 14}
+                    defaultValue={editingService ? (editingService.followup_days ?? "") : 14}
                     className={inputClass}
                   />
                 </Field>
