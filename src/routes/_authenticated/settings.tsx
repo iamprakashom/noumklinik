@@ -329,7 +329,9 @@ function SettingsPage() {
           <DialogHeader>
             <DialogTitle>
               {dialog === "service"
-                ? "New service"
+                ? editingService
+                  ? "Edit service"
+                  : "New service"
                 : dialog === "provider"
                   ? "New provider"
                   : dialog === "room"
