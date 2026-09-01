@@ -407,40 +407,91 @@ function SettingsPage() {
             }}
           >
             <Field label="Name" className="sm:col-span-2">
-              <input name="name" required className={inputClass} />
+              <input name="name" required defaultValue={editingService?.name ?? ""} className={inputClass} />
             </Field>
 
             {dialog === "service" ? (
               <>
                 <Field label="Category">
-                  <input name="category" className={inputClass} placeholder="Injectables" />
+                  <input
+                    name="category"
+                    defaultValue={editingService?.category ?? ""}
+                    className={inputClass}
+                    placeholder="Injectables"
+                  />
                 </Field>
                 <Field label="Duration (min)">
-                  <input name="duration_min" type="number" defaultValue={30} className={inputClass} />
+                  <input
+                    name="duration_min"
+                    type="number"
+                    defaultValue={editingService?.duration_min ?? 30}
+                    className={inputClass}
+                  />
                 </Field>
                 <Field label="Price">
-                  <input name="price" type="number" step="0.01" defaultValue={0} className={inputClass} />
+                  <input
+                    name="price"
+                    type="number"
+                    step="0.01"
+                    defaultValue={editingService?.price ?? 0}
+                    className={inputClass}
+                  />
                 </Field>
                 <Field label="Follow-up after (days)">
-                  <input name="followup_days" type="number" defaultValue={14} className={inputClass} />
+                  <input
+                    name="followup_days"
+                    type="number"
+                    defaultValue={editingService?.followup_days ?? 14}
+                    className={inputClass}
+                  />
                 </Field>
                 <Field label="SAC code">
-                  <input name="sac_code" defaultValue="999722" className={inputClass} />
+                  <input
+                    name="sac_code"
+                    defaultValue={editingService?.sac_code ?? "999722"}
+                    className={inputClass}
+                  />
                 </Field>
                 <Field label="GST rate (%)">
-                  <input name="gst_rate" type="number" step="0.1" defaultValue={18} className={inputClass} />
+                  <input
+                    name="gst_rate"
+                    type="number"
+                    step="0.1"
+                    defaultValue={editingService?.gst_rate ?? 18}
+                    className={inputClass}
+                  />
                 </Field>
                 <Field label="Default product">
-                  <input name="default_product" className={inputClass} placeholder="Botox Cosmetic" />
+                  <input
+                    name="default_product"
+                    defaultValue={editingService?.default_product ?? ""}
+                    className={inputClass}
+                    placeholder="Botox Cosmetic"
+                  />
                 </Field>
                 <Field label="Default units">
-                  <input name="default_units" type="number" step="0.5" className={inputClass} />
+                  <input
+                    name="default_units"
+                    type="number"
+                    step="0.5"
+                    defaultValue={editingService?.default_units ?? ""}
+                    className={inputClass}
+                  />
                 </Field>
                 <Field label="Default device settings" className="sm:col-span-2">
-                  <input name="default_device_settings" className={inputClass} placeholder="Fluence, pulse width…" />
+                  <input
+                    name="default_device_settings"
+                    defaultValue={editingService?.default_device_settings ?? ""}
+                    className={inputClass}
+                    placeholder="Fluence, pulse width…"
+                  />
                 </Field>
                 <Field label="Required consent form" className="sm:col-span-2">
-                  <select name="consent_template_id" className={inputClass}>
+                  <select
+                    name="consent_template_id"
+                    defaultValue={editingService?.consent_template_id ?? ""}
+                    className={inputClass}
+                  >
                     <option value="">None</option>
                     {consents.data?.map((t) => (
                       <option key={t.id} value={t.id}>
