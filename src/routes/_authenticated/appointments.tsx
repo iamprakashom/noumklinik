@@ -157,13 +157,19 @@ function AppointmentsPage() {
       return;
     }
 
+    const startsAtDate = new Date(String(fd.get("starts_at")));
+    if (startsAtDate.getTime() < Date.now() - 5 * 60 * 1000) {
+      toast.error("Appointment date and time cannot be in the past");
+      return;
+    }
+
     createAppointment.mutate(
       {
         patient_id: patientId,
         provider_id: String(fd.get("provider_id")) || null,
         room_id: String(fd.get("room_id")) || null,
         service_id: service?.id ?? null,
-        starts_at: new Date(String(fd.get("starts_at"))).toISOString(),
+        starts_at: startsAtDate.toISOString(),
         duration_min: Number(fd.get("duration_min")) || service?.duration_min || 30,
         status: "Booked",
         source: String(fd.get("source")),
@@ -421,12 +427,17 @@ function AppointmentsPage() {
               onSubmit={(e) => {
                 e.preventDefault();
                 const fd = new FormData(e.currentTarget);
+                const newStart = new Date(String(fd.get("starts_at")));
+                if (newStart.getTime() < Date.now() - 5 * 60 * 1000) {
+                  toast.error("New appointment time cannot be in the past");
+                  return;
+                }
                 updateAppointment.mutate(
                   {
                     id: reschedule.id,
                     values: {
                       previous_starts_at: reschedule.starts_at,
-                      starts_at: new Date(String(fd.get("starts_at"))).toISOString(),
+                      starts_at: newStart.toISOString(),
                       reschedule_count: (reschedule.reschedule_count ?? 0) + 1,
                       status: "Booked",
                     },
@@ -449,6 +460,7 @@ function AppointmentsPage() {
                   name="starts_at"
                   type="datetime-local"
                   required
+                  min={toLocalInputValue(new Date())}
                   defaultValue={toLocalInputValue(new Date(reschedule.starts_at))}
                   className={inputClass}
                 />
@@ -578,6 +590,7 @@ function AppointmentsPage() {
                 name="starts_at"
                 type="datetime-local"
                 required
+                min={toLocalInputValue(new Date())}
                 defaultValue={toLocalInputValue(new Date(new Date().setHours(10, 0, 0, 0)))}
                 className={inputClass}
               />

@@ -62,6 +62,16 @@ export const requestBooking = createServerFn({ method: "POST" })
       throw new Error("Please choose a date and time in the future.");
     }
 
+    if (data.alternate_at) {
+      const alternate = new Date(data.alternate_at);
+      if (Number.isNaN(alternate.getTime()) || alternate.getTime() < Date.now() - 3_600_000) {
+        throw new Error("Backup appointment date cannot be in the past.");
+      }
+      if (alternate.getTime() < preferred.getTime()) {
+        throw new Error("Backup appointment date must be after or equal to the preferred date.");
+      }
+    }
+
     const digits = data.phone.replace(/\D/g, "").slice(-10);
     let patientId: string | null = null;
     if (digits.length === 10) {

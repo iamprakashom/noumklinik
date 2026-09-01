@@ -194,7 +194,12 @@ export const submitIntake = createServerFn({ method: "POST" })
     } = {};
     if (data.email) values.email = data.email;
     if (data.phone) values.phone = data.phone;
-    if (data.birth_date) values.birth_date = data.birth_date;
+    if (data.birth_date) {
+      if (data.birth_date > new Date().toISOString().slice(0, 10)) {
+          throw new Error("Date of birth cannot be in the future.");
+        }   
+      values.birth_date = data.birth_date;
+    }
     if (data.allergies !== undefined) values.allergies = data.allergies ?? null;
     if (data.notes !== undefined) values.notes = data.notes ?? null;
     if (Object.keys(values).length > 0) {
@@ -299,6 +304,10 @@ export const requestReschedule = createServerFn({ method: "POST" })
       .maybeSingle();
     if (!link || link.kind !== "appointment" || !link.appointment_id || new Date(link.expires_at) < new Date()) {
       throw new Error("This link is no longer valid.");
+    }
+    const preferred = new Date(data.preferred_at);
+      if (Number.isNaN(preferred.getTime()) || preferred.getTime() < Date.now() - 5 * 60 * 1000 ) {
+      throw new Error("Reschedule preferred date and time must be in the future.");
     }
     const { data: patient } = await supabaseAdmin
       .from("patients")

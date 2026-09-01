@@ -16,6 +16,7 @@ import {
   submitFeedback,
   submitIntake,
 } from "@/lib/patient-links.functions";
+import { toLocalInputValue } from "@/data/clinic";
 
 export const Route = createFileRoute("/p/$token")({
   head: () => ({
@@ -264,7 +265,13 @@ function PatientLinkPage() {
               }}
             >
               <Field label="New preferred date and time">
-                <input name="preferred_at" type="datetime-local" required className={inputClass} />
+                <input
+                  name="preferred_at"
+                  type="datetime-local"
+                  required
+                  min={toLocalInputValue(new Date())}
+                  className={inputClass}
+                />
               </Field>
               <Field label="Reason (optional)">
                 <textarea name="notes" className={textareaClass} />
@@ -321,7 +328,12 @@ function PatientLinkPage() {
             <input name="phone" inputMode="tel" className={inputClass} />
           </Field>
           <Field label="Date of birth">
-            <input name="birth_date" type="date" className={inputClass} />
+            <input
+              name="birth_date"
+              type="date"
+              max={new Date().toISOString().slice(0, 10)}
+              className={inputClass}
+            />
           </Field>
           <Field label="Allergies or medications">
             <textarea name="allergies" className={textareaClass} />

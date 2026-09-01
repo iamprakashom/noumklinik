@@ -302,9 +302,17 @@ function SettingsPage() {
                   { onSuccess: () => ok("Service added"), onError: fail },
                 );
               } else if (dialog === "provider") {
+                const name = String(fd.get("name")).trim();
+                const dupe = (providers.data ?? []).some(
+                  (p) => p.name.trim().toLowerCase() === name.toLowerCase(),
+                );
+                if (dupe) {
+                  toast.error(`Provider "${name}" already exists`);
+                  return;
+                }
                 addProvider.mutate(
                   {
-                    name: String(fd.get("name")),
+                    name,
                     title: String(fd.get("title")) || null,
                     email: String(fd.get("email")) || null,
                     phone: String(fd.get("phone")) || null,
@@ -313,9 +321,17 @@ function SettingsPage() {
                   { onSuccess: () => ok("Provider added"), onError: fail },
                 );
               } else if (dialog === "room") {
+                const name = String(fd.get("name")).trim();
+                const dupe = (rooms.data ?? []).some(
+                  (r) => r.name.trim().toLowerCase() === name.toLowerCase(),
+                );
+                if (dupe) {
+                  toast.error(`Room "${name}" already exists`);
+                  return;
+                }
                 addRoom.mutate(
                   {
-                    name: String(fd.get("name")),
+                    name,
                     kind: String(fd.get("kind")) || null,
                     active: true,
                   },
