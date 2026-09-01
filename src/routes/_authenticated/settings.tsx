@@ -341,6 +341,7 @@ function SettingsPage() {
           </DialogHeader>
 
           <form
+            key={`${dialog ?? "none"}-${editingService?.id ?? "new"}`}
             id="setup-form"
             className="grid gap-4 sm:grid-cols-2"
             onSubmit={(e) => {
@@ -349,23 +350,30 @@ function SettingsPage() {
 
               const fd = new FormData(e.currentTarget);
               if (dialog === "service") {
-                addService.mutate(
-                  {
-                    name: String(fd.get("name")),
-                    category: String(fd.get("category")) || null,
-                    duration_min: Number(fd.get("duration_min")) || 30,
-                    price: Number(fd.get("price")) || 0,
-                    followup_days: Number(fd.get("followup_days")) || null,
-                    sac_code: String(fd.get("sac_code")) || "999722",
-                    gst_rate: Number(fd.get("gst_rate")) || 18,
-                    default_product: String(fd.get("default_product")) || null,
-                    default_units: fd.get("default_units") ? Number(fd.get("default_units")) : null,
-                    default_device_settings: String(fd.get("default_device_settings")) || null,
-                    consent_template_id: String(fd.get("consent_template_id")) || null,
-                    active: true,
-                  },
-                  { onSuccess: () => ok("Service added"), onError: fail },
-                );
+                const values = {
+                  name: String(fd.get("name")),
+                  category: String(fd.get("category")) || null,
+                  duration_min: Number(fd.get("duration_min")) || 30,
+                  price: Number(fd.get("price")) || 0,
+                  followup_days: Number(fd.get("followup_days")) || null,
+                  sac_code: String(fd.get("sac_code")) || "999722",
+                  gst_rate: Number(fd.get("gst_rate")) || 18,
+                  default_product: String(fd.get("default_product")) || null,
+                  default_units: fd.get("default_units") ? Number(fd.get("default_units")) : null,
+                  default_device_settings: String(fd.get("default_device_settings")) || null,
+                  consent_template_id: String(fd.get("consent_template_id")) || null,
+                };
+                if (editingService) {
+                  updateService.mutate(
+                    { id: editingService.id, values },
+                    { onSuccess: () => ok("Service updated"), onError: fail },
+                  );
+                } else {
+                  addService.mutate(
+                    { ...values, active: true },
+                    { onSuccess: () => ok("Service added"), onError: fail },
+                  );
+                }
               } else if (dialog === "provider") {
                 const name = String(fd.get("name")).trim();
                 const dupe = (providers.data ?? []).some(
