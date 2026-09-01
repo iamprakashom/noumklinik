@@ -133,7 +133,13 @@ function SettingsPage() {
           <Panel
             title="Treatment menu"
             action={
-              <button className={primaryButton} onClick={() => setDialog("service")}>
+              <button
+                className={primaryButton}
+                onClick={() => {
+                  setEditingService(null);
+                  setDialog("service");
+                }}
+              >
                 <Plus className="size-3.5" /> New service
               </button>
             }
@@ -143,22 +149,70 @@ function SettingsPage() {
             ) : (
               <ul className="divide-y divide-border">
                 {services.data?.map((s) => (
-                  <li key={s.id} className="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
+                  <li
+                    key={s.id}
+                    className={`flex items-center gap-3 py-3 first:pt-0 last:pb-0 ${s.active ? "" : "opacity-60"}`}
+                  >
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium">{s.name}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-medium">{s.name}</p>
+                        {s.active ? null : <Chip>Archived</Chip>}
+                      </div>
                       <p className="text-xs text-muted-foreground">
                         {s.category ?? "General"} · {s.duration_min} min · SAC {s.sac_code} · GST {s.gst_rate}% ·{" "}
                         {s.followup_days ? `${s.followup_days}d follow-up` : "no follow-up"}
                       </p>
                     </div>
                     <span className="text-sm tabular-nums">{money(s.price)}</span>
-                    <Switch
-                      checked={s.active}
-                      onCheckedChange={(v) =>
-                        updateService.mutate({ id: s.id, values: { active: v } })
-                      }
-                      aria-label="Toggle service"
-                    />
+                    <button
+                      type="button"
+                      className={ghostButton}
+                      aria-label={`Edit ${s.name}`}
+                      title="Edit service"
+                      onClick={() => {
+                        setEditingService(s);
+                        setDialog("service");
+                      }}
+                    >
+                      <Pencil className="size-3.5" />
+                    </button>
+                    {s.active ? (
+                      <button
+                        type="button"
+                        className={ghostButton}
+                        aria-label={`Archive ${s.name}`}
+                        title="Archive service"
+                        onClick={() => {
+                          if (
+                            window.confirm(
+                              `Archive "${s.name}"? It will be hidden from booking and billing, but past records are kept.`,
+                            )
+                          ) {
+                            updateService.mutate(
+                              { id: s.id, values: { active: false } },
+                              { onSuccess: () => toast.success("Service archived"), onError: fail },
+                            );
+                          }
+                        }}
+                      >
+                        <Trash2 className="size-3.5" />
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        className={ghostButton}
+                        aria-label={`Restore ${s.name}`}
+                        title="Restore service"
+                        onClick={() =>
+                          updateService.mutate(
+                            { id: s.id, values: { active: true } },
+                            { onSuccess: () => toast.success("Service restored"), onError: fail },
+                          )
+                        }
+                      >
+                        <Undo2 className="size-3.5" />
+                      </button>
+                    )}
                   </li>
                 ))}
               </ul>
