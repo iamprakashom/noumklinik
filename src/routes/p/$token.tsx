@@ -17,7 +17,6 @@ import {
   submitIntake,
 } from "@/lib/patient-links.functions";
 import { toLocalInputValue } from "@/data/clinic";
-import { toLocalInputValue } from "@/data/clinic";
 
 export const Route = createFileRoute("/p/$token")({
   head: () => ({
