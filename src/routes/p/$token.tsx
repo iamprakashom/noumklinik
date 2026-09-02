@@ -17,6 +17,7 @@ import {
   submitIntake,
 } from "@/lib/patient-links.functions";
 import { toLocalInputValue } from "@/data/clinic";
+import { toLocalInputValue } from "@/data/clinic";
 
 export const Route = createFileRoute("/p/$token")({
   head: () => ({
@@ -258,8 +259,10 @@ function PatientLinkPage() {
               onSubmit={(e) => {
                 e.preventDefault();
                 const fd = new FormData(e.currentTarget);
+                const local = String(fd.get("preferred_at") ?? "");
+                const iso = local ? new Date(local).toISOString() : "";
                 rescheduleMut.mutate({
-                  preferred_at: String(fd.get("preferred_at") ?? ""),
+                  preferred_at: iso,
                   notes: String(fd.get("notes") ?? ""),
                 });
               }}
@@ -331,7 +334,7 @@ function PatientLinkPage() {
             <input
               name="birth_date"
               type="date"
-              max={new Date().toISOString().slice(0, 10)}
+              max={toLocalInputValue(new Date()).slice(0, 10)}
               className={inputClass}
             />
           </Field>

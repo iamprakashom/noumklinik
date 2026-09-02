@@ -25,6 +25,7 @@ import {
   formatDate,
   leadTone,
   temperatureTone,
+  toLocalInputValue,
 } from "@/data/clinic";
 import type { Lead } from "@/data/clinic";
 import {
@@ -403,11 +404,11 @@ function LeadsPage() {
                     <td className="px-5 py-3">
                       <input
                         type="date"
-                        min={today.slice(0, 10)}
+                        min={toLocalInputValue(new Date()).slice(0, 10)}
                         value={l.next_follow_up_at ? l.next_follow_up_at.slice(0, 10) : ""}
                         onChange={(e) => {
                           const val = e.target.value;
-                          if (val && val<today.slice(0,10)) {
+                          if (val && val<toLocalInputValue(new Date()).slice(0, 10)) {
                             toast.error("Follow-up date cannot be in the past");
                             return;
                           }
@@ -634,7 +635,7 @@ function LeadsPage() {
               <input
                 name="next_follow_up_at"
                 type="date"
-                min={today.slice(0, 10)}
+                min={toLocalInputValue(new Date()).slice(0, 10)}
                 className={inputClass}
               />
             </Field>

@@ -195,9 +195,19 @@ export const submitIntake = createServerFn({ method: "POST" })
     if (data.email) values.email = data.email;
     if (data.phone) values.phone = data.phone;
     if (data.birth_date) {
-      if (data.birth_date > new Date().toISOString().slice(0, 10)) {
-          throw new Error("Date of birth cannot be in the future.");
-        }   
+      const [y, m, d] = data.birth_date.split("-").map(Number);
+      const dt = new Date(Date.UTC(y, m - 1, d));
+      const isValidDate =
+        /^\d{4}-\d{2}-\d{2}$/.test(data.birth_date) &&
+        dt.getUTCFullYear() === y &&
+        dt.getUTCMonth() === m - 1 &&
+        dt.getUTCDate() === d;
+      if (!isValidDate) {
+        throw new Error("Invalid date of birth.");
+      }
+      if (dt > new Date()) {
+        throw new Error("Date of birth cannot be in the future.");
+      }
       values.birth_date = data.birth_date;
     }
     if (data.allergies !== undefined) values.allergies = data.allergies ?? null;

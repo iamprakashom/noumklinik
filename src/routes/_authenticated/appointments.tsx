@@ -123,6 +123,11 @@ function AppointmentsPage() {
   async function submit(form: HTMLFormElement) {
     const fd = new FormData(form);
     const service = services.data?.find((s) => s.id === String(fd.get("service_id")));
+    const startsAtDate = new Date(String(fd.get("starts_at")));
+    if (Number.isNaN(startsAtDate.getTime()) || startsAtDate.getTime() < Date.now() - 5 * 60 * 1000) {
+      toast.error("Appointment date and time cannot be in the past");
+      return;
+    }
 
     let patientId = String(fd.get("patient_id") ?? "");
     if (quickAdd) {
@@ -154,12 +159,6 @@ function AppointmentsPage() {
     }
     if (!patientId) {
       toast.error("Pick a patient first");
-      return;
-    }
-
-    const startsAtDate = new Date(String(fd.get("starts_at")));
-    if (startsAtDate.getTime() < Date.now() - 5 * 60 * 1000) {
-      toast.error("Appointment date and time cannot be in the past");
       return;
     }
 
