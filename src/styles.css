@@ -257,8 +257,7 @@
   /* App chrome around an in-page printable region. */
   body:has(.print-scope) aside,
   body:has(.print-scope) [role="tablist"],
-  body:has(.print-scope) main > header,
-  body:has(.print-scope) > * > * > header {
+  body:has(.print-scope) main > header {
     display: none !important;
   }
 
