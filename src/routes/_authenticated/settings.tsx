@@ -178,7 +178,7 @@ function SettingsPage() {
                         setDialog("service");
                       }}
                     >
-                      <clear className="size-3.5" />
+                      <Pencil className="size-3.5" />
                     </button>
                     {s.active ? (
                       <button
