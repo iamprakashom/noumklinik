@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatDate, money, patientName } from "@/data/clinic";
 import {
   useAppointments,
+  useClinicProfile,
   useInvoices,
   usePackageRedemptions,
   usePatientFeedback,
@@ -74,6 +75,7 @@ function ReportsPage() {
 
   const invoices = useInvoices();
   const payments = usePayments();
+  const clinicProfile = useClinicProfile();
   const patients = usePatients();
   const providers = useProviders();
   const services = useServices();
