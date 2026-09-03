@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { money } from "@/data/clinic";
-import type { Service } from "@/data/clinic";
+import type { Provider, Room, Service } from "@/data/clinic";
 import {
   useConsentTemplates,
   useInsert,
@@ -55,6 +55,8 @@ type DialogKind = "service" | "provider" | "room" | "consent" | null;
 function SettingsPage() {
   const [dialog, setDialog] = useState<DialogKind>(null);
   const [editingService, setEditingService] = useState<Service | null>(null);
+  const [editingProvider, setEditingProvider] = useState<Provider | null>(null);
+  const [editingRoom, setEditingRoom] = useState<Room | null>(null);
 
   const services = useServices();
   const providers = useProviders();
@@ -74,6 +76,8 @@ function SettingsPage() {
   const close = () => {
     setDialog(null);
     setEditingService(null);
+    setEditingProvider(null);
+    setEditingRoom(null);
   };
   const saving =
     addService.isPending ||
@@ -174,7 +178,7 @@ function SettingsPage() {
                         setDialog("service");
                       }}
                     >
-                      <Pencil className="size-3.5" />
+                      <clear className="size-3.5" />
                     </button>
                     {s.active ? (
                       <button
@@ -224,7 +228,13 @@ function SettingsPage() {
           <Panel
             title="Providers"
             action={
-              <button className={primaryButton} onClick={() => setDialog("provider")}>
+              <button
+                className={primaryButton}
+                onClick={() => {
+                  setEditingProvider(null);
+                  setDialog("provider");
+                }}
+              >
                 <Plus className="size-3.5" /> New provider
               </button>
             }
@@ -234,21 +244,69 @@ function SettingsPage() {
             ) : (
               <ul className="divide-y divide-border">
                 {providers.data?.map((p) => (
-                  <li key={p.id} className="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
+                  <li
+                    key={p.id}
+                    className={`flex items-center gap-3 py-3 first:pt-0 last:pb-0 ${p.active ? "" : "opacity-60"}`}
+                  >
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium">{p.name}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-medium">{p.name}</p>
+                        {p.active ? null : <Chip>Archived</Chip>}
+                      </div>
                       <p className="text-xs text-muted-foreground">
                         {p.title ?? "Provider"}
                         {p.email ? ` · ${p.email}` : ""}
                       </p>
                     </div>
-                    <Switch
-                      checked={p.active}
-                      onCheckedChange={(v) =>
-                        updateProvider.mutate({ id: p.id, values: { active: v } })
-                      }
-                      aria-label="Toggle provider"
-                    />
+                    <button
+                      type="button"
+                      className={ghostButton}
+                      aria-label={`Edit ${p.name}`}
+                      title="Edit provider"
+                      onClick={() => {
+                        setEditingProvider(p);
+                        setDialog("provider");
+                      }}
+                    >
+                      <Pencil className="size-3.5" />
+                    </button>
+                    {p.active ? (
+                      <button
+                        type="button"
+                        className={ghostButton}
+                        aria-label={`Archive ${p.name}`}
+                        title="Archive provider"
+                        onClick={() => {
+                          if (
+                            window.confirm(
+                              `Archive "${p.name}"? It will be hidden from booking, but past records are kept.`,
+                            )
+                          ) {
+                            updateProvider.mutate(
+                              { id: p.id, values: { active: false } },
+                              { onSuccess: () => toast.success("Provider archived"), onError: fail },
+                            );
+                          }
+                        }}
+                      >
+                        <Trash2 className="size-3.5" />
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        className={ghostButton}
+                        aria-label={`Restore ${p.name}`}
+                        title="Restore provider"
+                        onClick={() =>
+                          updateProvider.mutate(
+                            { id: p.id, values: { active: true } },
+                            { onSuccess: () => toast.success("Provider restored"), onError: fail },
+                          )
+                        }
+                      >
+                        <Undo2 className="size-3.5" />
+                      </button>
+                    )}
                   </li>
                 ))}
               </ul>
@@ -260,7 +318,13 @@ function SettingsPage() {
           <Panel
             title="Treatment rooms"
             action={
-              <button className={primaryButton} onClick={() => setDialog("room")}>
+              <button
+                className={primaryButton}
+                onClick={() => {
+                  setEditingRoom(null);
+                  setDialog("room");
+                }}
+              >
                 <Plus className="size-3.5" /> New room
               </button>
             }
@@ -270,16 +334,66 @@ function SettingsPage() {
             ) : (
               <ul className="divide-y divide-border">
                 {rooms.data?.map((r) => (
-                  <li key={r.id} className="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
+                  <li
+                    key={r.id}
+                    className={`flex items-center gap-3 py-3 first:pt-0 last:pb-0 ${r.active ? "" : "opacity-60"}`}
+                  >
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium">{r.name}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-medium">{r.name}</p>
+                        {r.active ? null : <Chip>Archived</Chip>}
+                      </div>
                       <p className="text-xs text-muted-foreground">{r.kind ?? "Treatment room"}</p>
                     </div>
-                    <Switch
-                      checked={r.active}
-                      onCheckedChange={(v) => updateRoom.mutate({ id: r.id, values: { active: v } })}
-                      aria-label="Toggle room"
-                    />
+                    <button
+                      type="button"
+                      className={ghostButton}
+                      aria-label={`Edit ${r.name}`}
+                      title="Edit room"
+                      onClick={() => {
+                        setEditingRoom(r);
+                        setDialog("room");
+                      }}
+                    >
+                      <Pencil className="size-3.5" />
+                    </button>
+                    {r.active ? (
+                      <button
+                        type="button"
+                        className={ghostButton}
+                        aria-label={`Archive ${r.name}`}
+                        title="Archive room"
+                        onClick={() => {
+                          if (
+                            window.confirm(
+                              `Archive "${r.name}"? It will be hidden from booking, but past records are kept.`,
+                            )
+                          ) {
+                            updateRoom.mutate(
+                              { id: r.id, values: { active: false } },
+                              { onSuccess: () => toast.success("Room archived"), onError: fail },
+                            );
+                          }
+                        }}
+                      >
+                        <Trash2 className="size-3.5" />
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        className={ghostButton}
+                        aria-label={`Restore ${r.name}`}
+                        title="Restore room"
+                        onClick={() =>
+                          updateRoom.mutate(
+                            { id: r.id, values: { active: true } },
+                            { onSuccess: () => toast.success("Room restored"), onError: fail },
+                          )
+                        }
+                      >
+                        <Undo2 className="size-3.5" />
+                      </button>
+                    )}
                   </li>
                 ))}
               </ul>
@@ -333,15 +447,19 @@ function SettingsPage() {
                   ? "Edit service"
                   : "New service"
                 : dialog === "provider"
-                  ? "New provider"
+                  ? editingProvider
+                    ? "Edit provider"
+                    : "New provider"
                   : dialog === "room"
-                    ? "New treatment room"
+                    ? editingRoom
+                      ? "Edit room"
+                      : "New treatment room"
                     : "New consent form"}
             </DialogTitle>
           </DialogHeader>
 
           <form
-            key={`${dialog ?? "none"}-${editingService?.id ?? "new"}`}
+            key={`${dialog ?? "none"}-${editingService?.id ?? editingProvider?.id ?? editingRoom?.id ?? "new"}`}
             id="setup-form"
             className="grid gap-4 sm:grid-cols-2"
             onSubmit={(e) => {
@@ -377,39 +495,57 @@ function SettingsPage() {
               } else if (dialog === "provider") {
                 const name = String(fd.get("name")).trim();
                 const dupe = (providers.data ?? []).some(
-                  (p) => p.name.trim().toLowerCase() === name.toLowerCase(),
+                  (p) =>
+                    p.id !== editingProvider?.id &&
+                    p.name.trim().toLowerCase() === name.toLowerCase(),
                 );
                 if (dupe) {
                   toast.error(`Provider "${name}" already exists`);
                   return;
                 }
-                addProvider.mutate(
-                  {
-                    name,
-                    title: String(fd.get("title")) || null,
-                    email: String(fd.get("email")) || null,
-                    phone: String(fd.get("phone")) || null,
-                    active: true,
-                  },
-                  { onSuccess: () => ok("Provider added"), onError: fail },
-                );
+                const values = {
+                  name,
+                  title: String(fd.get("title")) || null,
+                  email: String(fd.get("email")) || null,
+                  phone: String(fd.get("phone")) || null,
+                };
+                if (editingProvider) {
+                  updateProvider.mutate(
+                    { id: editingProvider.id, values },
+                    { onSuccess: () => ok("Provider updated"), onError: fail },
+                  );
+                } else {
+                  addProvider.mutate(
+                    { ...values, active: true },
+                    { onSuccess: () => ok("Provider added"), onError: fail },
+                  );
+                }
               } else if (dialog === "room") {
                 const name = String(fd.get("name")).trim();
                 const dupe = (rooms.data ?? []).some(
-                  (r) => r.name.trim().toLowerCase() === name.toLowerCase(),
+                  (r) =>
+                    r.id !== editingRoom?.id &&
+                    r.name.trim().toLowerCase() === name.toLowerCase(),
                 );
                 if (dupe) {
                   toast.error(`Room "${name}" already exists`);
                   return;
                 }
-                addRoom.mutate(
-                  {
-                    name,
-                    kind: String(fd.get("kind")) || null,
-                    active: true,
-                  },
-                  { onSuccess: () => ok("Room added"), onError: fail },
-                );
+                const values = {
+                  name,
+                  kind: String(fd.get("kind")) || null,
+                };
+                if (editingRoom) {
+                  updateRoom.mutate(
+                    { id: editingRoom.id, values },
+                    { onSuccess: () => ok("Room updated"), onError: fail },
+                  );
+                } else {
+                  addRoom.mutate(
+                    { ...values, active: true },
+                    { onSuccess: () => ok("Room added"), onError: fail },
+                  );
+                }
               } else {
                 addConsent.mutate(
                   {
@@ -423,7 +559,17 @@ function SettingsPage() {
             }}
           >
             <Field label="Name" className="sm:col-span-2">
-              <input name="name" required defaultValue={editingService?.name ?? ""} className={inputClass} />
+              <input
+                name="name"
+                required
+                defaultValue={
+                  editingService?.name ??
+                  editingProvider?.name ??
+                  editingRoom?.name ??
+                  ""
+                }
+                className={inputClass}
+              />
             </Field>
 
             {dialog === "service" ? (
@@ -522,20 +668,39 @@ function SettingsPage() {
             {dialog === "provider" ? (
               <>
                 <Field label="Title">
-                  <input name="title" className={inputClass} placeholder="Nurse Injector" />
+                  <input
+                    name="title"
+                    defaultValue={editingProvider?.title ?? ""}
+                    className={inputClass}
+                    placeholder="Nurse Injector"
+                  />
                 </Field>
                 <Field label="Email">
-                  <input name="email" type="email" className={inputClass} />
+                  <input
+                    name="email"
+                    type="email"
+                    defaultValue={editingProvider?.email ?? ""}
+                    className={inputClass}
+                  />
                 </Field>
                 <Field label="Phone" className="sm:col-span-2">
-                  <input name="phone" className={inputClass} />
+                  <input
+                    name="phone"
+                    defaultValue={editingProvider?.phone ?? ""}
+                    className={inputClass}
+                  />
                 </Field>
               </>
             ) : null}
 
             {dialog === "room" ? (
               <Field label="Kind" className="sm:col-span-2">
-                <input name="kind" className={inputClass} placeholder="Laser suite" />
+                <input
+                  name="kind"
+                  defaultValue={editingRoom?.kind ?? ""}
+                  className={inputClass}
+                  placeholder="Laser suite"
+                />
               </Field>
             ) : null}
 
