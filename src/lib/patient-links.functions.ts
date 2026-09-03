@@ -195,7 +195,7 @@ export const submitIntake = createServerFn({ method: "POST" })
     if (data.email) values.email = data.email;
     if (data.phone) values.phone = data.phone;
     if (data.birth_date) {
-      const [y, m, d] = data.birth_date.split("-").map(Number);
+      const [y = NaN, m = NaN, d = NaN] = data.birth_date.split("-").map(Number);
       const dt = new Date(Date.UTC(y, m - 1, d));
       const isValidDate =
         /^\d{4}-\d{2}-\d{2}$/.test(data.birth_date) &&

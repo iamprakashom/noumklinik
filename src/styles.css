@@ -234,9 +234,14 @@
     background: #fff !important;
   }
 
-  /* Only the subtree containing the invoice prints. */
-  body > *:not(:has(.invoice-print-shell)):not(.invoice-print-shell) {
+  /* Only the subtree containing a printable region prints.
+     Pages with no .print-scope print normally. */
+  body:has(.print-scope) > *:not(:has(.print-scope)):not(.print-scope) {
     display: none !important;
+  }
+
+  .print-only {
+    display: block !important;
   }
 
 
@@ -247,6 +252,29 @@
   /* Toolbar row above the document. */
   .print\:hidden {
     display: none !important;
+  }
+
+  /* App chrome around an in-page printable region. */
+  body:has(.print-scope) aside,
+  body:has(.print-scope) header:not(.print-only),
+  body:has(.print-scope) [role="tablist"] {
+    display: none !important;
+  }
+
+  body:has(.print-scope) main {
+    padding: 0 !important;
+  }
+
+  .print-scope,
+  .print-scope * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .print-scope li,
+  .print-scope tr,
+  .print-scope thead {
+    break-inside: avoid;
   }
 
 
