@@ -231,8 +231,8 @@ function ReportsPage() {
 
 
         {/* --------------------------- Day close --------------------------- */}
-        <TabsContent value="day-close" className="mt-4 space-y-6">
-          <div className="flex flex-wrap items-end gap-3">
+        <TabsContent value="day-close" className="print-scope mt-4 space-y-6">
+          <div className="flex flex-wrap items-end gap-3 print:hidden">
             <Field label="Business date" className="w-48">
               <input
                 type="date"
@@ -242,12 +242,23 @@ function ReportsPage() {
               />
             </Field>
             <button
-              className="h-9 rounded-md border border-border px-3 text-xs hover:bg-secondary print:hidden"
+              className="h-9 rounded-md border border-border px-3 text-xs hover:bg-secondary"
               onClick={() => window.print()}
             >
               Print day close
             </button>
           </div>
+
+          <header className="print-only hidden">
+            <h2 className="text-base font-semibold">
+              {clinicProfile.data?.trade_name || clinicProfile.data?.legal_name || "Clinic"} — Day
+              close
+            </h2>
+            <p className="text-xs text-muted-foreground">
+              Business date {formatDate(`${day}T12:00:00`)}
+            </p>
+          </header>
+
 
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <StatCard
