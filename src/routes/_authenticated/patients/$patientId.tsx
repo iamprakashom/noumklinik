@@ -208,14 +208,19 @@ function PatientDetail() {
             className="grid max-w-2xl gap-4 rounded-xl border border-border bg-card p-5 sm:grid-cols-2"
             onSubmit={(e) => {
               e.preventDefault();
-              const fd = new FormData(e.currentTarget);
+             const fd = new FormData(e.currentTarget);
+             const birthDate = String(fd.get("birth_date") || "");
+             if (birthDate && birthDate > new Date().toLocaleDateString("en-CA")) {
+                toast.error("Date of birth cannot be in the future");
+              return;
+}   
               updatePatient.mutate(
                 {
                   id: patientId,
                   values: {
                     email: String(fd.get("email")) || null,
                     phone: String(fd.get("phone")) || null,
-                    birth_date: String(fd.get("birth_date")) || null,
+                    birth_date: birthDate || null,
                     preferred_channel: String(fd.get("preferred_channel")),
                     allergies: String(fd.get("allergies")) || null,
                     alerts: String(fd.get("alerts")) || null,
@@ -236,6 +241,7 @@ function PatientDetail() {
               <input
                 name="birth_date"
                 type="date"
+                max={new Date().toISOString().slice(0, 10)}
                 defaultValue={patient.birth_date ?? ""}
                 className={inputClass}
               />

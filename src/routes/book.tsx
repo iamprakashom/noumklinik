@@ -8,7 +8,7 @@ import { CalendarCheck, CheckCircle2, Clock } from "lucide-react";
 import { Field, inputClass, textareaClass } from "@/components/clinic/bits";
 import { primaryButton } from "@/components/clinic/AppShell";
 import { getBookingOptions, requestBooking } from "@/lib/booking.functions";
-import { money } from "@/data/clinic";
+import { money, toLocalInputValue } from "@/data/clinic";
 
 export const Route = createFileRoute("/book")({
   validateSearch: z.object({ c: z.string().uuid().optional() }),
@@ -160,10 +160,21 @@ function BookingPage() {
           </select>
         </Field>
         <Field label="Preferred date and time">
-          <input name="preferred_at" type="datetime-local" required className={inputClass} />
+          <input
+            name="preferred_at"
+            type="datetime-local"
+            required
+            min={toLocalInputValue(new Date())}
+            className={inputClass}
+          />
         </Field>
         <Field label="Backup slot (optional)">
-          <input name="alternate_at" type="datetime-local" className={inputClass} />
+          <input
+            name="alternate_at"
+            type="datetime-local"
+            min={toLocalInputValue(new Date())}
+            className={inputClass}
+          />
         </Field>
         <Field label="Anything we should know?">
           <textarea name="notes" className={textareaClass} />

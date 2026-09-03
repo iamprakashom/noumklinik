@@ -25,6 +25,7 @@ import {
   formatDate,
   leadTone,
   temperatureTone,
+  toLocalInputValue,
 } from "@/data/clinic";
 import type { Lead } from "@/data/clinic";
 import {
@@ -403,14 +404,20 @@ function LeadsPage() {
                     <td className="px-5 py-3">
                       <input
                         type="date"
+                        min={toLocalInputValue(new Date()).slice(0, 10)}
                         value={l.next_follow_up_at ? l.next_follow_up_at.slice(0, 10) : ""}
-                        onChange={(e) =>
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (val && val<toLocalInputValue(new Date()).slice(0, 10)) {
+                            toast.error("Follow-up date cannot be in the past");
+                            return;
+                          }
                           setField(l.id, {
-                            next_follow_up_at: e.target.value
-                              ? new Date(`${e.target.value}T09:00:00`).toISOString()
+                            next_follow_up_at: val
+                              ? new Date(`${val}T09:00:00`).toISOString()
                               : null,
-                          })
-                        }
+                          });
+                        }}
                         className={`${inputClass} h-8 w-36 text-xs ${isOverdue ? "border-status-overdue text-status-overdue" : ""}`}
                         aria-label="Next follow-up"
                       />
@@ -539,6 +546,10 @@ function LeadsPage() {
               const fd = new FormData(e.currentTarget);
               const source = String(fd.get("source"));
               const followUp = String(fd.get("next_follow_up_at"));
+              if (followUp && new Date(`${followUp}T23:59:59Z`).getTime() < new Date().setHours(0, 0, 0, 0)) {
+                toast.error("Follow-up date cannot be in the past");
+                return;
+              }
               createLead.mutate(
                 {
                   full_name: String(fd.get("full_name")),
@@ -621,7 +632,12 @@ function LeadsPage() {
               </select>
             </Field>
             <Field label="Next follow-up">
-              <input name="next_follow_up_at" type="date" className={inputClass} />
+              <input
+                name="next_follow_up_at"
+                type="date"
+                min={toLocalInputValue(new Date()).slice(0, 10)}
+                className={inputClass}
+              />
             </Field>
             <Field label="Other interest note" className="sm:col-span-2">
               <input name="interest" className={inputClass} placeholder="Laser hair removal — legs" />

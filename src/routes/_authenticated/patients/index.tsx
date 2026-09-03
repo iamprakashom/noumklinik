@@ -85,13 +85,18 @@ function PatientsPage() {
       });
       return;
     }
+   const birthDate = String(fd.get("birth_date") || "");
+if (birthDate && birthDate > new Date().toLocaleDateString("en-CA")) {
+  toast.error("Date of birth cannot be in the future");
+  return;
+}   
     createPatient.mutate(
       {
         first_name: String(fd.get("first_name")),
         last_name: String(fd.get("last_name")),
         email: String(fd.get("email")) || null,
         phone: String(fd.get("phone")) || null,
-        birth_date: String(fd.get("birth_date")) || null,
+        birth_date: birthDate || null,
         gender: String(fd.get("gender")) || null,
         source: String(fd.get("source")),
         preferred_channel: String(fd.get("preferred_channel")),
@@ -216,7 +221,12 @@ function PatientsPage() {
               <input name="phone" className={inputClass} />
             </Field>
             <Field label="Date of birth">
-              <input name="birth_date" type="date" className={inputClass} />
+              <input
+                name="birth_date"
+                type="date"
+                max={new Date().toISOString().slice(0, 10)}
+                className={inputClass}
+              />
             </Field>
             <Field label="Gender">
               <select name="gender" className={inputClass} defaultValue="">
