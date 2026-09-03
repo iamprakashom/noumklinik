@@ -57,6 +57,11 @@ function SettingsPage() {
   const [editingService, setEditingService] = useState<Service | null>(null);
   const [editingProvider, setEditingProvider] = useState<Provider | null>(null);
   const [editingRoom, setEditingRoom] = useState<Room | null>(null);
+   const [confirmArchive, setConfirmArchive] = useState<{
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  } | null>(null);
 
   const services = useServices();
   const providers = useProviders();
@@ -84,7 +89,10 @@ function SettingsPage() {
     addProvider.isPending ||
     addRoom.isPending ||
     addConsent.isPending ||
-    updateService.isPending;
+    updateService.isPending ||
+    updateProvider.isPending ||
+    updateRoom.isPending;   
+
   const ok = (msg: string) => {
     toast.success(msg);
     close();
@@ -186,18 +194,18 @@ function SettingsPage() {
                         className={ghostButton}
                         aria-label={`Archive ${s.name}`}
                         title="Archive service"
-                        onClick={() => {
-                          if (
-                            window.confirm(
-                              `Archive "${s.name}"? It will be hidden from booking and billing, but past records are kept.`,
-                            )
-                          ) {
-                            updateService.mutate(
-                              { id: s.id, values: { active: false } },
-                              { onSuccess: () => toast.success("Service archived"), onError: fail },
-                            );
-                          }
-                        }}
+                        onClick={() =>
+                          setConfirmArchive({
+                            title: `Archive "${s.name}"?`,
+                            message:
+                              "It will be hidden from booking and billing, but past records are kept.",
+                            onConfirm: () =>
+                              updateService.mutate(
+                                { id: s.id, values: { active: false } },
+                                { onSuccess: () => toast.success("Service archived"), onError: fail },
+                              ),
+                          })
+                        }
                       >
                         <Trash2 className="size-3.5" />
                       </button>
@@ -276,18 +284,17 @@ function SettingsPage() {
                         className={ghostButton}
                         aria-label={`Archive ${p.name}`}
                         title="Archive provider"
-                        onClick={() => {
-                          if (
-                            window.confirm(
-                              `Archive "${p.name}"? It will be hidden from booking, but past records are kept.`,
-                            )
-                          ) {
-                            updateProvider.mutate(
-                              { id: p.id, values: { active: false } },
-                              { onSuccess: () => toast.success("Provider archived"), onError: fail },
-                            );
-                          }
-                        }}
+                        onClick={() =>
+                          setConfirmArchive({
+                            title: `Archive "${p.name}"?`,
+                            message: "It will be hidden from booking, but past records are kept.",
+                            onConfirm: () =>
+                              updateProvider.mutate(
+                                { id: p.id, values: { active: false } },
+                                { onSuccess: () => toast.success("Provider archived"), onError: fail },
+                              ),
+                          })
+                        }
                       >
                         <Trash2 className="size-3.5" />
                       </button>
@@ -363,18 +370,17 @@ function SettingsPage() {
                         className={ghostButton}
                         aria-label={`Archive ${r.name}`}
                         title="Archive room"
-                        onClick={() => {
-                          if (
-                            window.confirm(
-                              `Archive "${r.name}"? It will be hidden from booking, but past records are kept.`,
-                            )
-                          ) {
-                            updateRoom.mutate(
-                              { id: r.id, values: { active: false } },
-                              { onSuccess: () => toast.success("Room archived"), onError: fail },
-                            );
-                          }
-                        }}
+                        onClick={() =>
+                          setConfirmArchive({
+                            title: `Archive "${r.name}"?`,
+                            message: "It will be hidden from booking, but past records are kept.",
+                            onConfirm: () =>
+                              updateRoom.mutate(
+                                { id: r.id, values: { active: false } },
+                                { onSuccess: () => toast.success("Room archived"), onError: fail },
+                              ),
+                          })
+                        }
                       >
                         <Trash2 className="size-3.5" />
                       </button>
@@ -725,6 +731,30 @@ function SettingsPage() {
             </button>
           </DialogFooter>
 
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={confirmArchive !== null} onOpenChange={(o) => (o ? null : setConfirmArchive(null))}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{confirmArchive?.title}</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">{confirmArchive?.message}</p>
+          <DialogFooter>
+            <button type="button" className={ghostButton} onClick={() => setConfirmArchive(null)}>
+              Cancel
+            </button>
+            <button
+              type="button"
+              className={primaryButton}
+              onClick={() => {
+                confirmArchive?.onConfirm();
+                setConfirmArchive(null);
+              }}
+            >
+              Archive
+            </button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </AppShell>
