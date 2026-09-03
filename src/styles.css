@@ -234,9 +234,14 @@
     background: #fff !important;
   }
 
-  /* Only the subtree containing the invoice prints. */
-  body > *:not(:has(.invoice-print-shell)):not(.invoice-print-shell) {
+  /* Only the subtree containing a printable region prints.
+     Pages with no .print-scope print normally. */
+  body:has(.print-scope) > *:not(:has(.print-scope)):not(.print-scope) {
     display: none !important;
+  }
+
+  .print-only {
+    display: block !important;
   }
 
 
