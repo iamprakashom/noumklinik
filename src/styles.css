@@ -254,6 +254,29 @@
     display: none !important;
   }
 
+  /* App chrome around an in-page printable region. */
+  body:has(.print-scope) aside,
+  body:has(.print-scope) header:not(.print-only),
+  body:has(.print-scope) [role="tablist"] {
+    display: none !important;
+  }
+
+  body:has(.print-scope) main {
+    padding: 0 !important;
+  }
+
+  .print-scope,
+  .print-scope * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .print-scope li,
+  .print-scope tr,
+  .print-scope thead {
+    break-inside: avoid;
+  }
+
 
 
   /* Detach the invoice dialog from its centred, clipped modal box.
