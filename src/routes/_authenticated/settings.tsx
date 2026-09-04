@@ -103,7 +103,7 @@ function SettingsPage() {
   return (
     <AppShell title="Clinic setup" subtitle="Treatment menu, team, rooms and consent forms">
       <Tabs defaultValue="services">
-        <TabsList>
+        <TabsList className="no-scrollbar max-w-full justify-start overflow-x-auto">
           <TabsTrigger value="clinic">Clinic</TabsTrigger>
           <TabsTrigger value="services">Services</TabsTrigger>
           <TabsTrigger value="providers">Providers</TabsTrigger>
@@ -445,7 +445,7 @@ function SettingsPage() {
       </Tabs>
 
       <Dialog open={dialog !== null} onOpenChange={(o) => (o ? null : close())}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>
               {dialog === "service"
@@ -735,7 +735,7 @@ function SettingsPage() {
       </Dialog>
 
       <Dialog open={confirmArchive !== null} onOpenChange={(o) => (o ? null : setConfirmArchive(null))}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-md">
           <DialogHeader>
             <DialogTitle>{confirmArchive?.title}</DialogTitle>
           </DialogHeader>

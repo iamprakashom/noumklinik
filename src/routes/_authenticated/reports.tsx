@@ -224,7 +224,7 @@ function ReportsPage() {
   return (
     <AppShell title="Reports" subtitle="Day close, outstanding dues and revenue attribution">
       <Tabs defaultValue="day-close">
-        <TabsList>
+        <TabsList className="no-scrollbar max-w-full justify-start overflow-x-auto">
           <TabsTrigger value="day-close">Day close</TabsTrigger>
           <TabsTrigger value="dues">Outstanding dues</TabsTrigger>
           <TabsTrigger value="incentives">Doctor & service revenue</TabsTrigger>
@@ -344,7 +344,7 @@ function ReportsPage() {
               <EmptyState>No outstanding dues. Everything is collected.</EmptyState>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full text-sm">
+                <table className="w-full min-w-[760px] text-sm">
                   <thead>
                     <tr className="border-b border-border text-left text-xs text-muted-foreground">
                       <th className="py-2 pr-3 font-medium">Invoice</th>

@@ -107,7 +107,7 @@ function InboxPage() {
               here.
             </EmptyState>
           ) : (
-            <ul className="-mx-2 divide-y divide-border">
+            <ul className="-mx-2 max-h-64 divide-y divide-border overflow-y-auto lg:max-h-[60vh]">
               {list.map((c) => (
                 <li key={c.contact_wa_id}>
                   <button
@@ -142,7 +142,7 @@ function InboxPage() {
           {!activeId ? (
             <EmptyState>Pick a conversation to read and reply.</EmptyState>
           ) : (
-            <div className="flex h-[60vh] flex-col">
+            <div className="flex h-[55dvh] flex-col lg:h-[60vh]">
               <div className="flex-1 space-y-2 overflow-y-auto pr-1">
                 {(thread.data ?? []).map((m) => (
                   <div

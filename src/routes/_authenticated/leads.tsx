@@ -327,7 +327,7 @@ function LeadsPage() {
         </div>
       ) : view === "table" ? (
         <div className="mt-4 overflow-x-auto rounded-xl border border-border bg-card">
-          <table className="w-full text-sm">
+          <table className="w-full min-w-[980px] text-sm">
             <thead>
               <tr className="border-b border-border text-left text-xs text-muted-foreground">
                 <th className="px-5 py-3 font-medium">Name</th>
@@ -534,7 +534,7 @@ function LeadsPage() {
       ) : null}
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>Add lead</DialogTitle>
           </DialogHeader>

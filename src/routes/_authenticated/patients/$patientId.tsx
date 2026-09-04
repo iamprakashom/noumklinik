@@ -184,7 +184,7 @@ function PatientDetail() {
       </div>
 
       <Tabs defaultValue="overview">
-        <TabsList>
+        <TabsList className="no-scrollbar max-w-full justify-start overflow-x-auto">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="visits">Visits</TabsTrigger>
           <TabsTrigger value="charts">Charts</TabsTrigger>
@@ -505,7 +505,7 @@ function PatientDetail() {
       </Tabs>
 
       <Dialog open={chartOpen} onOpenChange={setChartOpen}>
-        <DialogContent className="sm:max-w-xl">
+        <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-xl">
           <DialogHeader>
             <DialogTitle>New treatment note</DialogTitle>
           </DialogHeader>
@@ -605,7 +605,7 @@ function PatientDetail() {
       </Dialog>
 
       <Dialog open={consentOpen} onOpenChange={setConsentOpen}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>Capture consent</DialogTitle>
           </DialogHeader>

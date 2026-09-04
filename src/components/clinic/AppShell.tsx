@@ -8,6 +8,7 @@ import {
   BarChart3,
   LayoutDashboard,
   LogOut,
+  Menu,
   Search,
   Settings,
   Sparkles,
@@ -15,9 +16,11 @@ import {
   UserPlus,
   Users,
 } from "lucide-react";
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
+import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { CommandPalette } from "@/components/clinic/CommandPalette";
+
 
 const NAV = [
   { to: "/dashboard", label: "Today", icon: LayoutDashboard },
@@ -45,6 +48,11 @@ export function AppShell({
   const pathname = useRouterState({ select: (r) => r.location.pathname });
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const [mobileNav, setMobileNav] = useState(false);
+
+  useEffect(() => {
+    setMobileNav(false);
+  }, [pathname]);
 
   async function signOut() {
     await queryClient.cancelQueries();
@@ -53,61 +61,91 @@ export function AppShell({
     navigate({ to: "/auth", replace: true });
   }
 
+  const navList = (
+    <nav className="flex flex-col gap-0.5 px-2">
+      {NAV.map((item) => {
+        const active = pathname.startsWith(item.to);
+        return (
+          <Link
+            key={item.to}
+            to={item.to}
+            className={cn(
+              "flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm transition-colors lg:text-xs",
+              active
+                ? "bg-accent font-medium text-accent-foreground"
+                : "text-muted-foreground hover:bg-secondary hover:text-foreground",
+            )}
+          >
+            <item.icon className="size-4 shrink-0" />
+            {item.label}
+          </Link>
+        );
+      })}
+    </nav>
+  );
+
+  const brand = (
+    <div className="flex items-center gap-2 px-3 py-4">
+      <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+        <Stethoscope className="size-4" />
+      </span>
+      <span className="truncate text-sm font-semibold tracking-tight">Luma Aesthetics</span>
+    </div>
+  );
+
+  const signOutButton = (
+    <button
+      onClick={signOut}
+      className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-sm text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground lg:text-xs"
+    >
+      <LogOut className="size-4" />
+      Sign out
+    </button>
+  );
+
   return (
     <div className="flex min-h-screen w-full bg-background">
-      <aside className="sticky top-0 flex h-screen w-44 shrink-0 flex-col border-r border-border bg-card/60">
-        <div className="flex items-center gap-2 px-3 py-4">
-          <span className="flex size-7 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-            <Stethoscope className="size-4" />
-          </span>
-          <span className="text-sm font-semibold tracking-tight">Luma Aesthetics</span>
-        </div>
-        <nav className="flex flex-col gap-0.5 px-2">
-          {NAV.map((item) => {
-            const active = pathname.startsWith(item.to);
-            return (
-              <Link
-                key={item.to}
-                to={item.to}
-                className={cn(
-                  "flex items-center gap-2.5 rounded-md px-2.5 py-2 text-xs transition-colors",
-                  active
-                    ? "bg-accent font-medium text-accent-foreground"
-                    : "text-muted-foreground hover:bg-secondary hover:text-foreground",
-                )}
-              >
-                <item.icon className="size-4" />
-                {item.label}
-              </Link>
-            );
-          })}
-        </nav>
-        <div className="mt-auto border-t border-border px-2 py-3">
-          <button
-            onClick={signOut}
-            className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-xs text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
-          >
-            <LogOut className="size-4" />
-            Sign out
-          </button>
-        </div>
+      <aside className="sticky top-0 hidden h-screen w-44 shrink-0 flex-col border-r border-border bg-card/60 lg:flex">
+        {brand}
+        {navList}
+        <div className="mt-auto border-t border-border px-2 py-3">{signOutButton}</div>
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex items-center justify-between gap-4 border-b border-border px-8 py-5">
-          <div>
-            <h1 className="text-xl font-semibold tracking-tight">{title}</h1>
+        <header className="app-chrome flex flex-wrap items-center gap-3 border-b border-border px-4 py-3.5 sm:gap-4 lg:flex-nowrap lg:px-8 lg:py-5">
+          <Sheet open={mobileNav} onOpenChange={setMobileNav}>
+            <SheetTrigger asChild>
+              <button
+                type="button"
+                aria-label="Open navigation"
+                className="inline-flex size-9 shrink-0 items-center justify-center rounded-md border border-border bg-card text-muted-foreground transition-colors hover:bg-secondary lg:hidden"
+              >
+                <Menu className="size-4" />
+              </button>
+            </SheetTrigger>
+            <SheetContent side="left" className="w-64 p-0">
+              <SheetTitle className="sr-only">Navigation</SheetTitle>
+              <div className="flex h-full flex-col">
+                {brand}
+                {navList}
+                <div className="mt-auto border-t border-border px-2 py-3">{signOutButton}</div>
+              </div>
+            </SheetContent>
+          </Sheet>
+
+          <div className="min-w-0 flex-1">
+            <h1 className="truncate text-base font-semibold tracking-tight sm:text-xl">{title}</h1>
             {subtitle ? (
-              <p className="mt-0.5 text-xs text-muted-foreground">{subtitle}</p>
+              <p className="mt-0.5 truncate text-xs text-muted-foreground">{subtitle}</p>
             ) : null}
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex w-full flex-wrap items-center gap-2 lg:w-auto lg:shrink-0 lg:justify-end">
             <button
               type="button"
               onClick={() =>
                 window.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true }))
               }
-              className="hidden items-center gap-2 rounded-md border border-border bg-card px-2.5 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-secondary sm:inline-flex"
+              className="hidden items-center gap-2 rounded-md border border-border bg-card px-2.5 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-secondary lg:inline-flex"
             >
               <Search className="size-3.5" />
               Search
@@ -116,8 +154,9 @@ export function AppShell({
             {actions}
           </div>
         </header>
-        <main className="min-w-0 flex-1 p-8">{children}</main>
+        <main className="min-w-0 flex-1 p-4 sm:p-6 lg:p-8">{children}</main>
       </div>
+
       <CommandPalette />
     </div>
   );

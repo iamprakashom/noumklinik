@@ -211,6 +211,13 @@
   }
 }
 
+@utility no-scrollbar {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
 @utility card-hover {
   transition:
     box-shadow 150ms ease,
