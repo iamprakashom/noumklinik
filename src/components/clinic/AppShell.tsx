@@ -112,7 +112,7 @@ export function AppShell({
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="app-chrome grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 border-b border-border px-4 py-3.5 sm:gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:px-8 lg:py-5">
+        <header className="app-chrome flex flex-wrap items-center gap-3 border-b border-border px-4 py-3.5 sm:gap-4 lg:flex-nowrap lg:px-8 lg:py-5">
           <Sheet open={mobileNav} onOpenChange={setMobileNav}>
             <SheetTrigger asChild>
               <button
@@ -133,13 +133,13 @@ export function AppShell({
             </SheetContent>
           </Sheet>
 
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <h1 className="truncate text-base font-semibold tracking-tight sm:text-xl">{title}</h1>
             {subtitle ? (
               <p className="mt-0.5 truncate text-xs text-muted-foreground">{subtitle}</p>
             ) : null}
           </div>
-          <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+          <div className="flex w-full flex-wrap items-center gap-2 lg:w-auto lg:shrink-0 lg:justify-end">
             <button
               type="button"
               onClick={() =>
