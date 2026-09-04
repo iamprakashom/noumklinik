@@ -206,7 +206,7 @@ export async function verifySignature(
   raw: string,
 ) {
   const secret = settings?.app_secret ?? process.env["META_APP_SECRET"];
-  if (!secret) return true; // no secret configured yet — verify token already gated the hook
+  if (!secret) return false; // fail closed — never trust unsigned webhook payloads
   if (!header?.startsWith("sha256=")) return false;
   const { createHmac, timingSafeEqual } = await import("crypto");
   const expected = createHmac("sha256", secret).update(raw).digest("hex");
