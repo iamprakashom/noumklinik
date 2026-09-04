@@ -8,6 +8,7 @@ import {
   BarChart3,
   LayoutDashboard,
   LogOut,
+  Menu,
   Search,
   Settings,
   Sparkles,
@@ -15,9 +16,11 @@ import {
   UserPlus,
   Users,
 } from "lucide-react";
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
+import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { CommandPalette } from "@/components/clinic/CommandPalette";
+
 
 const NAV = [
   { to: "/dashboard", label: "Today", icon: LayoutDashboard },
