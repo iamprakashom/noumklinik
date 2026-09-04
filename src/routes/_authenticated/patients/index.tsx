@@ -135,13 +135,13 @@ if (birthDate && birthDate > new Date().toLocaleDateString("en-CA")) {
         </>
       }
     >
-      <div className="overflow-hidden rounded-xl border border-border bg-card">
+      <div className="overflow-x-auto rounded-xl border border-border bg-card">
         {rows.length === 0 ? (
           <div className="p-6">
             <EmptyState>No patients match your search.</EmptyState>
           </div>
         ) : (
-          <table className="w-full text-sm">
+          <table className="w-full min-w-[720px] text-sm">
             <thead>
               <tr className="border-b border-border text-left text-xs text-muted-foreground">
                 <th className="px-5 py-3 font-medium">Patient</th>

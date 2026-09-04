@@ -103,7 +103,7 @@ function SettingsPage() {
   return (
     <AppShell title="Clinic setup" subtitle="Treatment menu, team, rooms and consent forms">
       <Tabs defaultValue="services">
-        <TabsList>
+        <TabsList className="no-scrollbar max-w-full justify-start overflow-x-auto">
           <TabsTrigger value="clinic">Clinic</TabsTrigger>
           <TabsTrigger value="services">Services</TabsTrigger>
           <TabsTrigger value="providers">Providers</TabsTrigger>

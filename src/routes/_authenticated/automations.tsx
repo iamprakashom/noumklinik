@@ -92,7 +92,7 @@ function Automations() {
       }
     >
       <Tabs defaultValue="rules">
-        <TabsList>
+        <TabsList className="no-scrollbar max-w-full justify-start overflow-x-auto">
           <TabsTrigger value="rules">Rules</TabsTrigger>
           <TabsTrigger value="templates">Templates</TabsTrigger>
           <TabsTrigger value="outbox">Outbox</TabsTrigger>

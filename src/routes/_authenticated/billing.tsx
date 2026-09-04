@@ -181,7 +181,7 @@ function BillingPage() {
         </div>
       ) : null}
 
-      <div className="grid gap-4 sm:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
           label="Outstanding"
           value={money(outstanding)}
@@ -216,13 +216,13 @@ function BillingPage() {
         </section>
       ) : null}
 
-      <div className="mt-6 overflow-hidden rounded-xl border border-border bg-card">
+      <div className="mt-6 overflow-x-auto rounded-xl border border-border bg-card">
         {all.length === 0 ? (
           <div className="p-6">
             <EmptyState>No invoices yet.</EmptyState>
           </div>
         ) : (
-          <table className="w-full text-sm">
+          <table className="w-full min-w-[900px] text-sm">
             <thead>
               <tr className="border-b border-border text-left text-xs text-muted-foreground">
                 <th className="px-5 py-3 font-medium">Invoice</th>
@@ -422,7 +422,7 @@ function BillingPage() {
             <div className="grid gap-2">
               <span className="text-xs font-medium text-muted-foreground">Line items</span>
               {lines.map((line, idx) => (
-                <div key={idx} className="grid grid-cols-[1fr_60px_90px_70px] gap-2">
+                <div key={idx} className="grid grid-cols-2 gap-2 sm:grid-cols-[1fr_60px_90px_70px]">
                   <select
                     value={line.description}
                     onChange={(e) => {

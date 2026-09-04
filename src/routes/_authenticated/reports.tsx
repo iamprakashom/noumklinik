@@ -224,7 +224,7 @@ function ReportsPage() {
   return (
     <AppShell title="Reports" subtitle="Day close, outstanding dues and revenue attribution">
       <Tabs defaultValue="day-close">
-        <TabsList>
+        <TabsList className="no-scrollbar max-w-full justify-start overflow-x-auto">
           <TabsTrigger value="day-close">Day close</TabsTrigger>
           <TabsTrigger value="dues">Outstanding dues</TabsTrigger>
           <TabsTrigger value="incentives">Doctor & service revenue</TabsTrigger>

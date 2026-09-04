@@ -180,7 +180,7 @@ export function PackagesTab() {
             <div className="grid gap-2">
               <span className="text-xs font-medium text-muted-foreground">Included sessions</span>
               {drafts.map((d, idx) => (
-                <div key={idx} className="grid grid-cols-[1fr_80px] gap-2">
+                <div key={idx} className="grid grid-cols-[minmax(0,1fr)_80px] gap-2">
                   <select
                     className={inputClass}
                     aria-label="Service"
