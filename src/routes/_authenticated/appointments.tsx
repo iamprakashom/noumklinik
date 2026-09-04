@@ -343,7 +343,7 @@ function AppointmentsPage() {
                         aria-label="Doctor"
                       >
                         <option value="">Unassigned</option>
-                        {providers.data?.map((pr) => (
+                        {providers.data?.filter((pr) => pr.active).map((pr) => (
                           <option key={pr.id} value={pr.id}>
                             {pr.name}
                           </option>
@@ -539,7 +539,7 @@ function AppointmentsPage() {
             <Field label="Doctor">
               <select name="provider_id" className={inputClass}>
                 <option value="">Unassigned</option>
-                {providers.data?.map((p) => (
+                {providers.data?.filter((p) => p.active).map((p) => (
                   <option key={p.id} value={p.id}>
                     {p.name}
                   </option>

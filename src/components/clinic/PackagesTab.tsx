@@ -21,15 +21,20 @@ import {
   useUpdate,
 } from "@/lib/clinic-data";
 
-type Draft = { service_id: string; sessions: number };
+type Draft = { service_id: string; sessions: number | "" };
 
 /** Package catalogue: what the clinic sells upfront. */
 export function PackagesTab() {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [price, setPrice] = useState(0);
-  const [validity, setValidity] = useState(180);
+  const [price, setPrice] = useState<number | "">(0);
+  const [validity, setValidity] = useState<number | "">(180);
+  const [confirmDelete, setConfirmDelete] = useState<{
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  } | null>(null);
   const [refundable, setRefundable] = useState(false);
   const [drafts, setDrafts] = useState<Draft[]>([{ service_id: "", sessions: 6 }]);
 
@@ -89,13 +94,17 @@ export function PackagesTab() {
                 <button
                   className={ghostButton}
                   aria-label={`Delete ${p.name}`}
-                  onClick={() => {
-                    if (!window.confirm(`Delete package "${p.name}"?`)) return;
-                    removePackage.mutate(p.id, {
-                      onSuccess: () => toast.success("Package deleted"),
-                      onError: (e) => toast.error(e.message),
-                    });
-                  }}
+                  onClick={() =>
+                    setConfirmDelete({
+                      title: `Delete package "${p.name}"?`,
+                      message: `This cannot be undone.`,
+                      onConfirm: () =>
+                        removePackage.mutate(p.id, {
+                          onSuccess: () => toast.success("Package deleted"),
+                          onError: (e) => toast.error(e.message),
+                        }),
+                    })
+                  }
                 >
                   <Trash2 className="size-3.5" />
                 </button>
@@ -121,7 +130,8 @@ export function PackagesTab() {
             className="grid gap-4"
             onSubmit={(e) => {
               e.preventDefault();
-              const lines = drafts.filter((d) => d.service_id && d.sessions > 0);
+              const lines = drafts.filter((d) => d.service_id && (d.sessions === "" || d.sessions > 0))
+                .map((d) => ({ ...d, sessions: d.sessions === "" ? 1 : d.sessions }));
               if (lines.length === 0) {
                 toast.error("Add at least one service with sessions");
                 return;
@@ -130,8 +140,8 @@ export function PackagesTab() {
                 {
                   name,
                   description: description || null,
-                  price,
-                  validity_days: validity,
+                  price: price === "" ? 0 : price,
+                  validity_days: validity === "" ? 180 : validity,
                   refundable,
                 },
                 {
@@ -204,13 +214,19 @@ export function PackagesTab() {
                     aria-label="Sessions"
                     className={inputClass}
                     value={d.sessions}
-                    onChange={(e) =>
+                    onChange={(e) => {
+                      const value = e.target.value === "" ? "" : Number(e.target.value);
+                      setDrafts((prev) =>
+                        prev.map((x, i) => (i === idx ? { ...x, sessions: value } : x)),
+                      );
+                    }}
+                    onBlur={() => {
                       setDrafts((prev) =>
                         prev.map((x, i) =>
-                          i === idx ? { ...x, sessions: Number(e.target.value) } : x,
+                          i === idx && x.sessions === "" ? { ...x, sessions: 1 } : x,
                         ),
-                      )
-                    }
+                      );
+                    }}
                   />
                 </div>
               ))}
@@ -230,7 +246,13 @@ export function PackagesTab() {
                   min={0}
                   className={inputClass}
                   value={price}
-                  onChange={(e) => setPrice(Number(e.target.value))}
+                  onChange={(e) => {
+                    const value = e.target.value === "" ? "" : Math.max(0, Number(e.target.value));
+                    setPrice(value);
+                  }}
+                  onBlur={() => {
+                    if (price === "") setPrice(0);
+                  }}
                 />
               </Field>
               <Field label="Validity (days)">
@@ -239,7 +261,13 @@ export function PackagesTab() {
                   min={1}
                   className={inputClass}
                   value={validity}
-                  onChange={(e) => setValidity(Number(e.target.value))}
+                  onChange={(e) => {
+                    const value = e.target.value === "" ? "" : Number(e.target.value);
+                    setValidity(value);
+                  }}
+                  onBlur={() => {
+                    if (validity === "") setValidity(180);
+                  }}
                 />
               </Field>
             </div>
@@ -255,6 +283,32 @@ export function PackagesTab() {
             </button>
             <button type="submit" form="new-package" className={primaryButton}>
               Create package
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={confirmDelete !== null} onOpenChange={(v) => v || setConfirmDelete(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{confirmDelete?.title}</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">{confirmDelete?.message}</p>
+          <DialogFooter>
+            <button
+              className={ghostButton}
+              type="button"
+              onClick={() => setConfirmDelete(null)}>
+              Cancel
+            </button>
+            <button
+              className={primaryButton}
+              type="button"
+              onClick={() => {
+                confirmDelete?.onConfirm();
+                setConfirmDelete(null);
+              }}>
+              Delete
             </button>
           </DialogFooter>
         </DialogContent>

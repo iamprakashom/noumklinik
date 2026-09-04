@@ -62,7 +62,7 @@ const emptyLine: Line = { description: "", quantity: 1, unit_price: 0, gst_rate:
 function BillingPage() {
   const [open, setOpen] = useState(false);
   const [lines, setLines] = useState<Line[]>([{ ...emptyLine }]);
-  const [discount, setDiscount] = useState(0);
+  const [discount, setDiscount] = useState<number | "">(0);
   const [patientId, setPatientId] = useState("");
   const [pos, setPos] = useState("");
   const [preview, setPreview] = useState<Invoice | null>(null);
@@ -112,7 +112,7 @@ function BillingPage() {
   }, [mainService, addons.data, services.data, lines]);
 
   const totals = useMemo(
-    () => computeGstTotals(lines, discount, interState),
+    () => computeGstTotals(lines, discount === "" ? 0 : discount, interState),
     [lines, discount, interState],
   );
   const addonCount = Math.max(0, lines.filter((l) => l.description).length - 1);
@@ -372,7 +372,7 @@ function BillingPage() {
                 {
                   patient_id: patientId,
                   items: lines.filter((l) => l.description),
-                  discount,
+                  discount: discount === "" ? 0 : discount,
                   clinic: clinic.data ?? null,
                   placeOfSupply: placeOfSupply || null,
                 },
@@ -380,7 +380,7 @@ function BillingPage() {
                   onSuccess: () => {
                     toast.success("Invoice created");
                     setLines([{ ...emptyLine }]);
-                    setDiscount(0);
+                    setDiscount(0 as number | "");
                     setOpen(false);
                   },
                   onError: (err) => toast.error(err.message),
@@ -548,9 +548,16 @@ function BillingPage() {
             <Field label="Discount" className="max-w-40">
               <input
                 type="number"
-                step="0.01"
+                step="1"
+                min="0"
                 value={discount}
-                onChange={(e) => setDiscount(Number(e.target.value))}
+                onChange={(e) => {
+                  const value = e.target.value === "" ? "" : Math.max(0, Number(e.target.value));
+                  setDiscount(value);
+                }}
+                onBlur={() => {
+                  if (discount === "") setDiscount(0);
+                }}
                 className={inputClass}
               />
             </Field>

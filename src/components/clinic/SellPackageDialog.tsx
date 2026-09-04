@@ -32,7 +32,7 @@ export function SellPackageDialog({
 }) {
   const [patientId, setPatientId] = useState(fixedPatient ?? "");
   const [packageId, setPackageId] = useState("");
-  const [price, setPrice] = useState(0);
+  const [price, setPrice] = useState<number | "">(0);
   const [pos, setPos] = useState("");
 
   const packages = usePackages();
@@ -88,7 +88,7 @@ export function SellPackageDialog({
                   sessions: l.sessions,
                   list_price: l.list_price,
                 })),
-                price,
+                price: price === "" ? 0 : price,
                 gst_rate: lines[0]?.gst_rate ?? 18,
                 sac_code: lines[0]?.sac_code ?? "999722",
                 clinic: clinic.data ?? null,
@@ -99,7 +99,7 @@ export function SellPackageDialog({
                   toast.success("Package sold — invoice raised and balance opened");
                   onOpenChange(false);
                   setPackageId("");
-                  setPrice(0);
+                  setPrice(0 as number | "");
                 },
                 onError: (err) => toast.error(err.message),
               },
@@ -174,7 +174,13 @@ export function SellPackageDialog({
                 min={0}
                 className={inputClass}
                 value={price}
-                onChange={(e) => setPrice(Number(e.target.value))}
+                onChange={(e) => {
+                  const value = e.target.value === "" ? "" : Math.max(0, Number(e.target.value));
+                  setPrice(value);
+                }}
+                onBlur={() => {
+                  if (price === "") setPrice(0);
+                }}
               />
             </Field>
             <Field label="Place of supply">
