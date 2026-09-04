@@ -4,6 +4,7 @@ import { primaryButton } from "@/components/clinic/AppShell";
 import { Field, Panel, inputClass, textareaClass } from "@/components/clinic/bits";
 import { INDIAN_STATES, isValidGstin, stateCode } from "@/lib/gst";
 import { useClinicProfile, useUpdateClinicProfile } from "@/lib/clinic-data";
+import { DAYS_OF_WEEK, DEFAULT_OPEN_TIME, DEFAULT_CLOSE_TIME } from "@/lib/clinic-hours";
 
 const FIELDS = [
   "legal_name",
@@ -19,24 +20,45 @@ const FIELDS = [
   "invoice_prefix",
   "google_review_link",
   "declaration",
+  "open_time",
+  "close_time",
 ] as const;
 
 type FormState = Record<(typeof FIELDS)[number], string>;
 
 const blank = Object.fromEntries(FIELDS.map((f) => [f, ""])) as FormState;
 
+const DEFAULT_WORKING_DAYS = [
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+];
+
 /** Legal and tax identity printed on every GST invoice. */
 export function ClinicProfileTab() {
   const profile = useClinicProfile();
   const update = useUpdateClinicProfile();
   const [form, setForm] = useState<FormState>(blank);
+  const [workingDays, setWorkingDays] = useState<string[]>(DEFAULT_WORKING_DAYS);
 
   useEffect(() => {
     if (!profile.data) return;
-    const row = profile.data as unknown as Record<string, string | null>;
+    const row = profile.data as unknown as Record<string, unknown>;
     const next = { ...blank };
-    for (const f of FIELDS) next[f] = row[f] ?? "";
+    for (const f of FIELDS) next[f] = String(row[f] ?? "");
+    if (!next.open_time) next.open_time = DEFAULT_OPEN_TIME;
+    if (!next.close_time) next.close_time = DEFAULT_CLOSE_TIME;
     setForm(next);
+
+    const workingDaysVal = row["working_days"];
+    if (Array.isArray(workingDaysVal) && workingDaysVal.length > 0) {
+      setWorkingDays(workingDaysVal as string[]);
+    } else {
+      setWorkingDays(DEFAULT_WORKING_DAYS);
+    }
   }, [profile.data]);
 
   const set = (key: keyof FormState) => (value: string) =>
@@ -63,6 +85,9 @@ export function ClinicProfileTab() {
           const id = profile.data?.id ?? null;
           const values: Record<string, unknown> = {
             ...form,
+            working_days: workingDays,
+            open_time: form.open_time || DEFAULT_OPEN_TIME,
+            close_time: form.close_time || DEFAULT_CLOSE_TIME,
             gstin: form.gstin.toUpperCase() || null,
             state: form.state || "Karnataka",
             state_code: stateCode(form.state) ?? "",
@@ -176,12 +201,56 @@ export function ClinicProfileTab() {
               onChange={(e) => set("google_review_link")(e.target.value)}
             />
           </Field>
+          <p className="-mt-1 text-xs text-muted-foreground sm:col-span-2">
+            Patients who rate you 4–5 after a visit are sent straight to this link. Lower ratings stay
+            in-house as a complaint for the front desk.
+          </p>
+          <Field label="Opening time">
+            <input
+              type="time"
+              className={inputClass}
+              value={form.open_time}
+              onChange={(e) => set("open_time")(e.target.value)}
+            />
+          </Field>
+          <Field label="Closing time">
+            <input
+              type="time"
+              className={inputClass}
+              value={form.close_time}
+              onChange={(e) => set("close_time")(e.target.value)}
+            />
+          </Field>
         </div>
-        <p className="-mt-1 text-xs text-muted-foreground">
-          Patients who rate you 4–5 after a visit are sent straight to this link. Lower ratings stay
-          in-house as a complaint for the front desk.
-        </p>
 
+        <div className="space-y-2">
+          <label className="text-xs font-medium text-muted-foreground">Working days</label>
+          <div className="flex flex-wrap gap-2">
+            {DAYS_OF_WEEK.map((day) => {
+              const active = workingDays.includes(day);
+              return (
+                <button
+                  type="button"
+                  key={day}
+                  onClick={() => {
+                    if (active) {
+                      setWorkingDays(workingDays.filter((d) => d !== day));
+                    } else {
+                      setWorkingDays([...workingDays, day]);
+                    }
+                  }}
+                  className={`rounded-md border px-3 py-1.5 text-xs font-medium transition-colors ${
+                    active
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "border-border bg-background text-muted-foreground hover:bg-secondary"
+                  }`}
+                >
+                  {day}
+                </button>
+              );
+            })}
+          </div>
+        </div>
 
         <Field label="Declaration">
           <textarea

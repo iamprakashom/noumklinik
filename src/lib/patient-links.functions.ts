@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { validateAppointmentTime } from "@/lib/clinic-hours";
 
 const tokenSchema = z.object({ token: z.string().min(10) });
 
@@ -62,7 +63,7 @@ export const getPatientLink = createServerFn({ method: "GET" })
 
     const { data: clinic } = await supabaseAdmin
       .from("clinic_profile")
-      .select("trade_name, legal_name, google_review_link")
+      .select("trade_name, legal_name, google_review_link, working_days, open_time, close_time")
       .eq("clinic_id", link.clinic_id)
       .maybeSingle();
 
@@ -89,6 +90,9 @@ export const getPatientLink = createServerFn({ method: "GET" })
       patientName: patient ? `${patient.first_name} ${patient.last_name}`.trim() : "Patient",
       clinicName: clinic?.trade_name ?? clinic?.legal_name ?? "Our clinic",
       googleReviewLink: clinic?.google_review_link ?? null,
+      working_days: clinic?.working_days ?? null,
+      open_time: clinic?.open_time ?? null,
+      close_time: clinic?.close_time ?? null,
       consent,
     };
   });
@@ -318,6 +322,16 @@ export const requestReschedule = createServerFn({ method: "POST" })
     const preferred = new Date(data.preferred_at);
       if (Number.isNaN(preferred.getTime()) || preferred.getTime() < Date.now() - 5 * 60 * 1000 ) {
       throw new Error("Reschedule preferred date and time must be in the future.");
+    }
+
+    const { data: clinicProfile } = await supabaseAdmin
+      .from("clinic_profile")
+      .select("working_days, open_time, close_time")
+      .eq("clinic_id", link.clinic_id)
+      .maybeSingle();
+    const timeError = validateAppointmentTime(preferred, clinicProfile);
+    if (timeError) {
+      throw new Error(timeError);
     }
     const { data: patient } = await supabaseAdmin
       .from("patients")

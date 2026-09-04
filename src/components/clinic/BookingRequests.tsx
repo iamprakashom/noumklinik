@@ -3,8 +3,10 @@ import { toast } from "sonner";
 import { CalendarPlus, Inbox, X } from "lucide-react";
 import { Chip } from "@/components/clinic/bits";
 import { formatDateTime } from "@/data/clinic";
+import { validateAppointmentTime } from "@/lib/clinic-hours";
 import {
   useAppointmentRequests,
+  useClinicProfile,
   useInsert,
   usePatients,
   useProviders,
@@ -21,8 +23,10 @@ export function BookingRequests() {
   const providers = useProviders();
   const addPatient = useInsert("patients");
   const addAppointment = useInsert("appointments");
+  const updatePatient = useUpdate("patients");
   const updateRequest = useUpdate("appointment_requests");
   const updateAppointment = useUpdate("appointments");
+  const clinicProfile = useClinicProfile();
   const [busy, setBusy] = useState<string | null>(null);
 
   const pending = (requests.data ?? []).filter((r) => r.status === "New");
@@ -31,6 +35,11 @@ export function BookingRequests() {
   const digits = (v: string) => v.replace(/\D/g, "").slice(-10);
 
   async function accept(req: AppointmentRequest) {
+    const timeErr = validateAppointmentTime(req.preferred_at, clinicProfile.data);
+    if (timeErr) {
+      toast.error(`Cannot accept: ${timeErr}`);
+      return;
+    }
     setBusy(req.id);
     try {
       if (req.kind === "reschedule" && req.appointment_id) {
@@ -45,6 +54,14 @@ export function BookingRequests() {
             (p) => digits(p.phone ?? "") === digits(req.phone),
           );
           patientId = match?.id ?? null;
+          if (patientId && (req.birth_date || req.gender)) {
+            const updates: Record<string, unknown> = {};
+            if (req.birth_date && !match?.["birth_date"]) updates["birth_date"] = req.birth_date;
+            if (req.gender && !match?.["gender"]) updates["gender"] = req.gender;
+            if (Object.keys(updates).length > 0) {
+              await updatePatient.mutateAsync({ id: patientId, values: updates });
+            }
+          }
         }
         if (!patientId) {
           const [first, ...rest] = req.full_name.split(" ");
@@ -53,6 +70,8 @@ export function BookingRequests() {
             last_name: rest.join(" ") || "—",
             phone: req.phone,
             email: req.email,
+            birth_date: req.birth_date || null,
+            gender: req.gender || null,
             source: "Website",
           })) as { id: string }[];
           patientId = created[0]?.id ?? null;

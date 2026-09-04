@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { validateAppointmentTime } from "@/lib/clinic-hours";
 
 /** Public: everything the self-serve booking page needs to render, for one clinic. */
 export const getBookingOptions = createServerFn({ method: "GET" })
@@ -22,7 +23,7 @@ export const getBookingOptions = createServerFn({ method: "GET" })
       .order("name"),
     supabaseAdmin
       .from("clinic_profile")
-      .select("trade_name, legal_name, phone, city")
+      .select("trade_name, legal_name, phone, city, working_days, open_time, close_time")
       .eq("clinic_id", clinicId)
       .maybeSingle(),
   ]);
@@ -34,6 +35,9 @@ export const getBookingOptions = createServerFn({ method: "GET" })
       name: clinicRes.data?.trade_name ?? clinicRes.data?.legal_name ?? "Our clinic",
       phone: clinicRes.data?.phone ?? null,
       city: clinicRes.data?.city ?? null,
+      working_days: clinicRes.data?.working_days ?? null,
+      open_time: clinicRes.data?.open_time ?? null,
+      close_time: clinicRes.data?.close_time ?? null,
     },
   };
 });
@@ -47,8 +51,9 @@ export const requestBooking = createServerFn({ method: "POST" })
         full_name: z.string().min(2).max(120),
         phone: z.string().min(6).max(20),
         email: z.string().email().nullable().optional(),
+        birth_date: z.string().nullable().optional(),
+        gender: z.string().min(1),
         service_id: z.string().uuid().nullable().optional(),
-        provider_id: z.string().uuid().nullable().optional(),
         preferred_at: z.string().min(10),
         alternate_at: z.string().nullable().optional(),
         notes: z.string().max(1000).nullable().optional(),
@@ -62,6 +67,20 @@ export const requestBooking = createServerFn({ method: "POST" })
       throw new Error("Please choose a date and time in the future.");
     }
 
+    // Fetch clinic hours to validate the booking falls within working hours/days
+    const { data: clinicProfile } = await supabaseAdmin
+      .from("clinic_profile")
+      .select("working_days, open_time, close_time")
+      .eq("clinic_id", data.clinicId)
+      .maybeSingle();
+
+    const preferredError = validateAppointmentTime(preferred, clinicProfile, {
+      minMinutesInFuture: 60,
+    });
+    if (preferredError) {
+      throw new Error(preferredError);
+    }
+
     if (data.alternate_at) {
       const alternate = new Date(data.alternate_at);
       if (Number.isNaN(alternate.getTime()) || alternate.getTime() < Date.now() - 3_600_000) {
@@ -69,6 +88,12 @@ export const requestBooking = createServerFn({ method: "POST" })
       }
       if (alternate.getTime() < preferred.getTime()) {
         throw new Error("Backup appointment date must be after or equal to the preferred date.");
+      }
+      const altError = validateAppointmentTime(alternate, clinicProfile, {
+        minMinutesInFuture: 60,
+      });
+      if (altError) {
+        throw new Error(`Backup slot: ${altError}`);
       }
     }
 
@@ -89,8 +114,9 @@ export const requestBooking = createServerFn({ method: "POST" })
       full_name: data.full_name,
       phone: data.phone,
       email: data.email ?? null,
+      birth_date: data.birth_date || null,
+      gender: data.gender || null,
       service_id: data.service_id ?? null,
-      provider_id: data.provider_id ?? null,
       preferred_at: preferred.toISOString(),
       alternate_at: data.alternate_at ? new Date(data.alternate_at).toISOString() : null,
       notes: data.notes ?? null,

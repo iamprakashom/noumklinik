@@ -17,6 +17,7 @@ import {
   submitIntake,
 } from "@/lib/patient-links.functions";
 import { toLocalInputValue } from "@/data/clinic";
+import { TimePickerSelector } from "@/components/clinic/TimePickerSelector";
 
 export const Route = createFileRoute("/p/$token")({
   head: () => ({
@@ -267,12 +268,10 @@ function PatientLinkPage() {
               }}
             >
               <Field label="New preferred date and time">
-                <input
+                <TimePickerSelector
                   name="preferred_at"
-                  type="datetime-local"
                   required
-                  min={toLocalInputValue(new Date())}
-                  className={inputClass}
+                  clinic={data}
                 />
               </Field>
               <Field label="Reason (optional)">
