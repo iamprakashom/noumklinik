@@ -196,7 +196,7 @@ if (birthDate && birthDate > new Date().toLocaleDateString("en-CA")) {
       </div>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>New patient</DialogTitle>
           </DialogHeader>

@@ -257,7 +257,7 @@ function Automations() {
       </Tabs>
 
       <Dialog open={ruleOpen} onOpenChange={setRuleOpen}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>New automation rule</DialogTitle>
           </DialogHeader>
@@ -333,7 +333,7 @@ function Automations() {
       </Dialog>
 
       <Dialog open={templateOpen} onOpenChange={setTemplateOpen}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>New message template</DialogTitle>
           </DialogHeader>

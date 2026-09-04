@@ -415,7 +415,7 @@ function AppointmentsPage() {
       )}
 
       <Dialog open={!!reschedule} onOpenChange={(v) => !v && setReschedule(null)}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Reschedule appointment</DialogTitle>
           </DialogHeader>
@@ -478,7 +478,7 @@ function AppointmentsPage() {
       </Dialog>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>New appointment</DialogTitle>
           </DialogHeader>
