@@ -14,6 +14,16 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   APPOINTMENT_SOURCES,
   APPOINTMENT_STATUSES,
   TEMPERATURES,
@@ -70,6 +80,9 @@ function AppointmentsPage() {
   const [range, setRange] = useState<RangeKey>("upcoming");
   const [sourceFilter, setSourceFilter] = useState("all");
   const [doctorFilter, setDoctorFilter] = useState("all");
+  const [conflictModal, setConflictModal] = useState<{ message: string; onConfirm: () => void } | null>(null);
+  const [cancelModal, setCancelModal] = useState<Appointment | null>(null);
+  const [cancelReason, setCancelReason] = useState("Patient requested");
 
   const appointments = useAppointments();
   const patients = usePatients();
@@ -124,6 +137,42 @@ function AppointmentsPage() {
   const patch = (id: string, values: Record<string, unknown>, msg = "Appointment updated") =>
     updateAppointment.mutate({ id, values }, { onSuccess: () => toast.success(msg) });
 
+  function checkAppointmentConflict({
+    startsAt,
+    durationMin,
+    providerId,
+    roomId,
+    excludeId,
+  }: {
+    startsAt: Date;
+    durationMin: number;
+    providerId?: string | null;
+    roomId?: string | null;
+    excludeId?: string;
+  }): string | null {
+    if (!appointments.data?.length) return null;
+    const reqStart = startsAt.getTime();
+    const reqEnd = reqStart + durationMin * 60_000;
+
+    for (const app of appointments.data) {
+      if (app.status === "Cancelled" || (excludeId && app.id === excludeId)) continue;
+      const appStart = new Date(app.starts_at).getTime();
+      const appEnd = appStart + (app.duration_min ?? 30) * 60_000;
+
+      if (appStart < reqEnd && appEnd > reqStart) {
+        if (providerId && app.provider_id === providerId) {
+          const docName = providers.data?.find((p) => p.id === providerId)?.name ?? "Selected doctor";
+          return `Warning: ${docName} is already booked at this time.`;
+        }
+        if (roomId && app.room_id === roomId) {
+          const roomName = rooms.data?.find((r) => r.id === roomId)?.name ?? "Selected room";
+          return `Warning: ${roomName} is already occupied at this time.`;
+        }
+      }
+    }
+    return null;
+  }
+
   async function submit(form: HTMLFormElement) {
     const fd = new FormData(form);
     const service = services.data?.find((s) => s.id === String(fd.get("service_id")));
@@ -167,28 +216,50 @@ function AppointmentsPage() {
       return;
     }
 
-    createAppointment.mutate(
-      {
-        patient_id: patientId,
-        provider_id: String(fd.get("provider_id")) || null,
-        room_id: String(fd.get("room_id")) || null,
-        service_id: service?.id ?? null,
-        starts_at: startsAtDate.toISOString(),
-        duration_min: Number(fd.get("duration_min")) || service?.duration_min || 30,
-        status: "Booked",
-        source: String(fd.get("source")),
-        temperature: String(fd.get("temperature")),
-        notes: String(fd.get("notes")) || null,
-      },
-      {
-        onSuccess: () => {
-          toast.success("Appointment booked");
-          setQuickAdd(false);
-          setOpen(false);
+    const providerId = String(fd.get("provider_id")) || null;
+    const roomId = String(fd.get("room_id")) || null;
+    const durationMin = Number(fd.get("duration_min")) || service?.duration_min || 30;
+
+    const conflictMsg = checkAppointmentConflict({
+      startsAt: startsAtDate,
+      durationMin,
+      providerId,
+      roomId,
+    });
+    const doCreate = () => {
+      createAppointment.mutate(
+        {
+          patient_id: patientId,
+          provider_id: providerId,
+          room_id: roomId,
+          service_id: service?.id ?? null,
+          starts_at: startsAtDate.toISOString(),
+          duration_min: durationMin,
+          status: "Booked",
+          source: String(fd.get("source")),
+          temperature: String(fd.get("temperature")),
+          notes: String(fd.get("notes")) || null,
         },
-        onError: (e) => toast.error(e.message),
-      },
-    );
+        {
+          onSuccess: () => {
+            toast.success("Appointment booked");
+            setQuickAdd(false);
+            setOpen(false);
+          },
+          onError: (e) => toast.error(e.message),
+        },
+      );
+    };
+
+    if (conflictMsg) {
+      setConflictModal({
+        message: conflictMsg,
+        onConfirm: doCreate,
+      });
+      return;
+    }
+
+    doCreate();
   }
 
 
@@ -341,9 +412,24 @@ function AppointmentsPage() {
                     <td className="px-5 py-3">
                       <select
                         value={a.provider_id ?? ""}
-                        onChange={(e) =>
-                          patch(a.id, { provider_id: e.target.value || null }, "Doctor assigned")
-                        }
+                        onChange={(e) => {
+                          const newDocId = e.target.value || null;
+                          const conflictMsg = checkAppointmentConflict({
+                            startsAt: new Date(a.starts_at),
+                            durationMin: a.duration_min ?? 30,
+                            providerId: newDocId,
+                            roomId: a.room_id,
+                            excludeId: a.id,
+                          });
+                          if (conflictMsg) {
+                            setConflictModal({
+                              message: conflictMsg,
+                              onConfirm: () => patch(a.id, { provider_id: newDocId }, "Doctor assigned"),
+                            });
+                            return;
+                          }
+                          patch(a.id, { provider_id: newDocId }, "Doctor assigned");
+                        }}
                         className={`${inputClass} h-8 w-36 text-xs`}
                         aria-label="Doctor"
                       >
@@ -375,7 +461,15 @@ function AppointmentsPage() {
                     <td className="px-5 py-3">
                       <select
                         value={a.status}
-                        onChange={(e) => patch(a.id, { status: e.target.value }, "Status updated")}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (val === "Cancelled") {
+                            setCancelModal(a);
+                            setCancelReason("Patient requested");
+                            return;
+                          }
+                          patch(a.id, { status: val }, "Status updated");
+                        }}
                         className={`${inputClass} h-8 w-32 text-xs`}
                         aria-label="Status"
                       >
@@ -437,24 +531,44 @@ function AppointmentsPage() {
                   toast.error(timeErr);
                   return;
                 }
-                updateAppointment.mutate(
-                  {
-                    id: reschedule.id,
-                    values: {
-                      previous_starts_at: reschedule.starts_at,
-                      starts_at: newStart.toISOString(),
-                      reschedule_count: (reschedule.reschedule_count ?? 0) + 1,
-                      status: "Booked",
+
+                const conflictMsg = checkAppointmentConflict({
+                  startsAt: newStart,
+                  durationMin: reschedule.duration_min ?? 30,
+                  providerId: reschedule.provider_id,
+                  roomId: reschedule.room_id,
+                  excludeId: reschedule.id,
+                });
+                const doReschedule = () => {
+                  updateAppointment.mutate(
+                    {
+                      id: reschedule.id,
+                      values: {
+                        previous_starts_at: reschedule.starts_at,
+                        starts_at: newStart.toISOString(),
+                        reschedule_count: (reschedule.reschedule_count ?? 0) + 1,
+                        status: "Booked",
+                      },
                     },
-                  },
-                  {
-                    onSuccess: () => {
-                      toast.success("Appointment rescheduled");
-                      setReschedule(null);
+                    {
+                      onSuccess: () => {
+                        toast.success("Appointment rescheduled");
+                        setReschedule(null);
+                      },
+                      onError: (err) => toast.error(err.message),
                     },
-                    onError: (err) => toast.error(err.message),
-                  },
-                );
+                  );
+                };
+
+                if (conflictMsg) {
+                  setConflictModal({
+                    message: conflictMsg,
+                    onConfirm: doReschedule,
+                  });
+                  return;
+                }
+
+                doReschedule();
               }}
             >
               <p className="text-xs text-muted-foreground">
@@ -614,6 +728,81 @@ function AppointmentsPage() {
               disabled={createAppointment.isPending}
             >
               Book appointment
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={!!conflictModal} onOpenChange={(v) => !v && setConflictModal(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Schedule Conflict Detected</AlertDialogTitle>
+            <AlertDialogDescription>
+              {conflictModal?.message}
+              <br />
+              <br />
+              Do you still want to proceed with this booking?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setConflictModal(null)}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                conflictModal?.onConfirm();
+                setConflictModal(null);
+              }}
+            >
+              Proceed Anyway
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <Dialog open={!!cancelModal} onOpenChange={(v) => !v && setCancelModal(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Cancel Appointment</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-2">
+            <p className="text-sm text-muted-foreground">
+              Please select a reason for cancelling this appointment:
+            </p>
+            <Field label="Cancellation reason">
+              <select
+                value={cancelReason}
+                onChange={(e) => setCancelReason(e.target.value)}
+                className={inputClass}
+              >
+                <option value="Patient requested">Patient requested</option>
+                <option value="Clinic reschedule">Clinic reschedule</option>
+                <option value="No-show">No-show</option>
+                <option value="Duplicate booking">Duplicate booking</option>
+                <option value="Other">Other / Skip</option>
+              </select>
+            </Field>
+          </div>
+          <DialogFooter>
+            <button type="button" className={ghostButton} onClick={() => setCancelModal(null)}>
+              Keep appointment
+            </button>
+            <button
+              type="button"
+              className={primaryButton}
+              onClick={() => {
+                if (!cancelModal) return;
+                const existingNotes = cancelModal.notes ? `${cancelModal.notes}\n` : "";
+                const updatedNotes = `${existingNotes}[Cancellation Reason: ${cancelReason}]`;
+                patch(
+                  cancelModal.id,
+                  { status: "Cancelled", notes: updatedNotes },
+                  "Appointment cancelled",
+                );
+                setCancelModal(null);
+              }}
+            >
+              Confirm Cancellation
             </button>
           </DialogFooter>
         </DialogContent>

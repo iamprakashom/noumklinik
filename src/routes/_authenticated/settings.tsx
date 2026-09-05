@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { money } from "@/data/clinic";
-import type { Provider, Room, Service } from "@/data/clinic";
+import type { ConsentTemplate, Provider, Room, Service } from "@/data/clinic";
 import {
   useConsentTemplates,
   useInsert,
@@ -57,6 +57,7 @@ function SettingsPage() {
   const [editingService, setEditingService] = useState<Service | null>(null);
   const [editingProvider, setEditingProvider] = useState<Provider | null>(null);
   const [editingRoom, setEditingRoom] = useState<Room | null>(null);
+  const [editingConsent, setEditingConsent] = useState<ConsentTemplate | null>(null);
    const [confirmArchive, setConfirmArchive] = useState<{
     title: string;
     message: string;
@@ -83,6 +84,7 @@ function SettingsPage() {
     setEditingService(null);
     setEditingProvider(null);
     setEditingRoom(null);
+    setEditingConsent(null);
   };
   const saving =
     addService.isPending ||
@@ -411,7 +413,13 @@ function SettingsPage() {
           <Panel
             title="Consent forms"
             action={
-              <button className={primaryButton} onClick={() => setDialog("consent")}>
+              <button
+                className={primaryButton}
+                onClick={() => {
+                  setEditingConsent(null);
+                  setDialog("consent");
+                }}
+              >
                 <Plus className="size-3.5" /> New form
               </button>
             }
@@ -427,15 +435,29 @@ function SettingsPage() {
                         <p className="text-sm font-medium">{c.name}</p>
                         {c.active ? null : <Chip>Archived</Chip>}
                       </div>
-                      <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{c.body}</p>
+                      <p className="mt-1 line-clamp-2 text-xs text-muted-foreground whitespace-pre-line">{c.body}</p>
                     </div>
-                    <Switch
-                      checked={c.active}
-                      onCheckedChange={(v) =>
-                        updateConsent.mutate({ id: c.id, values: { active: v } })
-                      }
-                      aria-label="Toggle consent form"
-                    />
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        className={ghostButton}
+                        aria-label={`Edit ${c.name}`}
+                        title="Edit consent form"
+                        onClick={() => {
+                          setEditingConsent(c);
+                          setDialog("consent");
+                        }}
+                      >
+                        <Pencil className="size-3.5" />
+                      </button>
+                      <Switch
+                        checked={c.active}
+                        onCheckedChange={(v) =>
+                          updateConsent.mutate({ id: c.id, values: { active: v } })
+                        }
+                        aria-label="Toggle consent form"
+                      />
+                    </div>
                   </li>
                 ))}
               </ul>
@@ -460,12 +482,14 @@ function SettingsPage() {
                     ? editingRoom
                       ? "Edit room"
                       : "New treatment room"
-                    : "New consent form"}
+                    : editingConsent
+                      ? "Edit consent form"
+                      : "New consent form"}
             </DialogTitle>
           </DialogHeader>
 
           <form
-            key={`${dialog ?? "none"}-${editingService?.id ?? editingProvider?.id ?? editingRoom?.id ?? "new"}`}
+            key={`${dialog ?? "none"}-${editingService?.id ?? editingProvider?.id ?? editingRoom?.id ?? editingConsent?.id ?? "new"}`}
             id="setup-form"
             className="grid gap-4 sm:grid-cols-2"
             onSubmit={(e) => {
@@ -553,14 +577,23 @@ function SettingsPage() {
                   );
                 }
               } else {
-                addConsent.mutate(
-                  {
-                    name: String(fd.get("name")),
-                    body: String(fd.get("body")),
-                    active: true,
-                  },
-                  { onSuccess: () => ok("Consent form added"), onError: fail },
-                );
+                const name = String(fd.get("name")).trim();
+                const body = String(fd.get("body")).trim();
+                if (editingConsent) {
+                  updateConsent.mutate(
+                    { id: editingConsent.id, values: { name, body } },
+                    { onSuccess: () => ok("Consent form updated"), onError: fail },
+                  );
+                } else {
+                  addConsent.mutate(
+                    {
+                      name,
+                      body,
+                      active: true,
+                    },
+                    { onSuccess: () => ok("Consent form added"), onError: fail },
+                  );
+                }
               }
             }}
           >
@@ -572,6 +605,7 @@ function SettingsPage() {
                   editingService?.name ??
                   editingProvider?.name ??
                   editingRoom?.name ??
+                  editingConsent?.name ??
                   ""
                 }
                 className={inputClass}
@@ -712,7 +746,14 @@ function SettingsPage() {
 
             {dialog === "consent" ? (
               <Field label="Body" className="sm:col-span-2">
-                <textarea name="body" required className={textareaClass} />
+                <textarea
+                  name="body"
+                  required
+                  rows={6}
+                  defaultValue={editingConsent?.body ?? ""}
+                  className={textareaClass}
+                  placeholder="Enter the complete consent terms and disclaimer text..."
+                />
               </Field>
             ) : null}
           </form>
