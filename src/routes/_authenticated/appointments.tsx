@@ -46,13 +46,13 @@ import { sendAppointmentReminder } from "@/lib/messaging.functions";
 export const Route = createFileRoute("/_authenticated/appointments")({
   head: () => ({
     meta: [
-      { title: "Appointments — Luma Aesthetics Clinic CRM" },
+      { title: "Appointments — Noum Klinik" },
       {
         name: "description",
         content:
           "Book, reschedule and assign clinic appointments with source tracking, treatment type, doctor assignment and session reminders.",
       },
-      { property: "og:title", content: "Appointments — Luma Aesthetics Clinic CRM" },
+      { property: "og:title", content: "Appointments — Noum Klinik" },
       {
         property: "og:description",
         content: "Medspa appointment desk with reschedule, doctor assignment and reminders.",

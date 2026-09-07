@@ -39,13 +39,13 @@ import { createInvoicePaymentLink } from "@/lib/payments.functions";
 export const Route = createFileRoute("/_authenticated/billing")({
   head: () => ({
     meta: [
-      { title: "Billing — Luma Aesthetics Clinic CRM" },
+      { title: "Billing — Noum Klinik" },
       {
         name: "description",
         content:
           "Raise GST tax invoices with CGST/SGST split, SAC codes and sequential numbering, collect UPI or EMI payments and track balances.",
       },
-      { property: "og:title", content: "Billing — Luma Aesthetics Clinic CRM" },
+      { property: "og:title", content: "Billing — Noum Klinik" },
       {
         property: "og:description",
         content: "GST invoices, credit notes, payment links and outstanding balances for the clinic.",

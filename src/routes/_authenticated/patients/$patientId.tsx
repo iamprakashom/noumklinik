@@ -44,13 +44,13 @@ import {
 export const Route = createFileRoute("/_authenticated/patients/$patientId")({
   head: () => ({
     meta: [
-      { title: "Patient chart — Luma Aesthetics Clinic CRM" },
+      { title: "Patient chart — Noum Klinik" },
       {
         name: "description",
         content:
           "Patient chart with visit history, clinical treatment notes, signed consents, invoices and communication timeline.",
       },
-      { property: "og:title", content: "Patient chart — Luma Aesthetics Clinic CRM" },
+      { property: "og:title", content: "Patient chart — Noum Klinik" },
       {
         property: "og:description",
         content: "Clinical notes, consents, billing and messages for a single patient.",

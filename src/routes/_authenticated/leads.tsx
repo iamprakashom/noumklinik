@@ -64,13 +64,13 @@ export const Route = createFileRoute("/_authenticated/leads")({
   search: { middlewares: [stripSearchParams(leadsSearchDefaults)] },
   head: () => ({
     meta: [
-      { title: "Leads — Luma Aesthetics Clinic CRM" },
+      { title: "Leads — Noum Klinik" },
       {
         name: "description",
         content:
           "Track aesthetic clinic enquiries from Meta ads, Google ads and organic sources, score interest strength and work overdue follow-ups.",
       },
-      { property: "og:title", content: "Leads — Luma Aesthetics Clinic CRM" },
+      { property: "og:title", content: "Leads — Noum Klinik" },
       {
         property: "og:description",
         content: "Lead pipeline with interest strength, source groups and follow-up tracking.",

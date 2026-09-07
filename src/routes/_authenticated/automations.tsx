@@ -28,13 +28,13 @@ import {
 export const Route = createFileRoute("/_authenticated/automations")({
   head: () => ({
     meta: [
-      { title: "Follow-ups — Luma Aesthetics Clinic CRM" },
+      { title: "Follow-ups — Noum Klinik" },
       {
         name: "description",
         content:
           "Automated appointment reminders, post-treatment check-ins, recalls and no-show win-backs over Email, SMS and WhatsApp.",
       },
-      { property: "og:title", content: "Follow-ups — Luma Aesthetics Clinic CRM" },
+      { property: "og:title", content: "Follow-ups — Noum Klinik" },
       {
         property: "og:description",
         content: "Reminder rules, message templates and the outbox of scheduled patient messages.",

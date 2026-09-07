@@ -24,13 +24,13 @@ import {
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
     meta: [
-      { title: "Today — Luma Aesthetics Clinic CRM" },
+      { title: "Today — Noum Klinik" },
       {
         name: "description",
         content:
           "Daily clinic overview: today's schedule, check-ins, revenue, new leads and scheduled patient follow-ups.",
       },
-      { property: "og:title", content: "Today — Luma Aesthetics Clinic CRM" },
+      { property: "og:title", content: "Today — Noum Klinik" },
       {
         property: "og:description",
         content: "Schedule, revenue, leads and follow-ups for your medspa at a glance.",

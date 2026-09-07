@@ -89,7 +89,7 @@ export function AppShell({
       <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
         <Stethoscope className="size-4" />
       </span>
-      <span className="truncate text-sm font-semibold tracking-tight">Luma Aesthetics</span>
+      <span className="truncate text-sm font-semibold tracking-tight">Noum Klinik</span>
     </div>
   );
 

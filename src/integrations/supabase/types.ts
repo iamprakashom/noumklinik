@@ -420,6 +420,7 @@ export type Database = {
           address_line2: string | null
           city: string | null
           clinic_id: string
+          close_time: string
           created_at: string
           declaration: string
           email: string | null
@@ -428,6 +429,7 @@ export type Database = {
           id: string
           invoice_prefix: string
           legal_name: string
+          open_time: string
           phone: string | null
           pincode: string | null
           singleton: boolean
@@ -435,15 +437,14 @@ export type Database = {
           state_code: string
           trade_name: string | null
           updated_at: string
-          working_days: string[] | null
-          open_time: string | null
-          close_time: string | null
+          working_days: string[]
         }
         Insert: {
           address_line1?: string | null
           address_line2?: string | null
           city?: string | null
           clinic_id?: string
+          close_time?: string
           created_at?: string
           declaration?: string
           email?: string | null
@@ -452,6 +453,7 @@ export type Database = {
           id?: string
           invoice_prefix?: string
           legal_name?: string
+          open_time?: string
           phone?: string | null
           pincode?: string | null
           singleton?: boolean
@@ -459,15 +461,14 @@ export type Database = {
           state_code?: string
           trade_name?: string | null
           updated_at?: string
-          working_days?: string[] | null
-          open_time?: string | null
-          close_time?: string | null
+          working_days?: string[]
         }
         Update: {
           address_line1?: string | null
           address_line2?: string | null
           city?: string | null
           clinic_id?: string
+          close_time?: string
           created_at?: string
           declaration?: string
           email?: string | null
@@ -476,6 +477,7 @@ export type Database = {
           id?: string
           invoice_prefix?: string
           legal_name?: string
+          open_time?: string
           phone?: string | null
           pincode?: string | null
           singleton?: boolean
@@ -483,9 +485,7 @@ export type Database = {
           state_code?: string
           trade_name?: string | null
           updated_at?: string
-          working_days?: string[] | null
-          open_time?: string | null
-          close_time?: string | null
+          working_days?: string[]
         }
         Relationships: [
           {

@@ -41,13 +41,13 @@ import {
 export const Route = createFileRoute("/_authenticated/settings")({
   head: () => ({
     meta: [
-      { title: "Clinic setup — Luma Aesthetics Clinic CRM" },
+      { title: "Clinic setup — Noum Klinik" },
       {
         name: "description",
         content:
           "Manage the treatment menu, providers, treatment rooms and consent forms that power scheduling and charting.",
       },
-      { property: "og:title", content: "Clinic setup — Luma Aesthetics Clinic CRM" },
+      { property: "og:title", content: "Clinic setup — Noum Klinik" },
       {
         property: "og:description",
         content: "Services, providers, rooms and consent form configuration.",

@@ -22,13 +22,13 @@ import { TimePickerSelector } from "@/components/clinic/TimePickerSelector";
 export const Route = createFileRoute("/p/$token")({
   head: () => ({
     meta: [
-      { title: "Complete your form — Luma Aesthetics Clinic" },
+      { title: "Complete your form — Noum Klinik" },
       {
         name: "description",
         content:
           "Securely complete your pre-visit intake details or sign your treatment consent form before your clinic appointment.",
       },
-      { property: "og:title", content: "Complete your form — Luma Aesthetics Clinic" },
+      { property: "og:title", content: "Complete your form — Noum Klinik" },
       {
         property: "og:description",
         content: "Fill in your intake details or sign your consent form from your phone.",

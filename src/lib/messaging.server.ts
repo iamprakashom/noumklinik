@@ -42,7 +42,7 @@ async function sendSms(input: SendInput): Promise<SendResult> {
 
 async function sendEmail(input: SendInput): Promise<SendResult> {
   const key = process.env["RESEND_API_KEY"];
-  const from = process.env["RESEND_FROM_EMAIL"] ?? "Luma Aesthetics <onboarding@resend.dev>";
+  const from = process.env["RESEND_FROM_EMAIL"] ?? "Noum Klinik <onboarding@resend.dev>";
   if (!key) return { ok: false, error: "Email is not connected" };
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
