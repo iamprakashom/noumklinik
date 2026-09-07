@@ -35,13 +35,13 @@ import { useAppointments, useInsert, usePatients } from "@/lib/clinic-data";
 export const Route = createFileRoute("/_authenticated/patients/")({
   head: () => ({
     meta: [
-      { title: "Patients — Luma Aesthetics Clinic CRM" },
+      { title: "Patients — Noum Klinik" },
       {
         name: "description",
         content:
           "Search patient records, review contact details, treatment tags, clinical alerts and visit history for your aesthetics clinic.",
       },
-      { property: "og:title", content: "Patients — Luma Aesthetics Clinic CRM" },
+      { property: "og:title", content: "Patients — Noum Klinik" },
       {
         property: "og:description",
         content: "Every patient record, alert and visit in one searchable list.",

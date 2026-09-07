@@ -22,13 +22,13 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/_authenticated/reports")({
   head: () => ({
     meta: [
-      { title: "Reports — Luma Aesthetics Clinic CRM" },
+      { title: "Reports — Noum Klinik" },
       {
         name: "description",
         content:
           "Day-close cash reconciliation, collection by payment mode, outstanding dues and doctor incentive reporting for the clinic.",
       },
-      { property: "og:title", content: "Reports — Luma Aesthetics Clinic CRM" },
+      { property: "og:title", content: "Reports — Noum Klinik" },
       {
         property: "og:description",
         content: "Daily collections by mode, dues ageing and revenue by doctor and service.",

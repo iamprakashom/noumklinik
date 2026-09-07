@@ -13,12 +13,12 @@ export const Route = createFileRoute("/onboarding")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "Set up your clinic — Luma Aesthetics Clinic CRM" },
+      { title: "Set up your clinic — Noum Klinik" },
       {
         name: "description",
         content: "Create your private clinic workspace or accept an invite from a colleague to get started.",
       },
-      { property: "og:title", content: "Set up your clinic — Luma Aesthetics Clinic CRM" },
+      { property: "og:title", content: "Set up your clinic — Noum Klinik" },
       { property: "og:description", content: "Create a clinic workspace or join your team." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -113,7 +113,7 @@ function OnboardingPage() {
               minLength={2}
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Luma Aesthetics, Indiranagar"
+              placeholder="Skin & Glow Clinic, Indiranagar"
             />
           </div>
           <Button type="submit" className="mt-4 w-full" disabled={create.isPending}>

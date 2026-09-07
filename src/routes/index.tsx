@@ -6,13 +6,13 @@ import { supabase } from "@/integrations/supabase/client";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Luma — MedSpa & Aesthetic Clinic CRM" },
+      { title: "Noum Klinik — MedSpa & Aesthetic Clinic CRM" },
       {
         name: "description",
         content:
-          "Luma is the all-in-one CRM for aesthetic clinics: scheduling, patient charts, consents, billing, lead capture and automated follow-ups.",
+          "Noum Klinik is the all-in-one CRM for aesthetic clinics: scheduling, patient charts, consents, billing, lead capture and automated follow-ups.",
       },
-      { property: "og:title", content: "Luma — MedSpa & Aesthetic Clinic CRM" },
+      { property: "og:title", content: "Noum Klinik — MedSpa & Aesthetic Clinic CRM" },
       {
         property: "og:description",
         content: "Scheduling, clinical charting, billing and follow-up automation for medspas.",
@@ -67,7 +67,7 @@ function Landing() {
         <span className="mx-auto flex size-10 items-center justify-center rounded-lg bg-primary text-primary-foreground">
           <Stethoscope className="size-5" />
         </span>
-        <h1 className="mt-6 text-3xl font-semibold tracking-tight">Luma Aesthetics</h1>
+        <h1 className="mt-6 text-3xl font-semibold tracking-tight">Noum Klinik</h1>
         <p className="mt-3 text-sm text-muted-foreground">
           Clinic operations for medspas — scheduling, patient charts, consents, billing,
           lead capture and automated follow-ups in one workspace.

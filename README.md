@@ -1,4 +1,4 @@
-# Maeby CRM
+# Noum Klinik
 
 A modern clinic management system for MedSpa and aesthetic clinics — built to handle appointments, patient records, lead follow-up, billing, and daily operations in one minimal interface.
 

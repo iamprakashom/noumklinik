@@ -12,12 +12,12 @@ export const Route = createFileRoute("/auth")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "Sign in — Luma Aesthetics Clinic CRM" },
+      { title: "Sign in — Noum Klinik" },
       {
         name: "description",
-        content: "Sign in to Luma to manage appointments, patient charts, billing and clinic follow-ups.",
+        content: "Sign in to Noum Klinik to manage appointments, patient charts, billing and clinic follow-ups.",
       },
-      { property: "og:title", content: "Sign in — Luma Aesthetics Clinic CRM" },
+      { property: "og:title", content: "Sign in — Noum Klinik" },
       { property: "og:description", content: "Access your clinic workspace." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -109,7 +109,7 @@ function AuthPage() {
           <span className="flex size-8 items-center justify-center rounded-md bg-primary text-primary-foreground">
             <Stethoscope className="size-4" />
           </span>
-          <span className="text-sm font-semibold tracking-tight">Luma Aesthetics</span>
+          <span className="text-sm font-semibold tracking-tight">Noum Klinik</span>
         </div>
         <h1 className="mt-5 text-xl font-semibold tracking-tight">
           {mode === "signin" ? "Sign in" : "Create your account"}

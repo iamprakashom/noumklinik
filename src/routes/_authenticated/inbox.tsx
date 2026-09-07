@@ -11,13 +11,13 @@ import { listConversations, listThread, sendWhatsAppReply } from "@/lib/whatsapp
 export const Route = createFileRoute("/_authenticated/inbox")({
   head: () => ({
     meta: [
-      { title: "WhatsApp inbox — Luma Aesthetics Clinic CRM" },
+      { title: "WhatsApp inbox — Noum Klinik" },
       {
         name: "description",
         content:
           "Two-way WhatsApp conversations with patients and leads, with replies logged against the right record.",
       },
-      { property: "og:title", content: "WhatsApp inbox — Luma Aesthetics Clinic CRM" },
+      { property: "og:title", content: "WhatsApp inbox — Noum Klinik" },
       {
         property: "og:description",
         content: "Reply to patient WhatsApp messages from one clinic inbox.",

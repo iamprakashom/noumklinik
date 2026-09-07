@@ -12,12 +12,12 @@ export const Route = createFileRoute("/join")({
   validateSearch: z.object({ token: z.string().optional() }),
   head: () => ({
     meta: [
-      { title: "Join a clinic — Luma Aesthetics Clinic CRM" },
+      { title: "Join a clinic — Noum Klinik" },
       {
         name: "description",
-        content: "Accept your colleague's invitation and join the clinic workspace on Luma.",
+        content: "Accept your colleague's invitation and join the clinic workspace on Noum Klinik.",
       },
-      { property: "og:title", content: "Join a clinic — Luma Aesthetics Clinic CRM" },
+      { property: "og:title", content: "Join a clinic — Noum Klinik" },
       { property: "og:description", content: "Accept an invitation to a clinic workspace." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

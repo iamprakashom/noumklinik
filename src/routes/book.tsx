@@ -16,13 +16,13 @@ export const Route = createFileRoute("/book")({
   validateSearch: z.object({ c: z.string().uuid().optional() }),
   head: () => ({
     meta: [
-      { title: "Book an appointment — Luma Aesthetics Clinic" },
+      { title: "Book an appointment — Noum Klinik" },
       {
         name: "description",
         content:
           "Request an appointment at our aesthetic clinic online. Choose your treatment, preferred doctor and time — our front desk confirms within clinic hours.",
       },
-      { property: "og:title", content: "Book an appointment — Luma Aesthetics Clinic" },
+      { property: "og:title", content: "Book an appointment — Noum Klinik" },
       {
         property: "og:description",
         content: "Request a consultation or treatment slot online in under a minute.",
