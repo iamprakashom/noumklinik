@@ -3,7 +3,14 @@ import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Plus, Search } from "lucide-react";
 import { AppShell, ghostButton, primaryButton } from "@/components/clinic/AppShell";
-import { Avatar, Chip, EmptyState, Field, inputClass, textareaClass } from "@/components/clinic/bits";
+import {
+  Avatar,
+  Chip,
+  EmptyState,
+  Field,
+  inputClass,
+  textareaClass,
+} from "@/components/clinic/bits";
 import {
   Dialog,
   DialogContent,
@@ -11,7 +18,18 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { CHANNELS, LEAD_SOURCES, age, formatDate, initials, patientName } from "@/data/clinic";
+import type { Patient } from "@/data/clinic";
 import { useAppointments, useInsert, usePatients } from "@/lib/clinic-data";
 
 export const Route = createFileRoute("/_authenticated/patients/")({
@@ -35,11 +53,27 @@ export const Route = createFileRoute("/_authenticated/patients/")({
   component: PatientsPage,
 });
 
+type PatientInsertValues = {
+  first_name: string;
+  last_name: string;
+  email: string | null;
+  phone: string | null;
+  birth_date: string | null;
+  gender: string | null;
+  source: string;
+  preferred_channel: string;
+  allergies: string | null;
+  alerts: string | null;
+};
+
 function PatientsPage() {
   const { new: openNew } = Route.useSearch();
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(openNew ?? false);
-  const [ignoreDupe, setIgnoreDupe] = useState<string | null>(null);
+  const [dupeMatch, setDupeMatch] = useState<{
+    patient: Patient;
+    formValues: PatientInsertValues;
+  } | null>(null);
   const patients = usePatients();
   const appointments = useAppointments();
   const createPatient = useInsert("patients");
@@ -68,50 +102,55 @@ function PatientsPage() {
     return future[0]?.starts_at ?? null;
   };
 
+  function performInsert(values: PatientInsertValues) {
+    createPatient.mutate(values, {
+      onSuccess: () => {
+        toast.success("Patient added");
+        setDupeMatch(null);
+        setOpen(false);
+      },
+      onError: (e) => toast.error(e.message),
+    });
+  }
+
   function submit(form: HTMLFormElement) {
     const fd = new FormData(form);
     const digits = (v: string) => v.replace(/\D/g, "").slice(-10);
     const phone = String(fd.get("phone") ?? "");
-    const email = String(fd.get("email") ?? "").trim().toLowerCase();
+    const email = String(fd.get("email") ?? "")
+      .trim()
+      .toLowerCase();
     const dupe = (patients.data ?? []).find(
       (p) =>
         (phone.length >= 10 && digits(p.phone ?? "") === digits(phone)) ||
         (email && (p.email ?? "").toLowerCase() === email),
     );
-    if (dupe && dupe.id !== ignoreDupe) {
-      setIgnoreDupe(dupe.id);
-      toast.warning(`${patientName(dupe)} already exists with these contact details`, {
-        description: "Press Save again to create a separate record anyway.",
-      });
+
+    const birthDate = String(fd.get("birth_date") || "");
+    if (birthDate && birthDate > new Date().toLocaleDateString("en-CA")) {
+      toast.error("Date of birth cannot be in the future");
       return;
     }
-   const birthDate = String(fd.get("birth_date") || "");
-if (birthDate && birthDate > new Date().toLocaleDateString("en-CA")) {
-  toast.error("Date of birth cannot be in the future");
-  return;
-}   
-    createPatient.mutate(
-      {
-        first_name: String(fd.get("first_name")),
-        last_name: String(fd.get("last_name")),
-        email: String(fd.get("email")) || null,
-        phone: String(fd.get("phone")) || null,
-        birth_date: birthDate || null,
-        gender: String(fd.get("gender")) || null,
-        source: String(fd.get("source")),
-        preferred_channel: String(fd.get("preferred_channel")),
-        allergies: String(fd.get("allergies")) || null,
-        alerts: String(fd.get("alerts")) || null,
-      },
-      {
-        onSuccess: () => {
-          toast.success("Patient added");
-          setIgnoreDupe(null);
-          setOpen(false);
-        },
-        onError: (e) => toast.error(e.message),
-      },
-    );
+
+    const payload = {
+      first_name: String(fd.get("first_name")),
+      last_name: String(fd.get("last_name")),
+      email: String(fd.get("email")) || null,
+      phone: String(fd.get("phone")) || null,
+      birth_date: birthDate || null,
+      gender: String(fd.get("gender")) || null,
+      source: String(fd.get("source")),
+      preferred_channel: String(fd.get("preferred_channel")),
+      allergies: String(fd.get("allergies")) || null,
+      alerts: String(fd.get("alerts")) || null,
+    };
+
+    if (dupe) {
+      setDupeMatch({ patient: dupe, formValues: payload });
+      return;
+    }
+
+    performInsert(payload);
   }
 
   return (
@@ -275,6 +314,49 @@ if (birthDate && birthDate > new Date().toLocaleDateString("en-CA")) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={!!dupeMatch} onOpenChange={(v) => !v && setDupeMatch(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Potential duplicate patient detected</AlertDialogTitle>
+            <AlertDialogDescription>
+              {dupeMatch ? (
+                <span>
+                  An existing patient record matches this contact info:
+                  <br />
+                  <strong className="text-foreground">{patientName(dupeMatch.patient)}</strong>
+                  {dupeMatch.patient.phone ? ` · ${dupeMatch.patient.phone}` : ""}
+                  {dupeMatch.patient.email ? ` · ${dupeMatch.patient.email}` : ""}
+                </span>
+              ) : null}
+              <br />
+              <br />
+              Creating this patient will result in duplicate records. Are you sure you want to
+              proceed?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setDupeMatch(null)}>Cancel</AlertDialogCancel>
+            {dupeMatch ? (
+              <Link
+                to="/patients/$patientId"
+                params={{ patientId: dupeMatch.patient.id }}
+                className={ghostButton}
+                target="_blank"
+              >
+                View existing record
+              </Link>
+            ) : null}
+            <AlertDialogAction
+              onClick={() => {
+                if (dupeMatch) performInsert(dupeMatch.formValues);
+              }}
+            >
+              Create duplicate anyway
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AppShell>
   );
 }

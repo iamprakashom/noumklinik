@@ -9,6 +9,8 @@ import { Field, inputClass, textareaClass } from "@/components/clinic/bits";
 import { primaryButton } from "@/components/clinic/AppShell";
 import { getBookingOptions, requestBooking } from "@/lib/booking.functions";
 import { money, toLocalInputValue } from "@/data/clinic";
+import { validateAppointmentTime } from "@/lib/clinic-hours";
+import { TimePickerSelector } from "@/components/clinic/TimePickerSelector";
 
 export const Route = createFileRoute("/book")({
   validateSearch: z.object({ c: z.string().uuid().optional() }),
@@ -70,6 +72,8 @@ function BookingPage() {
           full_name: values["full_name"] ?? "",
           phone: values["phone"] ?? "",
           email: values["email"] || null,
+          birth_date: values["birth_date"] || null,
+          gender: values["gender"] || null,
           service_id: values["service_id"] || null,
           provider_id: values["provider_id"] || null,
           preferred_at: values["preferred_at"] ?? "",
@@ -109,12 +113,12 @@ function BookingPage() {
 
   return (
     <Shell>
-      <header className="space-y-1">
+      <header className="space-y-1 text-center">
         <p className="text-xs tracking-wide text-muted-foreground uppercase">
           {clinic?.name ?? "Aesthetic clinic"}
           {clinic?.city ? ` · ${clinic.city}` : ""}
         </p>
-        <h1 className="flex items-center gap-2 text-2xl font-semibold">
+        <h1 className="flex items-center justify-center gap-2 text-2xl font-semibold">
           <CalendarCheck className="size-5 text-primary" /> Book an appointment
         </h1>
         <p className="text-sm text-muted-foreground">
@@ -127,7 +131,31 @@ function BookingPage() {
         onSubmit={(e) => {
           e.preventDefault();
           const fd = new FormData(e.currentTarget);
-          submit.mutate(Object.fromEntries(fd) as Record<string, string>);
+          const vals = Object.fromEntries(fd) as Record<string, string>;
+
+          if (vals["preferred_at"]) {
+            const err = validateAppointmentTime(vals["preferred_at"], options.data?.clinic);
+            if (err) {
+              toast.error(err);
+              return;
+            }
+          }
+          if (vals["alternate_at"]) {
+            const err = validateAppointmentTime(vals["alternate_at"], options.data?.clinic);
+            if (err) {
+              toast.error(`Backup slot: ${err}`);
+              return;
+            }
+            if (
+              vals["preferred_at"] &&
+              new Date(vals["alternate_at"]) < new Date(vals["preferred_at"])
+            ) {
+              toast.error("Backup appointment date must be after or equal to the preferred date.");
+              return;
+            }
+          }
+
+          submit.mutate(vals);
         }}
       >
         <Field label="Your name">
@@ -139,6 +167,26 @@ function BookingPage() {
         <Field label="Email (optional)">
           <input name="email" type="email" className={inputClass} />
         </Field>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="Date of birth (optional)">
+            <input
+              name="birth_date"
+              type="date"
+              max={toLocalInputValue(new Date()).slice(0, 10)}
+              className={inputClass}
+            />
+          </Field>
+          <Field label="Gender">
+            <select name="gender" required className={inputClass} defaultValue="">
+              <option value="" disabled>
+                Select gender…
+              </option>
+              <option value="Female">Female</option>
+              <option value="Male">Male</option>
+              <option value="Other">Other</option>
+            </select>
+          </Field>
+        </div>
         <Field label="Treatment">
           <select name="service_id" className={inputClass} defaultValue="">
             <option value="">Not sure — please advise</option>
@@ -159,32 +207,23 @@ function BookingPage() {
             ))}
           </select>
         </Field>
-        <Field label="Preferred date and time">
-          <input
-            name="preferred_at"
-            type="datetime-local"
-            required
-            min={toLocalInputValue(new Date())}
-            className={inputClass}
-          />
+        <Field as="div" label="Preferred date and time">
+          <TimePickerSelector name="preferred_at" required clinic={options.data?.clinic} />
         </Field>
-        <Field label="Backup slot (optional)">
-          <input
-            name="alternate_at"
-            type="datetime-local"
-            min={toLocalInputValue(new Date())}
-            className={inputClass}
-          />
+        <Field as="div" label="Backup slot (optional)">
+          <TimePickerSelector name="alternate_at" clinic={options.data?.clinic} />
         </Field>
         <Field label="Anything we should know?">
           <textarea name="notes" className={textareaClass} />
         </Field>
-        <button className={primaryButton} disabled={submit.isPending}>
-          {submit.isPending ? "Sending…" : "Request appointment"}
-        </button>
-        <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          <Clock className="size-3.5" /> This is a request, not a confirmed booking.
-        </p>
+        <div className="flex flex-col items-center gap-2 pt-2">
+          <button className={`${primaryButton} w-auto px-8`} disabled={submit.isPending}>
+            {submit.isPending ? "Booking…" : "Book appointment"}
+          </button>
+          <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <Clock className="size-3.5" /> This is a request, not a confirmed booking.
+          </p>
+        </div>
       </form>
     </Shell>
   );

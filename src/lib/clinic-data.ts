@@ -76,6 +76,8 @@ export type AppointmentRequest = {
   full_name: string;
   phone: string;
   email: string | null;
+  birth_date: string | null;
+  gender: string | null;
   service_id: string | null;
   provider_id: string | null;
   preferred_at: string;

@@ -17,6 +17,7 @@ import {
   submitIntake,
 } from "@/lib/patient-links.functions";
 import { toLocalInputValue } from "@/data/clinic";
+import { TimePickerSelector } from "@/components/clinic/TimePickerSelector";
 
 export const Route = createFileRoute("/p/$token")({
   head: () => ({
@@ -38,8 +39,16 @@ export const Route = createFileRoute("/p/$token")({
     ],
   }),
   component: PatientLinkPage,
-  errorComponent: () => <Shell><p className="text-sm">This link could not be opened.</p></Shell>,
-  notFoundComponent: () => <Shell><p className="text-sm">Link not found.</p></Shell>,
+  errorComponent: () => (
+    <Shell>
+      <p className="text-sm">This link could not be opened.</p>
+    </Shell>
+  ),
+  notFoundComponent: () => (
+    <Shell>
+      <p className="text-sm">Link not found.</p>
+    </Shell>
+  ),
 });
 
 function Shell({ children }: { children: React.ReactNode }) {
@@ -66,7 +75,6 @@ function PatientLinkPage() {
   const [signature, setSignature] = useState<string | null>(null);
   const [rating, setRating] = useState(0);
 
-
   const link = useQuery({
     queryKey: ["patient_link", token],
     queryFn: () => fetchLink({ data: { token } }),
@@ -79,7 +87,9 @@ function PatientLinkPage() {
   });
   const saveConsent = useMutation({
     mutationFn: (values: { signature_name: string }) =>
-      consent({ data: { token, signature_name: values.signature_name, signature_data: signature } }),
+      consent({
+        data: { token, signature_name: values.signature_name, signature_data: signature },
+      }),
     onSuccess: () => setDone(true),
     onError: (e: Error) => toast.error(e.message),
   });
@@ -116,8 +126,12 @@ function PatientLinkPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
-
-  if (link.isLoading) return <Shell><p className="text-sm text-muted-foreground">Loading…</p></Shell>;
+  if (link.isLoading)
+    return (
+      <Shell>
+        <p className="text-sm text-muted-foreground">Loading…</p>
+      </Shell>
+    );
   const data = link.data;
   if (!data || data.status !== "ok") {
     return (
@@ -142,7 +156,8 @@ function PatientLinkPage() {
         <CheckCircle2 className="size-8 text-primary" />
         <h1 className="text-xl font-semibold">Thank you, {data.patientName}</h1>
         <p className="text-sm text-muted-foreground">
-          {doneMessage ?? `Your details have been sent to ${data.clinicName}. You can close this page.`}
+          {doneMessage ??
+            `Your details have been sent to ${data.clinicName}. You can close this page.`}
         </p>
         {reviewLink ? (
           <a
@@ -158,7 +173,6 @@ function PatientLinkPage() {
       </Shell>
     );
   }
-
 
   return (
     <Shell>
@@ -221,9 +235,15 @@ function PatientLinkPage() {
             ))}
           </div>
           <p className="-mt-3 text-center text-xs text-muted-foreground">
-            {rating === 0 ? "Tap a star" : rating >= 4 ? "Glad to hear it!" : "Sorry to hear that — tell us more."}
+            {rating === 0
+              ? "Tap a star"
+              : rating >= 4
+                ? "Glad to hear it!"
+                : "Sorry to hear that — tell us more."}
           </p>
-          <Field label={rating > 0 && rating < 4 ? "What went wrong?" : "Anything to add? (optional)"}>
+          <Field
+            label={rating > 0 && rating < 4 ? "What went wrong?" : "Anything to add? (optional)"}
+          >
             <textarea name="comment" className={textareaClass} />
           </Field>
           <button className={primaryButton} disabled={feedbackMut.isPending}>
@@ -231,7 +251,6 @@ function PatientLinkPage() {
           </button>
         </form>
       ) : data.kind === "appointment" ? (
-
         <div className="grid gap-4 rounded-xl border border-border bg-card p-5">
           <div className="rounded-lg border border-border bg-background p-4 text-sm">
             <p className="font-medium">
@@ -247,8 +266,9 @@ function PatientLinkPage() {
                 : "Appointment details unavailable"}
             </p>
             <p className="mt-1 text-xs text-muted-foreground">
-              {[data.appointment?.service, data.appointment?.provider].filter(Boolean).join(" · ") ||
-                "At the clinic"}
+              {[data.appointment?.service, data.appointment?.provider]
+                .filter(Boolean)
+                .join(" · ") || "At the clinic"}
             </p>
           </div>
 
@@ -266,14 +286,8 @@ function PatientLinkPage() {
                 });
               }}
             >
-              <Field label="New preferred date and time">
-                <input
-                  name="preferred_at"
-                  type="datetime-local"
-                  required
-                  min={toLocalInputValue(new Date())}
-                  className={inputClass}
-                />
+              <Field as="div" label="New preferred date and time">
+                <TimePickerSelector name="preferred_at" required clinic={data} />
               </Field>
               <Field label="Reason (optional)">
                 <textarea name="notes" className={textareaClass} />
@@ -360,7 +374,12 @@ function PatientLinkPage() {
             {data.consent?.body ?? "Consent form text unavailable."}
           </div>
           <Field label="Full name">
-            <input name="signature_name" required defaultValue={data.patientName} className={inputClass} />
+            <input
+              name="signature_name"
+              required
+              defaultValue={data.patientName}
+              className={inputClass}
+            />
           </Field>
           <Field label="Signature">
             <SignaturePad onChange={setSignature} />

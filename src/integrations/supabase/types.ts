@@ -69,10 +69,12 @@ export type Database = {
         Row: {
           alternate_at: string | null
           appointment_id: string | null
+          birth_date: string | null
           clinic_id: string
           created_at: string
           email: string | null
           full_name: string
+          gender: string | null
           id: string
           kind: string
           notes: string | null
@@ -87,10 +89,12 @@ export type Database = {
         Insert: {
           alternate_at?: string | null
           appointment_id?: string | null
+          birth_date?: string | null
           clinic_id?: string
           created_at?: string
           email?: string | null
           full_name: string
+          gender?: string | null
           id?: string
           kind?: string
           notes?: string | null
@@ -105,10 +109,12 @@ export type Database = {
         Update: {
           alternate_at?: string | null
           appointment_id?: string | null
+          birth_date?: string | null
           clinic_id?: string
           created_at?: string
           email?: string | null
           full_name?: string
+          gender?: string | null
           id?: string
           kind?: string
           notes?: string | null
@@ -429,6 +435,9 @@ export type Database = {
           state_code: string
           trade_name: string | null
           updated_at: string
+          working_days: string[] | null
+          open_time: string | null
+          close_time: string | null
         }
         Insert: {
           address_line1?: string | null
@@ -450,6 +459,9 @@ export type Database = {
           state_code?: string
           trade_name?: string | null
           updated_at?: string
+          working_days?: string[] | null
+          open_time?: string | null
+          close_time?: string | null
         }
         Update: {
           address_line1?: string | null
@@ -471,6 +483,9 @@ export type Database = {
           state_code?: string
           trade_name?: string | null
           updated_at?: string
+          working_days?: string[] | null
+          open_time?: string | null
+          close_time?: string | null
         }
         Relationships: [
           {

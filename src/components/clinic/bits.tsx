@@ -93,12 +93,13 @@ export function Field({
   label: string;
   children: ReactNode;
   className?: string;
+  as?: string;
 }) {
   return (
-    <label className={cn("grid gap-1.5", className)}>
-      <span className="text-xs font-medium text-muted-foreground">{label}</span>
+    <div className={cn("grid gap-1.5", className)}>
+      <label className="text-xs font-medium text-muted-foreground">{label}</label>
       {children}
-    </label>
+    </div>
   );
 }
 
