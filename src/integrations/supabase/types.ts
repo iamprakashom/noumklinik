@@ -69,10 +69,12 @@ export type Database = {
         Row: {
           alternate_at: string | null
           appointment_id: string | null
+          birth_date: string | null
           clinic_id: string
           created_at: string
           email: string | null
           full_name: string
+          gender: string | null
           id: string
           kind: string
           notes: string | null
@@ -87,10 +89,12 @@ export type Database = {
         Insert: {
           alternate_at?: string | null
           appointment_id?: string | null
+          birth_date?: string | null
           clinic_id?: string
           created_at?: string
           email?: string | null
           full_name: string
+          gender?: string | null
           id?: string
           kind?: string
           notes?: string | null
@@ -105,10 +109,12 @@ export type Database = {
         Update: {
           alternate_at?: string | null
           appointment_id?: string | null
+          birth_date?: string | null
           clinic_id?: string
           created_at?: string
           email?: string | null
           full_name?: string
+          gender?: string | null
           id?: string
           kind?: string
           notes?: string | null
