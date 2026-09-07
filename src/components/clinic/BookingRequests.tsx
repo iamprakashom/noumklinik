@@ -53,18 +53,21 @@ export function BookingRequests() {
         });
       } else {
         let patientId = req.patient_id;
+        let matchedPatient = patientId
+          ? (patients.data ?? []).find((p) => p.id === patientId)
+          : null;
         if (!patientId) {
-          const match = (patients.data ?? []).find(
+          matchedPatient = (patients.data ?? []).find(
             (p) => digits(p.phone ?? "") === digits(req.phone),
           );
-          patientId = match?.id ?? null;
-          if (patientId && (req.birth_date || req.gender)) {
-            const updates: Record<string, unknown> = {};
-            if (req.birth_date && !match?.["birth_date"]) updates["birth_date"] = req.birth_date;
-            if (req.gender && !match?.["gender"]) updates["gender"] = req.gender;
-            if (Object.keys(updates).length > 0) {
-              await updatePatient.mutateAsync({ id: patientId, values: updates });
-            }
+          patientId = matchedPatient?.id ?? null;
+        }
+        if (patientId && matchedPatient && (req.birth_date || req.gender)) {
+          const updates: Record<string, unknown> = {};
+          if (req.birth_date && !matchedPatient.birth_date) updates["birth_date"] = req.birth_date;
+          if (req.gender && !matchedPatient.gender) updates["gender"] = req.gender;
+          if (Object.keys(updates).length > 0) {
+            await updatePatient.mutateAsync({ id: patientId, values: updates });
           }
         }
         if (!patientId) {

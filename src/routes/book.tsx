@@ -73,8 +73,9 @@ function BookingPage() {
           phone: values["phone"] ?? "",
           email: values["email"] || null,
           birth_date: values["birth_date"] || null,
-          gender: values["gender"] ?? "",
+          gender: values["gender"] || null,
           service_id: values["service_id"] || null,
+          provider_id: values["provider_id"] || null,
           preferred_at: values["preferred_at"] ?? "",
           alternate_at: values["alternate_at"] || null,
           notes: values["notes"] || null,
@@ -192,6 +193,16 @@ function BookingPage() {
             {options.data?.services.map((s) => (
               <option key={s.id} value={s.id}>
                 {s.name} · {s.duration_min} min · {money(s.price)}
+              </option>
+            ))}
+          </select>
+        </Field>
+        <Field label="Preferred doctor (optional)">
+          <select name="provider_id" className={inputClass} defaultValue="">
+            <option value="">No preference</option>
+            {options.data?.providers.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name} — {p.title}
               </option>
             ))}
           </select>

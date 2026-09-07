@@ -30,17 +30,13 @@ export const DEFAULT_OPEN_TIME = "09:00";
 export const DEFAULT_CLOSE_TIME = "19:00";
 
 export const DAY_NAMES: readonly DayOfWeek[] = [
-  "Sunday",
-  "Monday",
-  "Tuesday",
-  "Wednesday",
-  "Thursday",
-  "Friday",
-  "Saturday",
+  DAYS_OF_WEEK[6],
+  ...DAYS_OF_WEEK.slice(0, 6),
 ];
 
 export function getDayOfWeek(date: Date): DayOfWeek {
-  return DAY_NAMES[date.getDay()]!;
+  const dayIndex = (date.getDay() + 6) % 7;
+  return DAYS_OF_WEEK[dayIndex]!;
 }
 
 /**

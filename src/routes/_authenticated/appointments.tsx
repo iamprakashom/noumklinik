@@ -226,7 +226,7 @@ function AppointmentsPage() {
         return;
       }
       const existing = patients.data?.find(
-        (p) => (p.phone ?? "").replace(/\\D/g, "") === phone.replace(/\\D/g, ""),
+        (p) => (p.phone ?? "").replace(/\D/g, "") === phone.replace(/\D/g, ""),
       );
       if (existing) {
         patientId = existing.id;
@@ -304,7 +304,7 @@ function AppointmentsPage() {
 
   function handleCancelConfirm() {
     if (!cancelModal) return;
-    const existingNotes = cancelModal.notes ? `${cancelModal.notes}\\n` : "";
+    const existingNotes = cancelModal.notes ? `${cancelModal.notes}\n` : "";
     const updatedNotes = `${existingNotes}[Cancellation Reason: ${cancelReason}]`;
     patch(cancelModal.id, { status: "Cancelled", notes: updatedNotes }, "Appointment cancelled");
     setCancelModal(null);

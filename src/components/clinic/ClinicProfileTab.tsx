@@ -4,6 +4,7 @@ import { primaryButton } from "@/components/clinic/AppShell";
 import { Field, Panel, inputClass, textareaClass } from "@/components/clinic/bits";
 import { INDIAN_STATES, isValidGstin, stateCode } from "@/lib/gst";
 import { useClinicProfile, useUpdateClinicProfile } from "@/lib/clinic-data";
+import type { ClinicProfile } from "@/data/clinic";
 import {
   DAYS_OF_WEEK,
   DEFAULT_WORKING_DAYS,
@@ -42,14 +43,14 @@ export function ClinicProfileTab() {
 
   useEffect(() => {
     if (!profile.data) return;
-    const row = profile.data as unknown as Record<string, unknown>;
+    const row: ClinicProfile = profile.data;
     const next = { ...blank };
-    for (const f of FIELDS) next[f] = String(row[f] ?? "");
+    for (const f of FIELDS) next[f] = String(row[f as keyof ClinicProfile] ?? "");
     if (!next.open_time) next.open_time = DEFAULT_OPEN_TIME;
     if (!next.close_time) next.close_time = DEFAULT_CLOSE_TIME;
     setForm(next);
 
-    const workingDaysVal = row["working_days"];
+    const workingDaysVal = row.working_days;
     if (Array.isArray(workingDaysVal)) {
       setWorkingDays(workingDaysVal as string[]);
     } else {
@@ -62,7 +63,7 @@ export function ClinicProfileTab() {
 
   const gstinBad = form.gstin.length > 0 && !isValidGstin(form.gstin);
 
-  const clinicId = (profile.data as { clinic_id?: string } | undefined)?.clinic_id;
+  const clinicId = profile.data?.clinic_id;
   const bookingUrl =
     clinicId && typeof window !== "undefined"
       ? `${window.location.origin}/book?c=${clinicId}`
@@ -78,12 +79,18 @@ export function ClinicProfileTab() {
             toast.error("That GSTIN doesn't look valid");
             return;
           }
+          const openTime = form.open_time || DEFAULT_OPEN_TIME;
+          const closeTime = form.close_time || DEFAULT_CLOSE_TIME;
+          if (openTime >= closeTime) {
+            toast.error("Opening time must be earlier than closing time");
+            return;
+          }
           const id = profile.data?.id ?? null;
           const values: Record<string, unknown> = {
             ...form,
             working_days: workingDays,
-            open_time: form.open_time || DEFAULT_OPEN_TIME,
-            close_time: form.close_time || DEFAULT_CLOSE_TIME,
+            open_time: openTime,
+            close_time: closeTime,
             gstin: form.gstin.toUpperCase() || null,
             state: form.state || "Karnataka",
             state_code: stateCode(form.state) ?? "",
