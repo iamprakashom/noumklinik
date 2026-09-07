@@ -6,5 +6,5 @@ ADD COLUMN IF NOT EXISTS close_time text DEFAULT '19:00';
 
 -- Add optional birth_date and gender to appointment_requests
 ALTER TABLE appointment_requests
-ADD COLUMN IF NOT EXISTS birth_date text,
+ADD COLUMN IF NOT EXISTS birth_date date,
 ADD COLUMN IF NOT EXISTS gender text;

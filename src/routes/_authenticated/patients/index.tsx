@@ -3,7 +3,14 @@ import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Plus, Search } from "lucide-react";
 import { AppShell, ghostButton, primaryButton } from "@/components/clinic/AppShell";
-import { Avatar, Chip, EmptyState, Field, inputClass, textareaClass } from "@/components/clinic/bits";
+import {
+  Avatar,
+  Chip,
+  EmptyState,
+  Field,
+  inputClass,
+  textareaClass,
+} from "@/components/clinic/bits";
 import {
   Dialog,
   DialogContent,
@@ -46,13 +53,26 @@ export const Route = createFileRoute("/_authenticated/patients/")({
   component: PatientsPage,
 });
 
+type PatientInsertValues = {
+  first_name: string;
+  last_name: string;
+  email: string | null;
+  phone: string | null;
+  birth_date: string | null;
+  gender: string | null;
+  source: string;
+  preferred_channel: string;
+  allergies: string | null;
+  alerts: string | null;
+};
+
 function PatientsPage() {
   const { new: openNew } = Route.useSearch();
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(openNew ?? false);
   const [dupeMatch, setDupeMatch] = useState<{
     patient: Patient;
-    formValues: Record<string, string | null>;
+    formValues: PatientInsertValues;
   } | null>(null);
   const patients = usePatients();
   const appointments = useAppointments();
@@ -82,18 +102,7 @@ function PatientsPage() {
     return future[0]?.starts_at ?? null;
   };
 
-  function performInsert(values: {
-    first_name: string;
-    last_name: string;
-    email: string | null;
-    phone: string | null;
-    birth_date: string | null;
-    gender: string | null;
-    source: string;
-    preferred_channel: string;
-    allergies: string | null;
-    alerts: string | null;
-  }) {
+  function performInsert(values: PatientInsertValues) {
     createPatient.mutate(values, {
       onSuccess: () => {
         toast.success("Patient added");
@@ -108,7 +117,9 @@ function PatientsPage() {
     const fd = new FormData(form);
     const digits = (v: string) => v.replace(/\D/g, "").slice(-10);
     const phone = String(fd.get("phone") ?? "");
-    const email = String(fd.get("email") ?? "").trim().toLowerCase();
+    const email = String(fd.get("email") ?? "")
+      .trim()
+      .toLowerCase();
     const dupe = (patients.data ?? []).find(
       (p) =>
         (phone.length >= 10 && digits(p.phone ?? "") === digits(phone)) ||
@@ -311,14 +322,17 @@ function PatientsPage() {
             <AlertDialogDescription>
               {dupeMatch ? (
                 <span>
-                  An existing patient record matches this contact info:<br />
+                  An existing patient record matches this contact info:
+                  <br />
                   <strong className="text-foreground">{patientName(dupeMatch.patient)}</strong>
                   {dupeMatch.patient.phone ? ` · ${dupeMatch.patient.phone}` : ""}
                   {dupeMatch.patient.email ? ` · ${dupeMatch.patient.email}` : ""}
                 </span>
               ) : null}
-              <br /><br />
-              Creating this patient will result in duplicate records. Are you sure you want to proceed?
+              <br />
+              <br />
+              Creating this patient will result in duplicate records. Are you sure you want to
+              proceed?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

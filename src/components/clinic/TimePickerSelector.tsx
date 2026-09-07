@@ -5,6 +5,7 @@ import {
   DEFAULT_CLOSE_TIME,
   DEFAULT_WORKING_DAYS,
   type DayOfWeek,
+  getDayOfWeek,
 } from "@/lib/clinic-hours";
 import { inputClass } from "@/components/clinic/bits";
 import { Clock, AlertCircle, CheckCircle2, ChevronDown } from "lucide-react";
@@ -23,31 +24,27 @@ export function TimePickerSelector({
   required?: boolean;
   minDate?: Date;
 }) {
-  const defaultDateObj = defaultValue ? new Date(defaultValue) : new Date();
+  const formatTimeVal = (d: Date) => {
+    return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+  };
 
   const formatDateVal = (d: Date) => {
-    const yyyy = d.getFullYear();
-    const mm = String(d.getMonth() + 1).padStart(2, "0");
-    const dd = String(d.getDate()).padStart(2, "0");
-    return `${yyyy}-${mm}-${dd}`;
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
   };
 
-  const formatTimeVal = (d: Date) => {
-    const hh = String(d.getHours()).padStart(2, "0");
-    const mm = String(d.getMinutes()).padStart(2, "0");
-    return `${hh}:${mm}`;
-  };
-
-  // Helper to format date offset by +2 minutes
   const getPlus2MinTime = () => {
     const d = new Date();
     d.setMinutes(d.getMinutes() + 2);
     return formatTimeVal(d);
   };
 
-  const [selectedDate, setSelectedDate] = useState<string>(formatDateVal(defaultDateObj));
+  const defaultDateObj = defaultValue ? new Date(defaultValue) : new Date();
+
+  const [selectedDate, setSelectedDate] = useState<string>(
+    defaultValue || required ? formatDateVal(defaultDateObj) : "",
+  );
   const [selectedTime, setSelectedTime] = useState<string>(
-    defaultValue ? formatTimeVal(defaultDateObj) : getPlus2MinTime()
+    defaultValue ? formatTimeVal(defaultDateObj) : required ? getPlus2MinTime() : "",
   );
   const [open, setOpen] = useState(false);
 
@@ -56,17 +53,8 @@ export function TimePickerSelector({
 
   const currentDateObj = selectedDate ? new Date(`${selectedDate}T12:00:00`) : new Date();
 
-  const dayNames: DayOfWeek[] = [
-    "Sunday",
-    "Monday",
-    "Tuesday",
-    "Wednesday",
-    "Thursday",
-    "Friday",
-    "Saturday",
-  ];
-  const dayName = dayNames[currentDateObj.getDay()]!;
-  const workingDays = clinic?.working_days?.length ? clinic.working_days : DEFAULT_WORKING_DAYS;
+  const dayName = getDayOfWeek(currentDateObj);
+  const workingDays = clinic?.working_days ?? DEFAULT_WORKING_DAYS;
   const isWorkingDay = workingDays.includes(dayName);
 
   const openTime = clinic?.open_time || DEFAULT_OPEN_TIME;
@@ -105,7 +93,9 @@ export function TimePickerSelector({
     for (let i = openH; i <= closeH; i++) {
       result.push(String(i).padStart(2, "0"));
     }
-    return result.length > 0 ? result : Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0"));
+    return result.length > 0
+      ? result
+      : Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0"));
   }, [openTime, closeTime]);
 
   // Minutes array (00 to 59, 1-min interval)
@@ -154,8 +144,7 @@ export function TimePickerSelector({
     return { valid: true, message: "Valid working hour slot." };
   }, [selectedTime, isWorkingDay, dayName, openTime, closeTime, isToday, currentHHMM]);
 
-  const combinedValue =
-    selectedDate && selectedTime ? `${selectedDate}T${selectedTime}` : "";
+  const combinedValue = selectedDate && selectedTime ? `${selectedDate}T${selectedTime}` : "";
 
   // Auto-scroll selected element to center of scroll container when popover opens
   const hourRef = useRef<HTMLDivElement>(null);
@@ -167,7 +156,7 @@ export function TimePickerSelector({
         // Center selected or first enabled hour
         const targetHourEl =
           (hourRef.current?.querySelector('[data-selected="true"]') as HTMLElement) ||
-          (hourRef.current?.querySelector('button:not([disabled])') as HTMLElement);
+          (hourRef.current?.querySelector("button:not([disabled])") as HTMLElement);
         if (targetHourEl && hourRef.current) {
           const containerHeight = hourRef.current.clientHeight;
           const elementTop = targetHourEl.offsetTop;
@@ -178,7 +167,7 @@ export function TimePickerSelector({
         // Center selected or first enabled minute
         const targetMinuteEl =
           (minuteRef.current?.querySelector('[data-selected="true"]') as HTMLElement) ||
-          (minuteRef.current?.querySelector('button:not([disabled])') as HTMLElement);
+          (minuteRef.current?.querySelector("button:not([disabled])") as HTMLElement);
         if (targetMinuteEl && minuteRef.current) {
           const containerHeight = minuteRef.current.clientHeight;
           const elementTop = targetMinuteEl.offsetTop;
@@ -195,8 +184,14 @@ export function TimePickerSelector({
 
       <div className="grid gap-3 sm:grid-cols-2">
         <div>
-          <label className="mb-1 block text-xs font-medium text-muted-foreground">Date</label>
+          <label
+            htmlFor={`${name}-date`}
+            className="mb-1 block text-xs font-medium text-muted-foreground"
+          >
+            Date
+          </label>
           <input
+            id={`${name}-date`}
             type="date"
             min={minDateStr}
             value={selectedDate}
@@ -209,13 +204,20 @@ export function TimePickerSelector({
         </div>
 
         <div>
-          <label className="mb-1 block text-xs font-medium text-muted-foreground">
+          <label
+            id={`${name}-time-label`}
+            htmlFor={`${name}-time-trigger`}
+            className="mb-1 block text-xs font-medium text-muted-foreground"
+          >
             Time ({openTime} – {closeTime})
           </label>
 
           <Popover open={open} onOpenChange={setOpen}>
             <PopoverTrigger asChild>
               <button
+                id={`${name}-time-trigger`}
+                aria-labelledby={`${name}-time-label`}
+                aria-label={`Select time, currently ${selectedTime || "none"}`}
                 type="button"
                 disabled={!isWorkingDay}
                 className={`${inputClass} flex items-center justify-between text-left ${
@@ -257,8 +259,8 @@ export function TimePickerSelector({
                           isSelected
                             ? "bg-primary text-primary-foreground font-semibold"
                             : disabled
-                            ? "opacity-30 cursor-not-allowed bg-muted/40 text-muted-foreground"
-                            : "hover:bg-secondary text-foreground"
+                              ? "opacity-30 cursor-not-allowed bg-muted/40 text-muted-foreground"
+                              : "hover:bg-secondary text-foreground"
                         }`}
                       >
                         {hh}
@@ -292,8 +294,8 @@ export function TimePickerSelector({
                           isSelected
                             ? "bg-primary text-primary-foreground font-semibold"
                             : disabled
-                            ? "opacity-30 cursor-not-allowed bg-muted/40 text-muted-foreground"
-                            : "hover:bg-secondary text-foreground"
+                              ? "opacity-30 cursor-not-allowed bg-muted/40 text-muted-foreground"
+                              : "hover:bg-secondary text-foreground"
                         }`}
                       >
                         {mm}
@@ -322,7 +324,10 @@ export function TimePickerSelector({
         <div className="flex items-center justify-between rounded-lg border border-border bg-secondary/50 px-3 py-2 text-xs text-muted-foreground">
           <span className="flex items-center gap-1.5">
             <Clock className="size-3.5 text-primary" />
-            Working hours on {dayName}: <strong className="font-medium text-foreground">{openTime} – {closeTime}</strong>
+            Working hours on {dayName}:{" "}
+            <strong className="font-medium text-foreground">
+              {openTime} – {closeTime}
+            </strong>
           </span>
           {timeValidation?.valid ? (
             <span className="flex items-center gap-1 text-emerald-600 font-medium">

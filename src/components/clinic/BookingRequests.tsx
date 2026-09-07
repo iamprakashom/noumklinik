@@ -3,13 +3,19 @@ import { toast } from "sonner";
 import { CalendarPlus, Inbox, X } from "lucide-react";
 import { Chip } from "@/components/clinic/bits";
 import { formatDateTime } from "@/data/clinic";
-import { validateAppointmentTime } from "@/lib/clinic-hours";
+import { checkAppointmentConflict, validateAppointmentTime } from "@/lib/clinic-hours";
 import {
+  ConflictAlertDialog,
+  type ConflictModalState,
+} from "@/components/clinic/ConflictAlertDialog";
+import {
+  useAppointments,
   useAppointmentRequests,
   useClinicProfile,
   useInsert,
   usePatients,
   useProviders,
+  useRooms,
   useServices,
   useUpdate,
   type AppointmentRequest,
@@ -18,9 +24,11 @@ import {
 /** Queue of self-serve booking and reschedule requests waiting on the front desk. */
 export function BookingRequests() {
   const requests = useAppointmentRequests();
+  const appointments = useAppointments();
   const patients = usePatients();
   const services = useServices();
   const providers = useProviders();
+  const rooms = useRooms();
   const addPatient = useInsert("patients");
   const addAppointment = useInsert("appointments");
   const updatePatient = useUpdate("patients");
@@ -28,18 +36,14 @@ export function BookingRequests() {
   const updateAppointment = useUpdate("appointments");
   const clinicProfile = useClinicProfile();
   const [busy, setBusy] = useState<string | null>(null);
+  const [conflictModal, setConflictModal] = useState<ConflictModalState | null>(null);
 
   const pending = (requests.data ?? []).filter((r) => r.status === "New");
   if (pending.length === 0) return null;
 
   const digits = (v: string) => v.replace(/\D/g, "").slice(-10);
 
-  async function accept(req: AppointmentRequest) {
-    const timeErr = validateAppointmentTime(req.preferred_at, clinicProfile.data);
-    if (timeErr) {
-      toast.error(`Cannot accept: ${timeErr}`);
-      return;
-    }
+  async function executeAccept(req: AppointmentRequest) {
     setBusy(req.id);
     try {
       if (req.kind === "reschedule" && req.appointment_id) {
@@ -98,6 +102,50 @@ export function BookingRequests() {
     }
   }
 
+  function accept(req: AppointmentRequest) {
+    const timeErr = validateAppointmentTime(req.preferred_at, clinicProfile.data);
+    if (timeErr) {
+      toast.error(`Cannot accept: ${timeErr}`);
+      return;
+    }
+
+    let conflictMsg: string | null = null;
+    const startsAtDate = new Date(req.preferred_at);
+    if (req.kind === "reschedule" && req.appointment_id) {
+      const existingApp = appointments.data?.find((a) => a.id === req.appointment_id);
+      conflictMsg = checkAppointmentConflict({
+        appointments: appointments.data ?? [],
+        providers: providers.data ?? [],
+        rooms: rooms.data ?? [],
+        startsAt: startsAtDate,
+        durationMin: existingApp?.duration_min ?? 30,
+        providerId: existingApp?.provider_id,
+        roomId: existingApp?.room_id,
+        excludeId: req.appointment_id,
+      });
+    } else {
+      const svc = services.data?.find((s) => s.id === req.service_id);
+      conflictMsg = checkAppointmentConflict({
+        appointments: appointments.data ?? [],
+        providers: providers.data ?? [],
+        rooms: rooms.data ?? [],
+        startsAt: startsAtDate,
+        durationMin: svc?.duration_min ?? 30,
+        providerId: req.provider_id,
+      });
+    }
+
+    if (conflictMsg) {
+      setConflictModal({
+        message: conflictMsg,
+        onConfirm: () => void executeAccept(req),
+      });
+      return;
+    }
+
+    void executeAccept(req);
+  }
+
   return (
     <section className="mb-5 rounded-xl border border-border bg-card">
       <header className="flex items-center gap-2 border-b border-border px-5 py-3">
@@ -113,8 +161,7 @@ export function BookingRequests() {
             <li key={r.id} className="flex flex-wrap items-center gap-3 px-5 py-3 text-sm">
               <div className="min-w-52 flex-1">
                 <p className="font-medium">
-                  {r.full_name}{" "}
-                  <span className="text-xs text-muted-foreground">{r.phone}</span>
+                  {r.full_name} <span className="text-xs text-muted-foreground">{r.phone}</span>
                 </p>
                 <p className="text-xs text-muted-foreground">
                   {[svc?.name ?? "Treatment not chosen", doc?.name, r.notes]
@@ -154,6 +201,7 @@ export function BookingRequests() {
           );
         })}
       </ul>
+      <ConflictAlertDialog modal={conflictModal} onClose={() => setConflictModal(null)} />
     </section>
   );
 }

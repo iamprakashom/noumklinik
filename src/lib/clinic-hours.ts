@@ -1,3 +1,5 @@
+import type { Appointment, Provider, Room } from "@/data/clinic";
+
 export const DAYS_OF_WEEK = [
   "Monday",
   "Tuesday",
@@ -27,11 +29,28 @@ export const DEFAULT_WORKING_DAYS: DayOfWeek[] = [
 export const DEFAULT_OPEN_TIME = "09:00";
 export const DEFAULT_CLOSE_TIME = "19:00";
 
+export const DAY_NAMES: readonly DayOfWeek[] = [
+  "Sunday",
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+];
+
+export function getDayOfWeek(date: Date): DayOfWeek {
+  return DAY_NAMES[date.getDay()]!;
+}
+
 /**
  * Calculates the dynamic min attribute string (YYYY-MM-DDTHH:mm)
  * for a datetime-local input based on clinic open time and current time.
  */
-export function getMinDateTimeLocal(date: Date = new Date(), clinic?: ClinicHoursSettings | null): string {
+export function getMinDateTimeLocal(
+  date: Date = new Date(),
+  clinic?: ClinicHoursSettings | null,
+): string {
   const pad = (n: number) => String(n).padStart(2, "0");
   const openTime = clinic?.open_time || DEFAULT_OPEN_TIME;
   const [openH = 9, openM = 0] = openTime.split(":").map(Number);
@@ -57,7 +76,6 @@ export function getMinDateTimeLocal(date: Date = new Date(), clinic?: ClinicHour
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(targetHour)}:${pad(targetMin)}`;
 }
 
-
 /**
  * Checks if a date/time is within working days/hours and not in the past.
  * Returns null if valid, or an error string if invalid.
@@ -65,7 +83,7 @@ export function getMinDateTimeLocal(date: Date = new Date(), clinic?: ClinicHour
 export function validateAppointmentTime(
   date: Date | string,
   clinic?: ClinicHoursSettings | null,
-  options?: { allowPast?: boolean; minMinutesInFuture?: number }
+  options?: { allowPast?: boolean; minMinutesInFuture?: number },
 ): string | null {
   const d = typeof date === "string" ? new Date(date) : date;
   if (Number.isNaN(d.getTime())) {
@@ -74,25 +92,15 @@ export function validateAppointmentTime(
 
   const now = new Date();
   const minMinutes = options?.minMinutesInFuture ?? 0;
-  if (!options?.allowPast && d.getTime() < now.getTime() - minMinutes * 60 * 1000) {
-    return "Appointment time cannot be in the past.";
+  const earliestTime = now.getTime() + minMinutes * 60_000;
+  if (!options?.allowPast && d.getTime() < earliestTime) {
+    return minMinutes > 0
+      ? `Appointment time must be at least ${minMinutes} minutes in the future.`
+      : "Appointment time cannot be in the past.";
   }
 
-  const workingDays = clinic?.working_days && clinic.working_days.length > 0
-    ? clinic.working_days
-    : DEFAULT_WORKING_DAYS;
-
-  // get day name in clinic/local context
-  const dayNames: DayOfWeek[] = [
-    "Sunday",
-    "Monday",
-    "Tuesday",
-    "Wednesday",
-    "Thursday",
-    "Friday",
-    "Saturday",
-  ];
-  const dayName = dayNames[d.getDay()]!;
+  const workingDays = clinic?.working_days ?? DEFAULT_WORKING_DAYS;
+  const dayName = getDayOfWeek(d);
 
   if (!workingDays.includes(dayName)) {
     return `The clinic is closed on ${dayName}s. Please choose an open day (${workingDays.join(", ")}).`;
@@ -119,23 +127,10 @@ export function validateAppointmentTime(
 export function getAvailableTimeSlots(
   date: Date,
   clinic?: ClinicHoursSettings | null,
-  stepMinutes = 30
+  stepMinutes = 30,
 ): { time: string; label: string; available: boolean }[] {
-  const workingDays =
-    clinic?.working_days && clinic.working_days.length > 0
-      ? clinic.working_days
-      : DEFAULT_WORKING_DAYS;
-
-  const dayNames: DayOfWeek[] = [
-    "Sunday",
-    "Monday",
-    "Tuesday",
-    "Wednesday",
-    "Thursday",
-    "Friday",
-    "Saturday",
-  ];
-  const dayName = dayNames[date.getDay()]!;
+  const workingDays = clinic?.working_days ?? DEFAULT_WORKING_DAYS;
+  const dayName = getDayOfWeek(date);
 
   const isWorkingDay = workingDays.includes(dayName);
   const openTime = clinic?.open_time || DEFAULT_OPEN_TIME;
@@ -175,3 +170,50 @@ export function getAvailableTimeSlots(
   return slots;
 }
 
+export interface AppointmentConflictParams {
+  appointments: Appointment[];
+  providers?: Provider[];
+  rooms?: Room[];
+  startsAt: Date;
+  durationMin: number;
+  providerId?: string | null | undefined;
+  roomId?: string | null | undefined;
+  excludeId?: string | undefined;
+}
+
+/**
+ * Checks if a requested appointment conflicts with existing appointments.
+ * Returns a warning message string if a conflict is found, or null if clear.
+ */
+export function checkAppointmentConflict({
+  appointments,
+  providers,
+  rooms,
+  startsAt,
+  durationMin,
+  providerId,
+  roomId,
+  excludeId,
+}: AppointmentConflictParams): string | null {
+  if (!appointments.length) return null;
+  const reqStart = startsAt.getTime();
+  const reqEnd = reqStart + durationMin * 60_000;
+
+  for (const app of appointments) {
+    if (app.status === "Cancelled" || (excludeId && app.id === excludeId)) continue;
+    const appStart = new Date(app.starts_at).getTime();
+    const appEnd = appStart + (app.duration_min ?? 30) * 60_000;
+
+    if (appStart < reqEnd && appEnd > reqStart) {
+      if (providerId && app.provider_id === providerId) {
+        const docName = providers?.find((p) => p.id === providerId)?.name ?? "Selected doctor";
+        return `Warning: ${docName} is already booked at this time.`;
+      }
+      if (roomId && app.room_id === roomId) {
+        const roomName = rooms?.find((r) => r.id === roomId)?.name ?? "Selected room";
+        return `Warning: ${roomName} is already occupied at this time.`;
+      }
+    }
+  }
+  return null;
+}

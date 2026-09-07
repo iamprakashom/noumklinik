@@ -548,7 +548,7 @@ function BillingPage() {
             <Field label="Discount" className="max-w-40">
               <input
                 type="number"
-                step="1"
+                step="0.01"
                 min="0"
                 value={discount}
                 onChange={(e) => {

@@ -4,7 +4,12 @@ import { primaryButton } from "@/components/clinic/AppShell";
 import { Field, Panel, inputClass, textareaClass } from "@/components/clinic/bits";
 import { INDIAN_STATES, isValidGstin, stateCode } from "@/lib/gst";
 import { useClinicProfile, useUpdateClinicProfile } from "@/lib/clinic-data";
-import { DAYS_OF_WEEK, DEFAULT_OPEN_TIME, DEFAULT_CLOSE_TIME } from "@/lib/clinic-hours";
+import {
+  DAYS_OF_WEEK,
+  DEFAULT_WORKING_DAYS,
+  DEFAULT_OPEN_TIME,
+  DEFAULT_CLOSE_TIME,
+} from "@/lib/clinic-hours";
 
 const FIELDS = [
   "legal_name",
@@ -28,15 +33,6 @@ type FormState = Record<(typeof FIELDS)[number], string>;
 
 const blank = Object.fromEntries(FIELDS.map((f) => [f, ""])) as FormState;
 
-const DEFAULT_WORKING_DAYS = [
-  "Monday",
-  "Tuesday",
-  "Wednesday",
-  "Thursday",
-  "Friday",
-  "Saturday",
-];
-
 /** Legal and tax identity printed on every GST invoice. */
 export function ClinicProfileTab() {
   const profile = useClinicProfile();
@@ -54,7 +50,7 @@ export function ClinicProfileTab() {
     setForm(next);
 
     const workingDaysVal = row["working_days"];
-    if (Array.isArray(workingDaysVal) && workingDaysVal.length > 0) {
+    if (Array.isArray(workingDaysVal)) {
       setWorkingDays(workingDaysVal as string[]);
     } else {
       setWorkingDays(DEFAULT_WORKING_DAYS);
@@ -101,7 +97,6 @@ export function ClinicProfileTab() {
             },
           );
         }}
-
       >
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Legal name">
@@ -202,8 +197,8 @@ export function ClinicProfileTab() {
             />
           </Field>
           <p className="-mt-1 text-xs text-muted-foreground sm:col-span-2">
-            Patients who rate you 4–5 after a visit are sent straight to this link. Lower ratings stay
-            in-house as a complaint for the front desk.
+            Patients who rate you 4–5 after a visit are sent straight to this link. Lower ratings
+            stay in-house as a complaint for the front desk.
           </p>
           <Field label="Opening time">
             <input
@@ -232,6 +227,7 @@ export function ClinicProfileTab() {
                 <button
                   type="button"
                   key={day}
+                  aria-pressed={active}
                   onClick={() => {
                     if (active) {
                       setWorkingDays(workingDays.filter((d) => d !== day));

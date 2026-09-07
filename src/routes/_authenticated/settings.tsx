@@ -10,7 +10,14 @@ import { PaymentsTab } from "@/components/clinic/PaymentsTab";
 import { WhatsAppTab } from "@/components/clinic/WhatsAppTab";
 import { LeadCaptureTab } from "@/components/clinic/LeadCaptureTab";
 import { TeamTab } from "@/components/clinic/TeamTab";
-import { Chip, EmptyState, Field, Panel, inputClass, textareaClass } from "@/components/clinic/bits";
+import {
+  Chip,
+  EmptyState,
+  Field,
+  Panel,
+  inputClass,
+  textareaClass,
+} from "@/components/clinic/bits";
 import { Switch } from "@/components/ui/switch";
 import {
   Dialog,
@@ -58,7 +65,7 @@ function SettingsPage() {
   const [editingProvider, setEditingProvider] = useState<Provider | null>(null);
   const [editingRoom, setEditingRoom] = useState<Room | null>(null);
   const [editingConsent, setEditingConsent] = useState<ConsentTemplate | null>(null);
-   const [confirmArchive, setConfirmArchive] = useState<{
+  const [confirmArchive, setConfirmArchive] = useState<{
     title: string;
     message: string;
     onConfirm: () => void;
@@ -93,14 +100,13 @@ function SettingsPage() {
     addConsent.isPending ||
     updateService.isPending ||
     updateProvider.isPending ||
-    updateRoom.isPending;   
+    updateRoom.isPending;
 
   const ok = (msg: string) => {
     toast.success(msg);
     close();
   };
   const fail = (e: Error) => toast.error(e.message);
-
 
   return (
     <AppShell title="Clinic setup" subtitle="Treatment menu, team, rooms and consent forms">
@@ -141,8 +147,6 @@ function SettingsPage() {
           <TeamTab />
         </TabsContent>
 
-
-
         <TabsContent value="services" className="mt-4">
           <Panel
             title="Treatment menu"
@@ -173,7 +177,8 @@ function SettingsPage() {
                         {s.active ? null : <Chip>Archived</Chip>}
                       </div>
                       <p className="text-xs text-muted-foreground">
-                        {s.category ?? "General"} · {s.duration_min} min · SAC {s.sac_code} · GST {s.gst_rate}% ·{" "}
+                        {s.category ?? "General"} · {s.duration_min} min · SAC {s.sac_code} · GST{" "}
+                        {s.gst_rate}% ·{" "}
                         {s.followup_days ? `${s.followup_days}d follow-up` : "no follow-up"}
                       </p>
                     </div>
@@ -204,7 +209,10 @@ function SettingsPage() {
                             onConfirm: () =>
                               updateService.mutate(
                                 { id: s.id, values: { active: false } },
-                                { onSuccess: () => toast.success("Service archived"), onError: fail },
+                                {
+                                  onSuccess: () => toast.success("Service archived"),
+                                  onError: fail,
+                                },
                               ),
                           })
                         }
@@ -293,7 +301,10 @@ function SettingsPage() {
                             onConfirm: () =>
                               updateProvider.mutate(
                                 { id: p.id, values: { active: false } },
-                                { onSuccess: () => toast.success("Provider archived"), onError: fail },
+                                {
+                                  onSuccess: () => toast.success("Provider archived"),
+                                  onError: fail,
+                                },
                               ),
                           })
                         }
@@ -435,7 +446,9 @@ function SettingsPage() {
                         <p className="text-sm font-medium">{c.name}</p>
                         {c.active ? null : <Chip>Archived</Chip>}
                       </div>
-                      <p className="mt-1 line-clamp-2 text-xs text-muted-foreground whitespace-pre-line">{c.body}</p>
+                      <p className="mt-1 line-clamp-2 text-xs text-muted-foreground whitespace-pre-line">
+                        {c.body}
+                      </p>
                     </div>
                     <div className="flex items-center gap-2">
                       <button
@@ -554,8 +567,7 @@ function SettingsPage() {
                 const name = String(fd.get("name")).trim();
                 const dupe = (rooms.data ?? []).some(
                   (r) =>
-                    r.id !== editingRoom?.id &&
-                    r.name.trim().toLowerCase() === name.toLowerCase(),
+                    r.id !== editingRoom?.id && r.name.trim().toLowerCase() === name.toLowerCase(),
                 );
                 if (dupe) {
                   toast.error(`Room "${name}" already exists`);
@@ -579,6 +591,10 @@ function SettingsPage() {
               } else {
                 const name = String(fd.get("name")).trim();
                 const body = String(fd.get("body")).trim();
+                if (!name || !body) {
+                  toast.error("Consent form name and body are required");
+                  return;
+                }
                 if (editingConsent) {
                   updateConsent.mutate(
                     { id: editingConsent.id, values: { name, body } },
@@ -762,20 +778,17 @@ function SettingsPage() {
             <button type="button" className={ghostButton} onClick={close}>
               Cancel
             </button>
-            <button
-              type="submit"
-              form="setup-form"
-              className={primaryButton}
-              disabled={saving}
-            >
+            <button type="submit" form="setup-form" className={primaryButton} disabled={saving}>
               {saving ? "Saving…" : "Save"}
             </button>
           </DialogFooter>
-
         </DialogContent>
       </Dialog>
 
-      <Dialog open={confirmArchive !== null} onOpenChange={(o) => (o ? null : setConfirmArchive(null))}>
+      <Dialog
+        open={confirmArchive !== null}
+        onOpenChange={(o) => (o ? null : setConfirmArchive(null))}
+      >
         <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-md">
           <DialogHeader>
             <DialogTitle>{confirmArchive?.title}</DialogTitle>

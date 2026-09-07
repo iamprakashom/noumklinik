@@ -73,7 +73,7 @@ function BookingPage() {
           phone: values["phone"] ?? "",
           email: values["email"] || null,
           birth_date: values["birth_date"] || null,
-          gender: values["gender"] || null,
+          gender: values["gender"] ?? "",
           service_id: values["service_id"] || null,
           preferred_at: values["preferred_at"] ?? "",
           alternate_at: values["alternate_at"] || null,
@@ -145,7 +145,10 @@ function BookingPage() {
               toast.error(`Backup slot: ${err}`);
               return;
             }
-            if (vals["preferred_at"] && new Date(vals["alternate_at"]) < new Date(vals["preferred_at"])) {
+            if (
+              vals["preferred_at"] &&
+              new Date(vals["alternate_at"]) < new Date(vals["preferred_at"])
+            ) {
               toast.error("Backup appointment date must be after or equal to the preferred date.");
               return;
             }
@@ -174,7 +177,9 @@ function BookingPage() {
           </Field>
           <Field label="Gender">
             <select name="gender" required className={inputClass} defaultValue="">
-              <option value="" disabled>Select gender…</option>
+              <option value="" disabled>
+                Select gender…
+              </option>
               <option value="Female">Female</option>
               <option value="Male">Male</option>
               <option value="Other">Other</option>
@@ -191,18 +196,11 @@ function BookingPage() {
             ))}
           </select>
         </Field>
-        <Field label="Preferred date and time">
-          <TimePickerSelector
-            name="preferred_at"
-            required
-            clinic={options.data?.clinic}
-          />
+        <Field as="div" label="Preferred date and time">
+          <TimePickerSelector name="preferred_at" required clinic={options.data?.clinic} />
         </Field>
-        <Field label="Backup slot (optional)">
-          <TimePickerSelector
-            name="alternate_at"
-            clinic={options.data?.clinic}
-          />
+        <Field as="div" label="Backup slot (optional)">
+          <TimePickerSelector name="alternate_at" clinic={options.data?.clinic} />
         </Field>
         <Field label="Anything we should know?">
           <textarea name="notes" className={textareaClass} />

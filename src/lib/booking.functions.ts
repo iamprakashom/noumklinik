@@ -6,41 +6,41 @@ import { validateAppointmentTime } from "@/lib/clinic-hours";
 export const getBookingOptions = createServerFn({ method: "GET" })
   .inputValidator((data: unknown) => z.object({ clinicId: z.string().uuid() }).parse(data))
   .handler(async ({ data }) => {
-  const clinicId = data.clinicId;
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const [servicesRes, providersRes, clinicRes] = await Promise.all([
-    supabaseAdmin
-      .from("services")
-      .select("id, name, category, duration_min, price")
-      .eq("clinic_id", clinicId)
-      .eq("active", true)
-      .order("name"),
-    supabaseAdmin
-      .from("providers")
-      .select("id, name, title")
-      .eq("clinic_id", clinicId)
-      .eq("active", true)
-      .order("name"),
-    supabaseAdmin
-      .from("clinic_profile")
-      .select("trade_name, legal_name, phone, city, working_days, open_time, close_time")
-      .eq("clinic_id", clinicId)
-      .maybeSingle(),
-  ]);
+    const clinicId = data.clinicId;
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const [servicesRes, providersRes, clinicRes] = await Promise.all([
+      supabaseAdmin
+        .from("services")
+        .select("id, name, category, duration_min, price")
+        .eq("clinic_id", clinicId)
+        .eq("active", true)
+        .order("name"),
+      supabaseAdmin
+        .from("providers")
+        .select("id, name, title")
+        .eq("clinic_id", clinicId)
+        .eq("active", true)
+        .order("name"),
+      supabaseAdmin
+        .from("clinic_profile")
+        .select("trade_name, legal_name, phone, city, working_days, open_time, close_time")
+        .eq("clinic_id", clinicId)
+        .maybeSingle(),
+    ]);
 
-  return {
-    services: servicesRes.data ?? [],
-    providers: providersRes.data ?? [],
-    clinic: {
-      name: clinicRes.data?.trade_name ?? clinicRes.data?.legal_name ?? "Our clinic",
-      phone: clinicRes.data?.phone ?? null,
-      city: clinicRes.data?.city ?? null,
-      working_days: clinicRes.data?.working_days ?? null,
-      open_time: clinicRes.data?.open_time ?? null,
-      close_time: clinicRes.data?.close_time ?? null,
-    },
-  };
-});
+    return {
+      services: servicesRes.data ?? [],
+      providers: providersRes.data ?? [],
+      clinic: {
+        name: clinicRes.data?.trade_name ?? clinicRes.data?.legal_name ?? "Our clinic",
+        phone: clinicRes.data?.phone ?? null,
+        city: clinicRes.data?.city ?? null,
+        working_days: clinicRes.data?.working_days ?? null,
+        open_time: clinicRes.data?.open_time ?? null,
+        close_time: clinicRes.data?.close_time ?? null,
+      },
+    };
+  });
 
 /** Public: a prospective patient asks the clinic for an appointment slot. */
 export const requestBooking = createServerFn({ method: "POST" })
@@ -51,7 +51,14 @@ export const requestBooking = createServerFn({ method: "POST" })
         full_name: z.string().min(2).max(120),
         phone: z.string().min(6).max(20),
         email: z.string().email().nullable().optional(),
-        birth_date: z.string().nullable().optional(),
+        birth_date: z
+          .string()
+          .date()
+          .refine((value) => value <= new Date().toISOString().slice(0, 10), {
+            message: "Date of birth cannot be in the future",
+          })
+          .nullable()
+          .optional(),
         gender: z.string().min(1),
         service_id: z.string().uuid().nullable().optional(),
         preferred_at: z.string().min(10),
