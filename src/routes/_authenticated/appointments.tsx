@@ -134,8 +134,25 @@ function AppointmentsPage() {
   const nameOf = (id: string | null, list?: { id: string; name: string }[]) =>
     list?.find((x) => x.id === id)?.name ?? "—";
 
-  const patch = (id: string, values: Record<string, unknown>, msg = "Appointment updated") =>
-    updateAppointment.mutate({ id, values }, { onSuccess: () => toast.success(msg) });
+  const patch = (
+    id: string,
+    values: Record<string, unknown>,
+    msg = "Appointment updated",
+    callbacks?: { onSuccess?: () => void; onError?: (err: Error) => void },
+  ) =>
+    updateAppointment.mutate(
+      { id, values },
+      {
+        onSuccess: () => {
+          toast.success(msg);
+          callbacks?.onSuccess?.();
+        },
+        onError: (err) => {
+          toast.error(err.message || "Failed to update appointment");
+          callbacks?.onError?.(err);
+        },
+      },
+    );
 
   function handleDoctorChange(a: Appointment, newDocId: string | null) {
     const conflict = checkAppointmentConflict({
@@ -378,10 +395,14 @@ function AppointmentsPage() {
         notes: updatedNotes,
       },
       "Appointment cancelled",
+      {
+        onSuccess: () => {
+          setCancelModal(null);
+          setCancelReason("");
+          setCancelNotes("");
+        },
+      },
     );
-    setCancelModal(null);
-    setCancelReason("");
-    setCancelNotes("");
   }
 
   return (

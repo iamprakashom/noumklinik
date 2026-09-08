@@ -60,9 +60,9 @@ describe("validateAppointmentTime", () => {
 
   it("rejects non-working days", () => {
     const sunday = new Date(2026, 8, 13, 10, 0); // Sunday
-    expect(validateAppointmentTime(sunday, { working_days: ["Monday"] })).toContain(
-      "clinic is closed on Sundays"
-    );
+    expect(
+      validateAppointmentTime(sunday, { working_days: ["Monday"] }, { allowPast: true }),
+    ).toContain("clinic is closed on Sundays");
   });
 
   it("rejects times outside working hours", () => {

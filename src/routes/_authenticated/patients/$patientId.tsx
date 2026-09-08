@@ -303,8 +303,16 @@ function PatientDetail() {
                 {visits.map((v) => (
                   <li
                     key={v.id}
+                    role="button"
+                    tabIndex={0}
                     className="flex cursor-pointer items-center gap-3 px-5 py-3 transition-colors hover:bg-muted/40"
                     onClick={() => setSelectedAppointment(v)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        setSelectedAppointment(v);
+                      }
+                    }}
                   >
                     <span className="w-44 text-xs text-muted-foreground">
                       {formatDateTime(v.starts_at)}

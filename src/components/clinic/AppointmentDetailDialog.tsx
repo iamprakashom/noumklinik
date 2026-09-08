@@ -53,7 +53,7 @@ export function AppointmentDetailDialog({
 }) {
   if (!appointment) return null;
 
-  const isCancelled = appointment.status === "Cancelled" || !!appointment.cancellation_reason;
+  const isCancelled = appointment.status === "Cancelled";
   const isOverridden = appointment.is_override || !!appointment.override_reason;
 
   return (
