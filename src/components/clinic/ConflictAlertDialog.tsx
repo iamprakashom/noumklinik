@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -8,10 +9,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { AlertTriangle, Calendar, DoorClosed, Stethoscope, User } from "lucide-react";
+import type { ConflictingAppointmentInfo } from "@/lib/clinic-hours";
 
 export interface ConflictModalState {
-  message: string;
-  onConfirm: () => void;
+  conflict: ConflictingAppointmentInfo;
+  allowOverride?: boolean;
+  onConfirm: (overrideReason: string) => void;
 }
 
 export function ConflictAlertDialog({
@@ -21,28 +25,103 @@ export function ConflictAlertDialog({
   modal: ConflictModalState | null;
   onClose: () => void;
 }) {
+  const [overrideReason, setOverrideReason] = useState("");
+  const allowOverride = modal?.allowOverride ?? true;
+
+  useEffect(() => {
+    setOverrideReason("");
+  }, [modal]);
+
+  if (!modal) return null;
+  const { conflict } = modal;
+
   return (
     <AlertDialog open={!!modal} onOpenChange={(v) => !v && onClose()}>
-      <AlertDialogContent>
+      <AlertDialogContent className="sm:max-w-md">
         <AlertDialogHeader>
-          <AlertDialogTitle>Schedule Conflict Detected</AlertDialogTitle>
-          <AlertDialogDescription>
-            {modal?.message}
-            <br />
-            <br />
-            Do you still want to proceed with this booking?
+          <div className="flex items-center gap-2 text-amber-600 dark:text-amber-500">
+            <AlertTriangle className="size-5 shrink-0" />
+            <AlertDialogTitle>Schedule Conflict Detected</AlertDialogTitle>
+          </div>
+          <AlertDialogDescription className="pt-1 text-sm text-muted-foreground">
+            The requested appointment time overlaps with an existing booking. Please review the
+            conflict details below.
           </AlertDialogDescription>
         </AlertDialogHeader>
-        <AlertDialogFooter>
+
+        <div className="space-y-2 rounded-lg border border-amber-200 bg-amber-50/50 p-3.5 text-xs text-foreground dark:border-amber-900/40 dark:bg-amber-950/20">
+          <div className="flex items-center gap-2">
+            <User className="size-3.5 shrink-0 text-muted-foreground" />
+            <span>
+              <strong className="font-semibold text-foreground">Conflicting patient: </strong>
+              {conflict.patientName}
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            {conflict.conflictType === "room" ? (
+              <DoorClosed className="size-3.5 shrink-0 text-muted-foreground" />
+            ) : (
+              <Stethoscope className="size-3.5 shrink-0 text-muted-foreground" />
+            )}
+            <span>
+              <strong className="font-semibold text-foreground">
+                {conflict.conflictType === "room"
+                  ? "Conflicting Room: "
+                  : conflict.conflictType === "both"
+                    ? "Conflicting Doctor & Room: "
+                    : "Conflicting Doctor: "}
+              </strong>
+              {conflict.conflictType === "both"
+                ? `${conflict.providerName} & ${conflict.roomName}`
+                : conflict.conflictType === "room"
+                  ? conflict.roomName
+                  : conflict.providerName}
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Calendar className="size-3.5 shrink-0 text-muted-foreground" />
+            <span>
+              <strong className="font-semibold text-foreground">Existing time slot: </strong>
+              {conflict.timeSlotFormatted}
+            </span>
+          </div>
+        </div>
+
+        {allowOverride && (
+          <div className="space-y-1.5 pt-1">
+            <label className="text-xs font-medium text-foreground">
+              Override reason <span className="text-destructive">*</span>
+            </label>
+            <input
+              type="text"
+              required
+              value={overrideReason}
+              onChange={(e) => setOverrideReason(e.target.value)}
+              placeholder="e.g. Doctor approved emergency add-on, VIP consultation..."
+              className="h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            />
+            <p className="text-[11px] text-muted-foreground">
+              Overriding will double-book this slot. The reason and timestamp will be logged for
+              administrative review.
+            </p>
+          </div>
+        )}
+
+        <AlertDialogFooter className="pt-2">
           <AlertDialogCancel onClick={onClose}>Cancel</AlertDialogCancel>
-          <AlertDialogAction
-            onClick={() => {
-              modal?.onConfirm();
-              onClose();
-            }}
-          >
-            Proceed Anyway
-          </AlertDialogAction>
+          {allowOverride ? (
+            <AlertDialogAction
+              disabled={!overrideReason.trim()}
+              onClick={() => {
+                if (!overrideReason.trim()) return;
+                modal.onConfirm(overrideReason.trim());
+                onClose();
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 disabled:opacity-50"
+            >
+              Proceed Anyway
+            </AlertDialogAction>
+          ) : null}
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

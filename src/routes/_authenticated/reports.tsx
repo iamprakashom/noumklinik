@@ -3,7 +3,7 @@ import { useMemo, useState } from "react";
 import { AppShell } from "@/components/clinic/AppShell";
 import { Chip, EmptyState, Field, Panel, StatCard, inputClass } from "@/components/clinic/bits";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { formatDate, money, patientName } from "@/data/clinic";
+import { formatDate, formatDateTime, money, patientName } from "@/data/clinic";
 import {
   useAppointments,
   useClinicProfile,
@@ -17,7 +17,6 @@ import {
   useUpdate,
 } from "@/lib/clinic-data";
 import { toast } from "sonner";
-
 
 export const Route = createFileRoute("/_authenticated/reports")({
   head: () => ({
@@ -59,7 +58,11 @@ function Row({
         <p className="truncate text-sm">{label}</p>
         {hint ? <p className="truncate text-xs text-muted-foreground">{hint}</p> : null}
       </div>
-      {tone ? <Chip tone={tone}>{value}</Chip> : <span className="text-sm tabular-nums">{value}</span>}
+      {tone ? (
+        <Chip tone={tone}>{value}</Chip>
+      ) : (
+        <span className="text-sm tabular-nums">{value}</span>
+      )}
     </li>
   );
 }
@@ -72,6 +75,7 @@ function ReportsPage() {
     return d.toISOString().slice(0, 10);
   });
   const [to, setTo] = useState(today);
+  const [cancellationDoctorFilter, setCancellationDoctorFilter] = useState("all");
 
   const invoices = useInvoices();
   const payments = usePayments();
@@ -83,7 +87,6 @@ function ReportsPage() {
   const redemptions = usePackageRedemptions();
   const feedback = usePatientFeedback();
   const updateFeedback = useUpdate("patient_feedback");
-
 
   const patientOf = (id: string) => patients.data?.find((p) => p.id === id);
   const providerName = (id: string | null) =>
@@ -140,9 +143,11 @@ function ReportsPage() {
       .filter((r) => r.balance > 0.5)
       .sort((a, b) => b.ageDays - a.ageDays);
 
-    const bucket = (d: number) => (d <= 7 ? "0–7 days" : d <= 30 ? "8–30 days" : d <= 60 ? "31–60 days" : "60+ days");
+    const bucket = (d: number) =>
+      d <= 7 ? "0–7 days" : d <= 30 ? "8–30 days" : d <= 60 ? "31–60 days" : "60+ days";
     const buckets = new Map<string, number>();
-    for (const r of list) buckets.set(bucket(r.ageDays), (buckets.get(bucket(r.ageDays)) ?? 0) + r.balance);
+    for (const r of list)
+      buckets.set(bucket(r.ageDays), (buckets.get(bucket(r.ageDays)) ?? 0) + r.balance);
     return {
       list,
       total: list.reduce((s, r) => s + r.balance, 0),
@@ -195,8 +200,7 @@ function ReportsPage() {
       providers: [...byProvider.entries()].sort((a, b) => b[1].revenue - a[1].revenue),
       services: [...byService.entries()].sort((a, b) => b[1].revenue - a[1].revenue),
       unattributed,
-      total:
-        [...byProvider.values()].reduce((s, v) => s + v.revenue, 0) + unattributed,
+      total: [...byProvider.values()].reduce((s, v) => s + v.revenue, 0) + unattributed,
     };
   }, [invoices.data, appointments.data, redemptions.data, services.data, from, to]);
 
@@ -221,6 +225,57 @@ function ReportsPage() {
     };
   }, [feedback.data, from, to]);
 
+  /* -------------------------- Cancellations (APT-08.3 & APT-05.3) -------------------------- */
+  const cancellationsData = useMemo(() => {
+    const allInPeriod = (appointments.data ?? []).filter((a) => {
+      const d = a.starts_at.slice(0, 10);
+      const inDate = d >= from && d <= to;
+      const inDoc =
+        cancellationDoctorFilter === "all"
+          ? true
+          : cancellationDoctorFilter === "unassigned"
+            ? !a.provider_id
+            : a.provider_id === cancellationDoctorFilter;
+      return inDate && inDoc;
+    });
+
+    const cancelled = allInPeriod.filter(
+      (a) => a.status === "Cancelled" || !!a.cancellation_reason,
+    );
+    const overrides = allInPeriod.filter((a) => a.is_override || !!a.override_reason);
+
+    const totalAppts = allInPeriod.length;
+    const totalCancelled = cancelled.length;
+    const cancelRate = totalAppts > 0 ? (totalCancelled / totalAppts) * 100 : 0;
+
+    const byReasonMap = new Map<string, number>();
+    for (const a of cancelled) {
+      const reason = a.cancellation_reason || "Skip / Other";
+      byReasonMap.set(reason, (byReasonMap.get(reason) ?? 0) + 1);
+    }
+
+    const reasonsList = Array.from(byReasonMap.entries())
+      .map(([reason, count]) => ({
+        reason,
+        count,
+        percent: totalCancelled > 0 ? (count / totalCancelled) * 100 : 0,
+      }))
+      .sort((a, b) => b.count - a.count);
+
+    const noShowCount = byReasonMap.get("No-show") ?? 0;
+
+    return {
+      allInPeriod,
+      cancelled,
+      overrides,
+      totalAppts,
+      totalCancelled,
+      cancelRate,
+      noShowCount,
+      reasonsList,
+    };
+  }, [appointments.data, from, to, cancellationDoctorFilter]);
+
   return (
     <AppShell title="Reports" subtitle="Day close, outstanding dues and revenue attribution">
       <Tabs defaultValue="day-close">
@@ -229,8 +284,8 @@ function ReportsPage() {
           <TabsTrigger value="dues">Outstanding dues</TabsTrigger>
           <TabsTrigger value="incentives">Doctor & service revenue</TabsTrigger>
           <TabsTrigger value="feedback">Feedback & reviews</TabsTrigger>
+          <TabsTrigger value="cancellations">Cancellations</TabsTrigger>
         </TabsList>
-
 
         {/* --------------------------- Day close --------------------------- */}
         <TabsContent value="day-close" className="print-scope mt-4 space-y-6">
@@ -261,14 +316,17 @@ function ReportsPage() {
             </p>
           </header>
 
-
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <StatCard
               label="Collected"
               value={money(dayClose.collected)}
               hint={`${dayClose.rows.length} payment${dayClose.rows.length === 1 ? "" : "s"}`}
             />
-            <StatCard label="Cash in drawer" value={money(dayClose.cash)} hint="Cash payments only" />
+            <StatCard
+              label="Cash in drawer"
+              value={money(dayClose.cash)}
+              hint="Cash payments only"
+            />
             <StatCard
               label="Billed"
               value={money(dayClose.billed)}
@@ -297,7 +355,9 @@ function ReportsPage() {
                   ))}
                   <li className="flex items-center justify-between pt-2.5 text-sm font-semibold">
                     <span>Total</span>
-                    <span className="tabular-nums">{money(dayClose.collected - dayClose.refunded)}</span>
+                    <span className="tabular-nums">
+                      {money(dayClose.collected - dayClose.refunded)}
+                    </span>
                   </li>
                 </ul>
               )}
@@ -367,15 +427,21 @@ function ReportsPage() {
                             {formatDate(`${invoice.issued_at}T12:00:00`)}
                           </td>
                           <td className="py-2.5 pr-3">
-                            <Chip tone={ageDays > 30 ? "overdue" : ageDays > 7 ? "progress" : "idle"}>
+                            <Chip
+                              tone={ageDays > 30 ? "overdue" : ageDays > 7 ? "progress" : "idle"}
+                            >
                               {ageDays}d
                             </Chip>
                           </td>
-                          <td className="py-2.5 pr-3 text-right tabular-nums">{money(Number(invoice.total))}</td>
+                          <td className="py-2.5 pr-3 text-right tabular-nums">
+                            {money(Number(invoice.total))}
+                          </td>
                           <td className="py-2.5 pr-3 text-right tabular-nums text-muted-foreground">
                             {money(paid)}
                           </td>
-                          <td className="py-2.5 text-right font-semibold tabular-nums">{money(balance)}</td>
+                          <td className="py-2.5 text-right font-semibold tabular-nums">
+                            {money(balance)}
+                          </td>
                         </tr>
                       );
                     })}
@@ -390,17 +456,38 @@ function ReportsPage() {
         <TabsContent value="incentives" className="mt-4 space-y-6">
           <div className="flex flex-wrap items-end gap-3">
             <Field label="From" className="w-44">
-              <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className={inputClass} />
+              <input
+                type="date"
+                value={from}
+                onChange={(e) => setFrom(e.target.value)}
+                className={inputClass}
+              />
             </Field>
             <Field label="To" className="w-44">
-              <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className={inputClass} />
+              <input
+                type="date"
+                value={to}
+                onChange={(e) => setTo(e.target.value)}
+                className={inputClass}
+              />
             </Field>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-3">
-            <StatCard label="Net revenue (pre-GST)" value={money(incentives.total)} hint="Invoices plus package sessions used" />
-            <StatCard label="Attributed to a doctor" value={money(incentives.total - incentives.unattributed)} />
-            <StatCard label="Unattributed" value={money(incentives.unattributed)} hint="No provider on the visit" />
+            <StatCard
+              label="Net revenue (pre-GST)"
+              value={money(incentives.total)}
+              hint="Invoices plus package sessions used"
+            />
+            <StatCard
+              label="Attributed to a doctor"
+              value={money(incentives.total - incentives.unattributed)}
+            />
+            <StatCard
+              label="Unattributed"
+              value={money(incentives.unattributed)}
+              hint="No provider on the visit"
+            />
           </div>
 
           <div className="grid gap-6 lg:grid-cols-2">
@@ -444,10 +531,20 @@ function ReportsPage() {
         <TabsContent value="feedback" className="mt-4 space-y-6">
           <div className="flex flex-wrap items-end gap-3">
             <Field label="From" className="w-44">
-              <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className={inputClass} />
+              <input
+                type="date"
+                value={from}
+                onChange={(e) => setFrom(e.target.value)}
+                className={inputClass}
+              />
             </Field>
             <Field label="To" className="w-44">
-              <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className={inputClass} />
+              <input
+                type="date"
+                value={to}
+                onChange={(e) => setTo(e.target.value)}
+                className={inputClass}
+              />
             </Field>
           </div>
 
@@ -518,7 +615,9 @@ function ReportsPage() {
 
           <Panel title="All responses">
             {reviews.rows.length === 0 ? (
-              <EmptyState>No feedback collected yet. Add {"{{feedback_link}}"} to a post-treatment automation.</EmptyState>
+              <EmptyState>
+                No feedback collected yet. Add {"{{feedback_link}}"} to a post-treatment automation.
+              </EmptyState>
             ) : (
               <ul className="divide-y divide-border">
                 {reviews.rows.map((f) => {
@@ -538,6 +637,184 @@ function ReportsPage() {
           </Panel>
         </TabsContent>
 
+        {/* ------------------------- Cancellations (APT-08.3 & APT-05.3) ------------------------- */}
+        <TabsContent value="cancellations" className="mt-4 space-y-6">
+          <div className="flex flex-wrap items-end gap-3">
+            <Field label="From" className="w-40">
+              <input
+                type="date"
+                value={from}
+                onChange={(e) => setFrom(e.target.value)}
+                className={inputClass}
+              />
+            </Field>
+            <Field label="To" className="w-40">
+              <input
+                type="date"
+                value={to}
+                onChange={(e) => setTo(e.target.value)}
+                className={inputClass}
+              />
+            </Field>
+            <Field label="Doctor" className="w-48">
+              <select
+                value={cancellationDoctorFilter}
+                onChange={(e) => setCancellationDoctorFilter(e.target.value)}
+                className={inputClass}
+              >
+                <option value="all">All doctors</option>
+                <option value="unassigned">Unassigned</option>
+                {providers.data?.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
+              </select>
+            </Field>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <StatCard
+              label="Total cancellations"
+              value={String(cancellationsData.totalCancelled)}
+              hint={`Out of ${cancellationsData.totalAppts} total appointments`}
+            />
+            <StatCard
+              label="Cancellation rate"
+              value={`${cancellationsData.cancelRate.toFixed(1)}%`}
+              hint={
+                cancellationsData.totalAppts > 0
+                  ? `${cancellationsData.totalCancelled} cancelled`
+                  : "No appointments"
+              }
+            />
+            <StatCard
+              label="No-shows"
+              value={String(cancellationsData.noShowCount)}
+              hint="Patients who missed appointment"
+            />
+            <StatCard
+              label="Double-booking overrides"
+              value={String(cancellationsData.overrides.length)}
+              hint="Logged intentional double-bookings"
+            />
+          </div>
+
+          <div className="grid gap-6 lg:grid-cols-2">
+            <Panel title="Breakdown by cancellation reason">
+              {cancellationsData.reasonsList.length === 0 ? (
+                <EmptyState>No cancellations in this period.</EmptyState>
+              ) : (
+                <ul className="divide-y divide-border">
+                  {cancellationsData.reasonsList.map(({ reason, count, percent }) => (
+                    <li key={reason} className="space-y-1.5 py-2.5 first:pt-0 last:pb-0">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="font-medium text-foreground">{reason}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-muted-foreground">
+                            {percent.toFixed(1)}%
+                          </span>
+                          <Chip>{count}</Chip>
+                        </div>
+                      </div>
+                      <div className="h-2 w-full overflow-hidden rounded-full bg-secondary">
+                        <div
+                          className="h-full rounded-full bg-primary transition-all"
+                          style={{ width: `${Math.max(4, Math.min(100, percent))}%` }}
+                        />
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </Panel>
+
+            <Panel title="Double-booking overrides (audit log)">
+              {cancellationsData.overrides.length === 0 ? (
+                <EmptyState>No double-booking overrides recorded.</EmptyState>
+              ) : (
+                <ul className="divide-y divide-border">
+                  {cancellationsData.overrides.map((a) => {
+                    const pt = patientOf(a.patient_id);
+                    return (
+                      <li key={a.id} className="space-y-1 py-2.5 text-xs first:pt-0 last:pb-0">
+                        <div className="flex items-center justify-between">
+                          <span className="font-medium text-foreground">
+                            {pt ? patientName(pt) : "Patient"}
+                          </span>
+                          <span className="text-muted-foreground">
+                            {formatDateTime(a.starts_at)}
+                          </span>
+                        </div>
+                        <p className="text-muted-foreground">
+                          Doctor: {providerName(a.provider_id)}
+                        </p>
+                        <p className="font-medium text-amber-700 dark:text-amber-400">
+                          Override Reason: {a.override_reason || "Manual override"}
+                        </p>
+                        {a.override_at && (
+                          <p className="text-[11px] text-muted-foreground">
+                            Overridden on {formatDateTime(a.override_at)}
+                          </p>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </Panel>
+          </div>
+
+          <Panel title="Cancelled appointments audit log">
+            {cancellationsData.cancelled.length === 0 ? (
+              <EmptyState>No cancelled appointments recorded for this period.</EmptyState>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[700px] text-sm">
+                  <thead>
+                    <tr className="border-b border-border text-left text-xs text-muted-foreground">
+                      <th className="py-2 pr-3 font-medium">Patient</th>
+                      <th className="py-2 pr-3 font-medium">Original Slot</th>
+                      <th className="py-2 pr-3 font-medium">Doctor</th>
+                      <th className="py-2 pr-3 font-medium">Cancellation Reason</th>
+                      <th className="py-2 pr-3 font-medium">Cancelled By</th>
+                      <th className="py-2 font-medium text-muted-foreground">Cancelled At</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {cancellationsData.cancelled.map((a) => {
+                      const pt = patientOf(a.patient_id);
+                      return (
+                        <tr key={a.id} className="border-b border-border/50 text-xs">
+                          <td className="py-2.5 pr-3 font-medium text-foreground">
+                            {pt ? patientName(pt) : "Patient"}
+                          </td>
+                          <td className="py-2.5 pr-3 text-muted-foreground">
+                            {formatDateTime(a.starts_at)}
+                          </td>
+                          <td className="py-2.5 pr-3 text-muted-foreground">
+                            {providerName(a.provider_id)}
+                          </td>
+                          <td className="py-2.5 pr-3">
+                            <Chip tone="idle">{a.cancellation_reason || "Unspecified"}</Chip>
+                          </td>
+                          <td className="py-2.5 pr-3 text-muted-foreground">
+                            {a.cancelled_by || "Staff member"}
+                          </td>
+                          <td className="py-2.5 text-muted-foreground">
+                            {a.cancelled_at
+                              ? formatDateTime(a.cancelled_at)
+                              : formatDateTime(a.updated_at)}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </Panel>
+        </TabsContent>
       </Tabs>
     </AppShell>
   );

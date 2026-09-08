@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { BellRing, CalendarClock, Plus } from "lucide-react";
+import { BellRing, CalendarClock, Eye, Plus } from "lucide-react";
 import { AppShell, ghostButton, primaryButton } from "@/components/clinic/AppShell";
 import { BookingRequests } from "@/components/clinic/BookingRequests";
 import { Chip, EmptyState, Field, inputClass, textareaClass } from "@/components/clinic/bits";
@@ -10,6 +10,7 @@ import {
   ConflictAlertDialog,
   type ConflictModalState,
 } from "@/components/clinic/ConflictAlertDialog";
+import { AppointmentDetailDialog } from "@/components/clinic/AppointmentDetailDialog";
 import {
   Dialog,
   DialogContent,
@@ -20,6 +21,7 @@ import {
 import {
   APPOINTMENT_SOURCES,
   APPOINTMENT_STATUSES,
+  CANCELLATION_REASONS,
   TEMPERATURES,
   appointmentTone,
   formatDateTime,
@@ -67,6 +69,7 @@ export const Route = createFileRoute("/_authenticated/appointments")({
 type RangeKey = "today" | "upcoming" | "past" | "all";
 
 function AppointmentsPage() {
+  const { user } = Route.useRouteContext();
   const { new: openNew } = Route.useSearch();
   const [open, setOpen] = useState(openNew ?? false);
   const [quickAdd, setQuickAdd] = useState(false);
@@ -76,7 +79,9 @@ function AppointmentsPage() {
   const [doctorFilter, setDoctorFilter] = useState("all");
   const [conflictModal, setConflictModal] = useState<ConflictModalState | null>(null);
   const [cancelModal, setCancelModal] = useState<Appointment | null>(null);
-  const [cancelReason, setCancelReason] = useState("Patient requested");
+  const [cancelReason, setCancelReason] = useState("");
+  const [cancelNotes, setCancelNotes] = useState("");
+  const [viewingAppointment, setViewingAppointment] = useState<Appointment | null>(null);
 
   const appointments = useAppointments();
   const patients = usePatients();
@@ -111,7 +116,7 @@ function AppointmentsPage() {
         if (range === "past") return t < startOfDay;
         return true;
       })
-      .filter((a) => sourceFilter === "all" || (a.source ?? "Walk-in") === sourceFilter)
+      .filter((a) => (sourceFilter === "all" ? true : (a.source ?? "Walk-in") === sourceFilter))
       .filter((a) =>
         doctorFilter === "all"
           ? true
@@ -133,8 +138,9 @@ function AppointmentsPage() {
     updateAppointment.mutate({ id, values }, { onSuccess: () => toast.success(msg) });
 
   function handleDoctorChange(a: Appointment, newDocId: string | null) {
-    const conflictMsg = checkAppointmentConflict({
+    const conflict = checkAppointmentConflict({
       appointments: appointments.data ?? [],
+      patients: patients.data ?? [],
       providers: providers.data ?? [],
       rooms: rooms.data ?? [],
       startsAt: new Date(a.starts_at),
@@ -143,10 +149,22 @@ function AppointmentsPage() {
       roomId: a.room_id,
       excludeId: a.id,
     });
-    if (conflictMsg) {
+    if (conflict) {
       setConflictModal({
-        message: conflictMsg,
-        onConfirm: () => patch(a.id, { provider_id: newDocId }, "Doctor assigned"),
+        conflict,
+        onConfirm: (overrideReason) => {
+          const nowIso = new Date().toISOString();
+          patch(
+            a.id,
+            {
+              provider_id: newDocId,
+              is_override: true,
+              override_reason: overrideReason,
+              override_at: nowIso,
+            },
+            "Doctor assigned (conflict overridden)",
+          );
+        },
       });
       return;
     }
@@ -164,8 +182,9 @@ function AppointmentsPage() {
       return;
     }
 
-    const conflictMsg = checkAppointmentConflict({
+    const conflict = checkAppointmentConflict({
       appointments: appointments.data ?? [],
+      patients: patients.data ?? [],
       providers: providers.data ?? [],
       rooms: rooms.data ?? [],
       startsAt: newStart,
@@ -175,7 +194,14 @@ function AppointmentsPage() {
       excludeId: reschedule.id,
     });
 
-    const doReschedule = () => {
+    const doReschedule = (overrideReason?: string) => {
+      const nowIso = new Date().toISOString();
+      const existingNotes = reschedule.notes ?? "";
+      const overrideNotes = overrideReason
+        ? `[Reschedule Override: ${overrideReason} on ${formatDateTime(nowIso)}]`
+        : "";
+      const updatedNotes = [existingNotes, overrideNotes].filter(Boolean).join("\n") || null;
+
       updateAppointment.mutate(
         {
           id: reschedule.id,
@@ -184,11 +210,23 @@ function AppointmentsPage() {
             starts_at: newStart.toISOString(),
             reschedule_count: (reschedule.reschedule_count ?? 0) + 1,
             status: "Booked",
+            ...(overrideReason
+              ? {
+                  is_override: true,
+                  override_reason: overrideReason,
+                  override_at: nowIso,
+                  notes: updatedNotes,
+                }
+              : {}),
           },
         },
         {
           onSuccess: () => {
-            toast.success("Appointment rescheduled");
+            toast.success(
+              overrideReason
+                ? "Appointment rescheduled (conflict overridden)"
+                : "Appointment rescheduled",
+            );
             setReschedule(null);
           },
           onError: (err) => toast.error(err.message),
@@ -196,10 +234,10 @@ function AppointmentsPage() {
       );
     };
 
-    if (conflictMsg) {
+    if (conflict) {
       setConflictModal({
-        message: conflictMsg,
-        onConfirm: doReschedule,
+        conflict,
+        onConfirm: (reason) => doReschedule(reason),
       });
       return;
     }
@@ -256,8 +294,9 @@ function AppointmentsPage() {
     const roomId = String(fd.get("room_id")) || null;
     const durationMin = Number(fd.get("duration_min")) || service?.duration_min || 30;
 
-    const conflictMsg = checkAppointmentConflict({
+    const conflict = checkAppointmentConflict({
       appointments: appointments.data ?? [],
+      patients: patients.data ?? [],
       providers: providers.data ?? [],
       rooms: rooms.data ?? [],
       startsAt: startsAtDate,
@@ -266,7 +305,14 @@ function AppointmentsPage() {
       roomId,
     });
 
-    const doCreate = () => {
+    const doCreate = (overrideReason?: string) => {
+      const nowIso = new Date().toISOString();
+      const existingNotes = String(fd.get("notes") ?? "").trim();
+      const overrideNotes = overrideReason
+        ? `[Double-booking Override: ${overrideReason} on ${formatDateTime(nowIso)}]`
+        : "";
+      const notes = [existingNotes, overrideNotes].filter(Boolean).join("\n") || null;
+
       createAppointment.mutate(
         {
           patient_id: patientId,
@@ -278,11 +324,22 @@ function AppointmentsPage() {
           status: "Booked",
           source: String(fd.get("source")),
           temperature: String(fd.get("temperature")),
-          notes: String(fd.get("notes")) || null,
+          ...(overrideReason
+            ? {
+                is_override: true,
+                override_reason: overrideReason,
+                override_at: nowIso,
+              }
+            : {}),
+          notes,
         },
         {
           onSuccess: () => {
-            toast.success("Appointment booked");
+            toast.success(
+              overrideReason
+                ? "Appointment booked (double-booking overridden)"
+                : "Appointment booked",
+            );
             setQuickAdd(false);
             setOpen(false);
           },
@@ -291,10 +348,10 @@ function AppointmentsPage() {
       );
     };
 
-    if (conflictMsg) {
+    if (conflict) {
       setConflictModal({
-        message: conflictMsg,
-        onConfirm: doCreate,
+        conflict,
+        onConfirm: (reason) => doCreate(reason),
       });
       return;
     }
@@ -303,11 +360,28 @@ function AppointmentsPage() {
   }
 
   function handleCancelConfirm() {
-    if (!cancelModal) return;
+    if (!cancelModal || !cancelReason) return;
+    const staffName =
+      (user?.user_metadata?.["full_name"] as string | undefined) || user?.email || "Staff member";
+    const timestamp = new Date().toISOString();
+    const reasonSnippet = `[Cancellation Reason: ${cancelReason}${cancelNotes ? ` - ${cancelNotes}` : ""} by ${staffName} on ${formatDateTime(timestamp)}]`;
     const existingNotes = cancelModal.notes ? `${cancelModal.notes}\n` : "";
-    const updatedNotes = `${existingNotes}[Cancellation Reason: ${cancelReason}]`;
-    patch(cancelModal.id, { status: "Cancelled", notes: updatedNotes }, "Appointment cancelled");
+    const updatedNotes = `${existingNotes}${reasonSnippet}`;
+
+    patch(
+      cancelModal.id,
+      {
+        status: "Cancelled",
+        cancellation_reason: cancelReason,
+        cancelled_at: timestamp,
+        cancelled_by: staffName,
+        notes: updatedNotes,
+      },
+      "Appointment cancelled",
+    );
     setCancelModal(null);
+    setCancelReason("");
+    setCancelNotes("");
   }
 
   return (
@@ -497,7 +571,8 @@ function AppointmentsPage() {
                           const val = e.target.value;
                           if (val === "Cancelled") {
                             setCancelModal(a);
-                            setCancelReason("Patient requested");
+                            setCancelReason("");
+                            setCancelNotes("");
                             return;
                           }
                           patch(a.id, { status: val }, "Status updated");
@@ -514,16 +589,42 @@ function AppointmentsPage() {
                       <Chip tone={appointmentTone(a.status)} className="mt-1">
                         {a.status}
                       </Chip>
+                      {a.cancellation_reason ? (
+                        <span
+                          className="mt-0.5 block max-w-[120px] truncate text-[11px] text-muted-foreground"
+                          title={a.cancellation_reason}
+                        >
+                          {a.cancellation_reason}
+                        </span>
+                      ) : null}
+                      {a.is_override ? (
+                        <Chip tone="overdue" className="mt-1 block text-[10px]">
+                          Overridden
+                        </Chip>
+                      ) : null}
                     </td>
                     <td className="max-w-[180px] px-5 py-3 text-xs text-muted-foreground">
                       {a.notes ?? "—"}
                     </td>
                     <td className="px-5 py-3">
                       <div className="flex flex-col items-end gap-1">
-                        <button className={ghostButton} onClick={() => setReschedule(a)}>
+                        <button
+                          type="button"
+                          className={ghostButton}
+                          onClick={() => setViewingAppointment(a)}
+                        >
+                          <Eye className="size-3.5" /> Details
+                        </button>
+                        <button
+                          type="button"
+                          disabled={a.status === "Cancelled" || a.status === "Completed"}
+                          className={`${ghostButton} disabled:opacity-40`}
+                          onClick={() => setReschedule(a)}
+                        >
                           <CalendarClock className="size-3.5" /> Reschedule
                         </button>
                         <button
+                          type="button"
                           className={ghostButton}
                           onClick={() => {
                             toast.promise(sendReminder({ data: { appointmentId: a.id } }), {
@@ -722,39 +823,88 @@ function AppointmentsPage() {
 
       <ConflictAlertDialog modal={conflictModal} onClose={() => setConflictModal(null)} />
 
-      <Dialog open={!!cancelModal} onOpenChange={(v) => !v && setCancelModal(null)}>
+      <Dialog
+        open={!!cancelModal}
+        onOpenChange={(v) => {
+          if (!v) {
+            setCancelModal(null);
+            setCancelReason("");
+            setCancelNotes("");
+          }
+        }}
+      >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Cancel Appointment</DialogTitle>
           </DialogHeader>
           <div className="grid gap-4 py-2">
             <p className="text-sm text-muted-foreground">
-              Please select a reason for cancelling this appointment:
+              Please select a mandatory reason for cancelling this appointment:
             </p>
-            <Field label="Cancellation reason">
+            <Field label="Cancellation reason *">
               <select
+                required
                 value={cancelReason}
                 onChange={(e) => setCancelReason(e.target.value)}
                 className={inputClass}
               >
-                <option value="Patient requested">Patient requested</option>
-                <option value="Clinic reschedule">Clinic reschedule</option>
-                <option value="No-show">No-show</option>
-                <option value="Duplicate booking">Duplicate booking</option>
-                <option value="Other">Other / Skip</option>
+                <option value="" disabled>
+                  Select cancellation reason…
+                </option>
+                {CANCELLATION_REASONS.map((r) => (
+                  <option key={r} value={r}>
+                    {r}
+                  </option>
+                ))}
               </select>
+            </Field>
+            <Field label="Additional notes (optional)">
+              <textarea
+                value={cancelNotes}
+                onChange={(e) => setCancelNotes(e.target.value)}
+                placeholder="Add any internal context about this cancellation..."
+                className={textareaClass}
+              />
             </Field>
           </div>
           <DialogFooter>
-            <button type="button" className={ghostButton} onClick={() => setCancelModal(null)}>
+            <button
+              type="button"
+              className={ghostButton}
+              onClick={() => {
+                setCancelModal(null);
+                setCancelReason("");
+                setCancelNotes("");
+              }}
+            >
               Keep appointment
             </button>
-            <button type="button" className={primaryButton} onClick={handleCancelConfirm}>
+            <button
+              type="button"
+              disabled={!cancelReason}
+              className={`${primaryButton} disabled:opacity-50`}
+              onClick={handleCancelConfirm}
+            >
               Confirm Cancellation
             </button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AppointmentDetailDialog
+        appointment={viewingAppointment}
+        patient={patients.data?.find((p) => p.id === viewingAppointment?.patient_id)}
+        provider={providers.data?.find((p) => p.id === viewingAppointment?.provider_id)}
+        room={rooms.data?.find((r) => r.id === viewingAppointment?.room_id)}
+        service={services.data?.find((s) => s.id === viewingAppointment?.service_id)}
+        onClose={() => setViewingAppointment(null)}
+        onReschedule={(app) => setReschedule(app)}
+        onCancel={(app) => {
+          setCancelModal(app);
+          setCancelReason("");
+          setCancelNotes("");
+        }}
+      />
     </AppShell>
   );
 }

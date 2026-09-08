@@ -43,13 +43,26 @@ export function BookingRequests() {
 
   const digits = (v: string) => v.replace(/\D/g, "").slice(-10);
 
-  async function executeAccept(req: AppointmentRequest) {
+  async function executeAccept(
+    req: AppointmentRequest,
+    override?: { is_override: boolean; override_reason: string; override_at: string },
+  ) {
     setBusy(req.id);
     try {
       if (req.kind === "reschedule" && req.appointment_id) {
         await updateAppointment.mutateAsync({
           id: req.appointment_id,
-          values: { starts_at: req.preferred_at, status: "Booked" },
+          values: {
+            starts_at: req.preferred_at,
+            status: "Booked",
+            ...(override
+              ? {
+                  is_override: override.is_override,
+                  override_reason: override.override_reason,
+                  override_at: override.override_at,
+                }
+              : {}),
+          },
         });
       } else {
         let patientId = req.patient_id;
@@ -94,6 +107,13 @@ export function BookingRequests() {
           status: "Booked",
           source: "Website",
           notes: req.notes,
+          ...(override
+            ? {
+                is_override: override.is_override,
+                override_reason: override.override_reason,
+                override_at: override.override_at,
+              }
+            : {}),
         });
       }
       await updateRequest.mutateAsync({ id: req.id, values: { status: "Accepted" } });
@@ -112,12 +132,13 @@ export function BookingRequests() {
       return;
     }
 
-    let conflictMsg: string | null = null;
+    let conflict = null;
     const startsAtDate = new Date(req.preferred_at);
     if (req.kind === "reschedule" && req.appointment_id) {
       const existingApp = appointments.data?.find((a) => a.id === req.appointment_id);
-      conflictMsg = checkAppointmentConflict({
+      conflict = checkAppointmentConflict({
         appointments: appointments.data ?? [],
+        patients: patients.data ?? [],
         providers: providers.data ?? [],
         rooms: rooms.data ?? [],
         startsAt: startsAtDate,
@@ -128,8 +149,9 @@ export function BookingRequests() {
       });
     } else {
       const svc = services.data?.find((s) => s.id === req.service_id);
-      conflictMsg = checkAppointmentConflict({
+      conflict = checkAppointmentConflict({
         appointments: appointments.data ?? [],
+        patients: patients.data ?? [],
         providers: providers.data ?? [],
         rooms: rooms.data ?? [],
         startsAt: startsAtDate,
@@ -138,10 +160,15 @@ export function BookingRequests() {
       });
     }
 
-    if (conflictMsg) {
+    if (conflict) {
       setConflictModal({
-        message: conflictMsg,
-        onConfirm: () => void executeAccept(req),
+        conflict,
+        onConfirm: (reason) =>
+          void executeAccept(req, {
+            is_override: true,
+            override_reason: reason,
+            override_at: new Date().toISOString(),
+          }),
       });
       return;
     }
