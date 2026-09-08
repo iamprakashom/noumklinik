@@ -69,8 +69,8 @@ export function AppointmentDetailDialog({
         <div className="space-y-4 py-1 text-sm">
           {/* Double-booking override banner (APT-05.3) */}
           {isOverridden && (
-            <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-200">
-              <div className="flex items-center gap-1.5 font-semibold text-amber-800 dark:text-amber-300">
+            <div className="rounded-lg border border-status-progress/30 bg-status-progress-soft p-3 text-xs text-foreground">
+              <div className="flex items-center gap-1.5 font-semibold text-status-progress">
                 <AlertTriangle className="size-4 shrink-0" />
                 <span>Double-Booking Override</span>
               </div>
@@ -90,8 +90,8 @@ export function AppointmentDetailDialog({
 
           {/* Cancellation details banner (APT-08.2) */}
           {isCancelled && (
-            <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-xs text-red-900 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-200">
-              <div className="flex items-center gap-1.5 font-semibold text-red-800 dark:text-red-300">
+            <div className="rounded-lg border border-status-overdue/30 bg-status-overdue-soft p-3 text-xs text-foreground">
+              <div className="flex items-center gap-1.5 font-semibold text-status-overdue">
                 <XCircle className="size-4 shrink-0" />
                 <span>Appointment Cancelled</span>
               </div>
@@ -252,7 +252,7 @@ export function AppointmentDetailDialog({
               {onCancel && (
                 <button
                   type="button"
-                  className="rounded-md border border-destructive/40 text-destructive hover:bg-destructive/10 px-3 py-1.5 text-xs font-medium"
+                  className="inline-flex h-9 items-center justify-center rounded-md border border-destructive/30 bg-destructive/10 px-3.5 text-xs font-medium text-destructive transition-colors hover:bg-destructive/20"
                   onClick={() => {
                     onClose();
                     onCancel(appointment);

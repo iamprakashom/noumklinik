@@ -749,7 +749,7 @@ function ReportsPage() {
                         <p className="text-muted-foreground">
                           Doctor: {providerName(a.provider_id)}
                         </p>
-                        <p className="font-medium text-amber-700 dark:text-amber-400">
+                        <p className="font-medium text-status-progress">
                           Override Reason: {a.override_reason || "Manual override"}
                         </p>
                         {a.override_at && (

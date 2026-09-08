@@ -9,6 +9,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { inputClass } from "@/components/clinic/bits";
 import { AlertTriangle, Calendar, DoorClosed, Stethoscope, User } from "lucide-react";
 import type { ConflictingAppointmentInfo } from "@/lib/clinic-hours";
 
@@ -39,7 +40,7 @@ export function ConflictAlertDialog({
     <AlertDialog open={!!modal} onOpenChange={(v) => !v && onClose()}>
       <AlertDialogContent className="sm:max-w-md">
         <AlertDialogHeader>
-          <div className="flex items-center gap-2 text-amber-600 dark:text-amber-500">
+          <div className="flex items-center gap-2 text-status-progress">
             <AlertTriangle className="size-5 shrink-0" />
             <AlertDialogTitle>Schedule Conflict Detected</AlertDialogTitle>
           </div>
@@ -49,7 +50,7 @@ export function ConflictAlertDialog({
           </AlertDialogDescription>
         </AlertDialogHeader>
 
-        <div className="space-y-2 rounded-lg border border-amber-200 bg-amber-50/50 p-3.5 text-xs text-foreground dark:border-amber-900/40 dark:bg-amber-950/20">
+        <div className="space-y-2 rounded-lg border border-status-progress/30 bg-status-progress-soft p-3.5 text-xs text-foreground">
           <div className="flex items-center gap-2">
             <User className="size-3.5 shrink-0 text-muted-foreground" />
             <span>
@@ -98,7 +99,7 @@ export function ConflictAlertDialog({
               value={overrideReason}
               onChange={(e) => setOverrideReason(e.target.value)}
               placeholder="e.g. Doctor approved emergency add-on, VIP consultation..."
-              className="h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+              className={inputClass}
             />
             <p className="text-[11px] text-muted-foreground">
               Overriding will double-book this slot. The reason and timestamp will be logged for

@@ -598,7 +598,7 @@ function AppointmentsPage() {
                         </span>
                       ) : null}
                       {a.is_override ? (
-                        <Chip tone="overdue" className="mt-1 block text-[10px]">
+                        <Chip tone="progress" className="mt-1 block text-[10px]">
                           Overridden
                         </Chip>
                       ) : null}

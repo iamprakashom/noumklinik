@@ -321,7 +321,7 @@ function PatientDetail() {
                       </span>
                     ) : null}
                     {v.is_override ? (
-                      <Chip tone="overdue" className="text-[10px]">
+                      <Chip tone="progress" className="text-[10px]">
                         Overridden
                       </Chip>
                     ) : null}
