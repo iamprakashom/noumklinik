@@ -43,13 +43,15 @@ export const APPOINTMENT_STATUSES = [
 ] as const;
 export type AppointmentStatus = (typeof APPOINTMENT_STATUSES)[number];
 
-export const LEAD_STAGES = [
-  "New",
-  "Contacted",
-  "Consult booked",
-  "Converted",
-  "Lost",
+export const CANCELLATION_REASONS = [
+  "Patient request",
+  "Clinic reschedule",
+  "No-show",
+  "Skip / Other",
 ] as const;
+export type CancellationReason = (typeof CANCELLATION_REASONS)[number];
+
+export const LEAD_STAGES = ["New", "Contacted", "Consult booked", "Converted", "Lost"] as const;
 export type LeadStage = (typeof LEAD_STAGES)[number];
 
 export const CHANNELS = ["Email", "SMS", "WhatsApp"] as const;
@@ -83,7 +85,13 @@ export const TEMPERATURE_HINT: Record<string, string> = {
   Cold: "Just exploring",
 };
 
-export const LEAD_SOURCE_GROUPS = ["Meta Ads", "Google Ads", "Organic", "Referral", "Walk-in"] as const;
+export const LEAD_SOURCE_GROUPS = [
+  "Meta Ads",
+  "Google Ads",
+  "Organic",
+  "Referral",
+  "Walk-in",
+] as const;
 
 export const SOURCE_GROUP_BY_SOURCE: Record<string, string> = {
   "Meta Lead Ads": "Meta Ads",
@@ -117,8 +125,6 @@ export function temperatureTone(t: string): StatusTone {
 export function daysSince(iso: string) {
   return Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000));
 }
-
-
 
 export type StatusTone = "completed" | "progress" | "overdue" | "idle";
 
@@ -160,7 +166,11 @@ export function initials(name: string) {
 
 export function money(value: number | string | null | undefined) {
   const n = Number(value ?? 0);
-  return n.toLocaleString("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 });
+  return n.toLocaleString("en-IN", {
+    style: "currency",
+    currency: "INR",
+    maximumFractionDigits: 0,
+  });
 }
 
 export function formatTime(iso: string) {

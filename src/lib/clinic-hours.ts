@@ -1,4 +1,12 @@
-import type { Appointment, Provider, Room } from "@/data/clinic";
+import {
+  formatDateTime,
+  formatTime,
+  patientName,
+  type Appointment,
+  type Patient,
+  type Provider,
+  type Room,
+} from "@/data/clinic";
 
 export const DAYS_OF_WEEK = [
   "Monday",
@@ -166,8 +174,21 @@ export function getAvailableTimeSlots(
   return slots;
 }
 
+export interface ConflictingAppointmentInfo {
+  appointment: Appointment;
+  patientName: string;
+  conflictType: "provider" | "room" | "both";
+  providerName?: string;
+  roomName?: string;
+  startsAt: string;
+  durationMin: number;
+  timeSlotFormatted: string;
+  message: string;
+}
+
 export interface AppointmentConflictParams {
   appointments: Appointment[];
+  patients?: Patient[];
   providers?: Provider[];
   rooms?: Room[];
   startsAt: Date;
@@ -179,10 +200,11 @@ export interface AppointmentConflictParams {
 
 /**
  * Checks if a requested appointment conflicts with existing appointments.
- * Returns a warning message string if a conflict is found, or null if clear.
+ * Returns detailed conflict information if a conflict is found, or null if clear.
  */
 export function checkAppointmentConflict({
   appointments,
+  patients,
   providers,
   rooms,
   startsAt,
@@ -190,7 +212,7 @@ export function checkAppointmentConflict({
   providerId,
   roomId,
   excludeId,
-}: AppointmentConflictParams): string | null {
+}: AppointmentConflictParams): ConflictingAppointmentInfo | null {
   if (!appointments.length) return null;
   const reqStart = startsAt.getTime();
   const reqEnd = reqStart + durationMin * 60_000;
@@ -201,13 +223,41 @@ export function checkAppointmentConflict({
     const appEnd = appStart + (app.duration_min ?? 30) * 60_000;
 
     if (appStart < reqEnd && appEnd > reqStart) {
-      if (providerId && app.provider_id === providerId) {
-        const docName = providers?.find((p) => p.id === providerId)?.name ?? "Selected doctor";
-        return `Warning: ${docName} is already booked at this time.`;
-      }
-      if (roomId && app.room_id === roomId) {
-        const roomName = rooms?.find((r) => r.id === roomId)?.name ?? "Selected room";
-        return `Warning: ${roomName} is already occupied at this time.`;
+      const isProviderConflict = Boolean(providerId && app.provider_id === providerId);
+      const isRoomConflict = Boolean(roomId && app.room_id === roomId);
+
+      if (isProviderConflict || isRoomConflict) {
+        const conflictType: "provider" | "room" | "both" =
+          isProviderConflict && isRoomConflict ? "both" : isProviderConflict ? "provider" : "room";
+
+        const docName = providers?.find((p) => p.id === app.provider_id)?.name ?? "Assigned doctor";
+        const roomName = rooms?.find((r) => r.id === app.room_id)?.name ?? "Assigned room";
+        const pt = patients?.find((p) => p.id === app.patient_id);
+        const ptName = pt ? patientName(pt) : "Existing patient";
+
+        const appEndObj = new Date(appEnd);
+        const timeSlotFormatted = `${formatDateTime(app.starts_at)} – ${formatTime(appEndObj.toISOString())}`;
+
+        let message = "";
+        if (conflictType === "both") {
+          message = `Doctor ${docName} and ${roomName} are already booked for ${ptName} (${timeSlotFormatted}).`;
+        } else if (conflictType === "provider") {
+          message = `Doctor ${docName} is already booked for ${ptName} (${timeSlotFormatted}).`;
+        } else {
+          message = `${roomName} is already occupied by ${ptName} (${timeSlotFormatted}).`;
+        }
+
+        return {
+          appointment: app,
+          patientName: ptName,
+          conflictType,
+          providerName: docName,
+          roomName,
+          startsAt: app.starts_at,
+          durationMin: app.duration_min ?? 30,
+          timeSlotFormatted,
+          message,
+        };
       }
     }
   }

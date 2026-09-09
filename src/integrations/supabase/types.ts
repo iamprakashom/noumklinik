@@ -166,12 +166,18 @@ export type Database = {
       }
       appointments: {
         Row: {
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
           clinic_id: string
           confirmed_at: string | null
           created_at: string
           duration_min: number
           id: string
+          is_override: boolean
           notes: string | null
+          override_at: string | null
+          override_reason: string | null
           patient_id: string
           previous_starts_at: string | null
           provider_id: string | null
@@ -186,12 +192,18 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
           clinic_id?: string
           confirmed_at?: string | null
           created_at?: string
           duration_min?: number
           id?: string
+          is_override?: boolean
           notes?: string | null
+          override_at?: string | null
+          override_reason?: string | null
           patient_id: string
           previous_starts_at?: string | null
           provider_id?: string | null
@@ -206,12 +218,18 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
           clinic_id?: string
           confirmed_at?: string | null
           created_at?: string
           duration_min?: number
           id?: string
+          is_override?: boolean
           notes?: string | null
+          override_at?: string | null
+          override_reason?: string | null
           patient_id?: string
           previous_starts_at?: string | null
           provider_id?: string | null

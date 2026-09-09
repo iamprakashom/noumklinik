@@ -3,7 +3,14 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { ArrowLeft, FileSignature, Link2, Lock, Plus } from "lucide-react";
 import { AppShell, ghostButton, primaryButton } from "@/components/clinic/AppShell";
-import { Avatar, Chip, EmptyState, Field, inputClass, textareaClass } from "@/components/clinic/bits";
+import {
+  Avatar,
+  Chip,
+  EmptyState,
+  Field,
+  inputClass,
+  textareaClass,
+} from "@/components/clinic/bits";
 import { PatientPackages } from "@/components/clinic/PatientPackages";
 import { NotePhotos, PatientPhotos } from "@/components/clinic/PatientPhotos";
 import { SignaturePad } from "@/components/clinic/SignaturePad";
@@ -17,6 +24,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { AppointmentDetailDialog } from "@/components/clinic/AppointmentDetailDialog";
 import {
   age,
   appointmentTone,
@@ -26,6 +34,7 @@ import {
   invoiceTone,
   money,
   patientName,
+  type Appointment,
 } from "@/data/clinic";
 import {
   useAppointments,
@@ -36,6 +45,7 @@ import {
   usePatientConsents,
   usePatients,
   useProviders,
+  useRooms,
   useServices,
   useTreatmentRecords,
   useUpdate,
@@ -70,7 +80,9 @@ function PatientDetail() {
   const invoices = useInvoices();
   const outbox = useOutbox();
   const providers = useProviders();
+  const rooms = useRooms();
   const services = useServices();
+  const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
 
   const addRecord = useInsert("treatment_records");
   const updateRecord = useUpdate("treatment_records");
@@ -127,9 +139,7 @@ function PatientDetail() {
   const bills = (invoices.data ?? []).filter((i) => i.patient_id === patientId);
   const messages = (outbox.data ?? []).filter((m) => m.patient_id === patientId);
   const selectedService = services.data?.find((s) => s.name === serviceId);
-  const balance = bills
-    .filter((i) => i.status === "Open")
-    .reduce((s, i) => s + Number(i.total), 0);
+  const balance = bills.filter((i) => i.status === "Open").reduce((s, i) => s + Number(i.total), 0);
 
   function saveChart(form: HTMLFormElement) {
     const fd = new FormData(form);
@@ -208,12 +218,12 @@ function PatientDetail() {
             className="grid max-w-2xl gap-4 rounded-xl border border-border bg-card p-5 sm:grid-cols-2"
             onSubmit={(e) => {
               e.preventDefault();
-             const fd = new FormData(e.currentTarget);
-             const birthDate = String(fd.get("birth_date") || "");
-             if (birthDate && birthDate > new Date().toLocaleDateString("en-CA")) {
+              const fd = new FormData(e.currentTarget);
+              const birthDate = String(fd.get("birth_date") || "");
+              if (birthDate && birthDate > new Date().toLocaleDateString("en-CA")) {
                 toast.error("Date of birth cannot be in the future");
-              return;
-}   
+                return;
+              }
               updatePatient.mutate(
                 {
                   id: patientId,
@@ -258,10 +268,18 @@ function PatientDetail() {
               </select>
             </Field>
             <Field label="Allergies" className="sm:col-span-2">
-              <textarea name="allergies" defaultValue={patient.allergies ?? ""} className={textareaClass} />
+              <textarea
+                name="allergies"
+                defaultValue={patient.allergies ?? ""}
+                className={textareaClass}
+              />
             </Field>
             <Field label="Clinical alerts" className="sm:col-span-2">
-              <textarea name="alerts" defaultValue={patient.alerts ?? ""} className={textareaClass} />
+              <textarea
+                name="alerts"
+                defaultValue={patient.alerts ?? ""}
+                className={textareaClass}
+              />
             </Field>
             <Field label="Notes" className="sm:col-span-2">
               <textarea name="notes" defaultValue={patient.notes ?? ""} className={textareaClass} />
@@ -283,16 +301,38 @@ function PatientDetail() {
             ) : (
               <ul className="divide-y divide-border">
                 {visits.map((v) => (
-                  <li key={v.id} className="flex items-center gap-3 px-5 py-3">
+                  <li
+                    key={v.id}
+                    role="button"
+                    tabIndex={0}
+                    className="flex cursor-pointer items-center gap-3 px-5 py-3 transition-colors hover:bg-muted/40"
+                    onClick={() => setSelectedAppointment(v)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        setSelectedAppointment(v);
+                      }
+                    }}
+                  >
                     <span className="w-44 text-xs text-muted-foreground">
                       {formatDateTime(v.starts_at)}
                     </span>
-                    <span className="flex-1 text-sm">
+                    <span className="flex-1 text-sm font-medium">
                       {services.data?.find((s) => s.id === v.service_id)?.name ?? "Service"}
                     </span>
                     <span className="text-xs text-muted-foreground">
                       {providers.data?.find((p) => p.id === v.provider_id)?.name ?? "—"}
                     </span>
+                    {v.cancellation_reason ? (
+                      <span className="text-[11px] text-muted-foreground">
+                        {v.cancellation_reason}
+                      </span>
+                    ) : null}
+                    {v.is_override ? (
+                      <Chip tone="progress" className="text-[10px]">
+                        Overridden
+                      </Chip>
+                    ) : null}
                     <Chip tone={appointmentTone(v.status)}>{v.status}</Chip>
                   </li>
                 ))}
@@ -381,10 +421,19 @@ function PatientDetail() {
                         );
                       }}
                     >
-                      <textarea name="addendum" required className={textareaClass} placeholder="Addendum to a locked note" />
+                      <textarea
+                        name="addendum"
+                        required
+                        className={textareaClass}
+                        placeholder="Addendum to a locked note"
+                      />
                       <div className="flex gap-2">
                         <button className={primaryButton}>Save addendum</button>
-                        <button type="button" className={ghostButton} onClick={() => setAddendumFor(null)}>
+                        <button
+                          type="button"
+                          className={ghostButton}
+                          onClick={() => setAddendumFor(null)}
+                        >
                           Cancel
                         </button>
                       </div>
@@ -425,9 +474,7 @@ function PatientDetail() {
             </button>
             <button
               className={ghostButton}
-              onClick={() =>
-                void shareLink("consent", consentTemplates.data?.[0]?.id ?? null)
-              }
+              onClick={() => void shareLink("consent", consentTemplates.data?.[0]?.id ?? null)}
             >
               <Link2 className="size-3.5" /> Send consent link
             </button>
@@ -443,7 +490,11 @@ function PatientDetail() {
                 <li key={c.id} className="flex items-center gap-3 px-5 py-3">
                   <span className="flex-1 text-sm">{c.template_name}</span>
                   {c.signature_data ? (
-                    <img src={c.signature_data} alt="Signature" className="h-7 w-20 object-contain" />
+                    <img
+                      src={c.signature_data}
+                      alt="Signature"
+                      className="h-7 w-20 object-contain"
+                    />
                   ) : null}
                   <span className="text-xs text-muted-foreground">
                     {c.signature_name} · {c.signed_via}
@@ -465,8 +516,12 @@ function PatientDetail() {
               <ul className="divide-y divide-border">
                 {bills.map((i) => (
                   <li key={i.id} className="flex items-center gap-3 px-5 py-3">
-                    <span className="w-24 text-xs tabular-nums text-muted-foreground">{i.number}</span>
-                    <span className="flex-1 text-xs text-muted-foreground">{formatDate(i.issued_at)}</span>
+                    <span className="w-24 text-xs tabular-nums text-muted-foreground">
+                      {i.number}
+                    </span>
+                    <span className="flex-1 text-xs text-muted-foreground">
+                      {formatDate(i.issued_at)}
+                    </span>
                     <span className="text-sm font-medium tabular-nums">{money(i.total)}</span>
                     <Chip tone={invoiceTone(i.status)}>{i.status}</Chip>
                   </li>
@@ -487,7 +542,15 @@ function PatientDetail() {
                 {messages.map((m) => (
                   <li key={m.id} className="px-5 py-3">
                     <div className="flex items-center gap-2">
-                      <Chip tone={m.status === "Sent" ? "completed" : m.status === "Failed" ? "overdue" : "progress"}>
+                      <Chip
+                        tone={
+                          m.status === "Sent"
+                            ? "completed"
+                            : m.status === "Failed"
+                              ? "overdue"
+                              : "progress"
+                        }
+                      >
                         {m.channel} · {m.status}
                       </Chip>
                       <span className="text-xs text-muted-foreground">
@@ -597,7 +660,12 @@ function PatientDetail() {
             <button type="button" className={ghostButton} onClick={() => setChartOpen(false)}>
               Cancel
             </button>
-            <button type="submit" form="new-chart" className={primaryButton} disabled={addRecord.isPending}>
+            <button
+              type="submit"
+              form="new-chart"
+              className={primaryButton}
+              disabled={addRecord.isPending}
+            >
               Save note
             </button>
           </DialogFooter>
@@ -659,19 +727,34 @@ function PatientDetail() {
               <SignaturePad onChange={setSignature} />
             </Field>
             <p className="text-xs text-muted-foreground">
-              Signing records the patient's name, drawn signature and a timestamp against this consent form.
+              Signing records the patient's name, drawn signature and a timestamp against this
+              consent form.
             </p>
           </form>
           <DialogFooter>
             <button type="button" className={ghostButton} onClick={() => setConsentOpen(false)}>
               Cancel
             </button>
-            <button type="submit" form="new-consent" className={primaryButton} disabled={addConsent.isPending}>
+            <button
+              type="submit"
+              form="new-consent"
+              className={primaryButton}
+              disabled={addConsent.isPending}
+            >
               Record consent
             </button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AppointmentDetailDialog
+        appointment={selectedAppointment}
+        patient={patient}
+        provider={providers.data?.find((p) => p.id === selectedAppointment?.provider_id)}
+        room={rooms.data?.find((r) => r.id === selectedAppointment?.room_id)}
+        service={services.data?.find((s) => s.id === selectedAppointment?.service_id)}
+        onClose={() => setSelectedAppointment(null)}
+      />
     </AppShell>
   );
 }
