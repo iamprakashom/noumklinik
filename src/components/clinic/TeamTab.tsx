@@ -87,7 +87,7 @@ export function TeamTab() {
   const members = team.data?.members ?? [];
   const invites = team.data?.invites ?? [];
   const myMember = members.find((m) => m.user_id === team.data?.me);
-  const isAdmin = myMember?.role === "admin";
+  const isAdmin = myMember?.role === "admin" && myMember?.status === "active";
 
   return (
     <div className="space-y-4">

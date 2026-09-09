@@ -574,6 +574,11 @@ function LeadsPage() {
                 stage: "New",
               };
 
+              if (!patients.isSuccess || !leads.isSuccess) {
+                toast.error("Unable to verify duplicate phone numbers. Please try again.");
+                return;
+              }
+
               if (phoneDigits.length === 10) {
                 const existingPatient = patients.data?.find(
                   (p) => (p.phone ?? "").replace(/\D/g, "").slice(-10) === phoneDigits,
@@ -684,7 +689,12 @@ function LeadsPage() {
             <button type="button" className={ghostButton} onClick={() => setOpen(false)}>
               Cancel
             </button>
-            <button type="submit" form="new-lead" className={primaryButton} disabled={createLead.isPending}>
+            <button
+              type="submit"
+              form="new-lead"
+              className={primaryButton}
+              disabled={createLead.isPending || !patients.isSuccess || !leads.isSuccess}
+            >
               Add lead
             </button>
           </DialogFooter>
