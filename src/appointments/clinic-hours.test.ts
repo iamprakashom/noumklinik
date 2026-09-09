@@ -9,7 +9,7 @@ import {
   DEFAULT_OPEN_TIME,
   DEFAULT_CLOSE_TIME,
 } from "../lib/clinic-hours";
-import { formatDateTime, formatTime } from "@/data/clinic";
+import { formatDateTime, formatTime, type Appointment } from "@/data/clinic";
 
 describe("getDayOfWeek", () => {
   it("returns correct day name", () => {
@@ -89,7 +89,8 @@ describe("checkAppointmentConflict", () => {
     room_id: "room1",
     patient_id: "p1",
     status: "Booked",
-  };
+  } as unknown as Appointment;
+
 
   it("returns null if no appointments or matched exclusions", () => {
     expect(
