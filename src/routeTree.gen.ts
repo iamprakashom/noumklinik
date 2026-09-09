@@ -21,6 +21,7 @@ import { Route as AuthenticatedBillingRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedInboxRouteImport } from './routes/_authenticated/inbox'
 import { Route as AuthenticatedLeadsRouteImport } from './routes/_authenticated/leads'
+import { Route as AuthenticatedRecallsRouteImport } from './routes/_authenticated/recalls'
 import { Route as AuthenticatedReportsRouteImport } from './routes/_authenticated/reports'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as PTokenRouteImport } from './routes/p/$token'
@@ -92,6 +93,11 @@ const AuthenticatedInboxRoute = AuthenticatedInboxRouteImport.update({
 const AuthenticatedLeadsRoute = AuthenticatedLeadsRouteImport.update({
   id: '/leads',
   path: '/leads',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedRecallsRoute = AuthenticatedRecallsRouteImport.update({
+  id: '/recalls',
+  path: '/recalls',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedReportsRoute = AuthenticatedReportsRouteImport.update({
@@ -166,6 +172,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/inbox': typeof AuthenticatedInboxRoute
   '/leads': typeof AuthenticatedLeadsRoute
+  '/recalls': typeof AuthenticatedRecallsRoute
   '/reports': typeof AuthenticatedReportsRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/p/$token': typeof PTokenRoute
@@ -190,6 +197,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/inbox': typeof AuthenticatedInboxRoute
   '/leads': typeof AuthenticatedLeadsRoute
+  '/recalls': typeof AuthenticatedRecallsRoute
   '/reports': typeof AuthenticatedReportsRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/p/$token': typeof PTokenRoute
@@ -216,6 +224,7 @@ export interface FileRoutesById {
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/inbox': typeof AuthenticatedInboxRoute
   '/_authenticated/leads': typeof AuthenticatedLeadsRoute
+  '/_authenticated/recalls': typeof AuthenticatedRecallsRoute
   '/_authenticated/reports': typeof AuthenticatedReportsRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/p/$token': typeof PTokenRoute
@@ -242,6 +251,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/inbox'
     | '/leads'
+    | '/recalls'
     | '/reports'
     | '/settings'
     | '/p/$token'
@@ -266,6 +276,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/inbox'
     | '/leads'
+    | '/recalls'
     | '/reports'
     | '/settings'
     | '/p/$token'
@@ -291,6 +302,7 @@ export interface FileRouteTypes {
     | '/_authenticated/dashboard'
     | '/_authenticated/inbox'
     | '/_authenticated/leads'
+    | '/_authenticated/recalls'
     | '/_authenticated/reports'
     | '/_authenticated/settings'
     | '/p/$token'
@@ -406,6 +418,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedLeadsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/recalls': {
+      id: '/_authenticated/recalls'
+      path: '/recalls'
+      fullPath: '/recalls'
+      preLoaderRoute: typeof AuthenticatedRecallsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/reports': {
       id: '/_authenticated/reports'
       path: '/reports'
@@ -493,6 +512,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedInboxRoute: typeof AuthenticatedInboxRoute
   AuthenticatedLeadsRoute: typeof AuthenticatedLeadsRoute
+  AuthenticatedRecallsRoute: typeof AuthenticatedRecallsRoute
   AuthenticatedReportsRoute: typeof AuthenticatedReportsRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedPatientsPatientIdRoute: typeof AuthenticatedPatientsPatientIdRoute
@@ -506,6 +526,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedInboxRoute: AuthenticatedInboxRoute,
   AuthenticatedLeadsRoute: AuthenticatedLeadsRoute,
+  AuthenticatedRecallsRoute: AuthenticatedRecallsRoute,
   AuthenticatedReportsRoute: AuthenticatedReportsRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedPatientsPatientIdRoute: AuthenticatedPatientsPatientIdRoute,

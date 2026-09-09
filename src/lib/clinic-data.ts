@@ -111,10 +111,33 @@ export type PatientFeedback = {
 export const usePatientFeedback = () =>
   useList<PatientFeedback>("patient_feedback", "patient_feedback", "created_at", false);
 
+/** A repeat visit the clinic owes the patient — created when a course treatment completes. */
+export type PatientRecall = {
+  id: string;
+  clinic_id: string;
+  patient_id: string;
+  service_id: string | null;
+  service_name: string;
+  source_appointment_id: string | null;
+  booked_appointment_id: string | null;
+  due_on: string;
+  status: string;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export const usePatientRecalls = () =>
+  useList<PatientRecall>("patient_recalls", "patient_recalls", "due_on");
+
+
+
 
 const RELATED: Record<string, string[]> = {
   patients: ["patients"],
-  appointments: ["appointments", "outbox", "appointment_requests"],
+  appointments: ["appointments", "outbox", "appointment_requests", "patient_recalls"],
+  patient_recalls: ["patient_recalls", "appointments"],
+
   appointment_requests: ["appointment_requests", "appointments"],
   leads: ["leads"],
   treatment_records: ["treatment_records"],
