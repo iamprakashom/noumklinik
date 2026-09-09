@@ -574,12 +574,12 @@ function LeadsPage() {
                 stage: "New",
               };
 
-              if (!patients.isSuccess || !leads.isSuccess) {
-                toast.error("Unable to verify duplicate phone numbers. Please try again.");
-                return;
-              }
-
               if (phoneDigits.length === 10) {
+                if (!patients.isSuccess || !leads.isSuccess) {
+                  toast.error("Unable to verify duplicate phone numbers. Please try again.");
+                  return;
+                }
+
                 const existingPatient = patients.data?.find(
                   (p) => (p.phone ?? "").replace(/\D/g, "").slice(-10) === phoneDigits,
                 );
@@ -693,7 +693,7 @@ function LeadsPage() {
               type="submit"
               form="new-lead"
               className={primaryButton}
-              disabled={createLead.isPending || !patients.isSuccess || !leads.isSuccess}
+              disabled={createLead.isPending}
             >
               Add lead
             </button>
