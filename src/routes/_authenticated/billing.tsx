@@ -59,6 +59,12 @@ type Line = { description: string; quantity: number; unit_price: number; gst_rat
 
 const emptyLine: Line = { description: "", quantity: 1, unit_price: 0, gst_rate: 18, sac_code: "999722" };
 
+/** Modes a clinic actually collects money in — the day-close report groups on these. */
+export const PAYMENT_METHODS = ["Cash", "UPI", "Card", "Bank transfer", "Cheque"] as const;
+
+const todayISO = () => new Date().toISOString().slice(0, 10);
+
+
 function BillingPage() {
   const [open, setOpen] = useState(false);
   const [lines, setLines] = useState<Line[]>([{ ...emptyLine }]);
@@ -67,6 +73,12 @@ function BillingPage() {
   const [pos, setPos] = useState("");
   const [preview, setPreview] = useState<Invoice | null>(null);
   const [sellOpen, setSellOpen] = useState(false);
+  const [payFor, setPayFor] = useState<Invoice | null>(null);
+  const [payAmount, setPayAmount] = useState<number | "">("");
+  const [payMethod, setPayMethod] = useState<string>(PAYMENT_METHODS[0]!);
+  const [payReference, setPayReference] = useState("");
+  const [payDate, setPayDate] = useState(todayISO());
+
 
   const invoices = useInvoices();
   const items = useInvoiceItems();
@@ -90,10 +102,67 @@ function BillingPage() {
     .reduce((s, i) => s + Number(i.total), 0);
   const collected = (payments.data ?? []).reduce((s, p) => s + Number(p.amount), 0);
 
+  /** Amount already settled against an invoice, so we can offer part payments. */
+  const paidOn = (invoiceId: string) =>
+    (payments.data ?? [])
+      .filter((p) => p.invoice_id === invoiceId && p.status !== "Refunded")
+      .reduce((s, p) => s + Number(p.amount), 0);
+
+  const balanceOf = (inv: Invoice) => Math.max(0, Number(inv.total) - paidOn(inv.id));
+
+  const openPayment = (inv: Invoice) => {
+    setPayFor(inv);
+    setPayAmount(Number(balanceOf(inv).toFixed(2)));
+    setPayMethod(PAYMENT_METHODS[0]!);
+    setPayReference("");
+    setPayDate(todayISO());
+  };
+
+  const submitPayment = () => {
+    if (!payFor) return;
+    const amount = payAmount === "" ? 0 : Number(payAmount);
+    if (amount <= 0) {
+      toast.error("Enter an amount greater than zero");
+      return;
+    }
+    const invoice = payFor;
+    addPayment.mutate(
+      {
+        invoice_id: invoice.id,
+        amount,
+        method: payMethod,
+        status: "Paid",
+        reference: payReference.trim() || null,
+        paid_at: new Date(`${payDate}T${new Date().toTimeString().slice(0, 8)}`).toISOString(),
+      },
+      {
+        onSuccess: () => {
+          const settled = paidOn(invoice.id) + amount;
+          const fullySettled = settled >= Number(invoice.total) - 0.5;
+          setPayFor(null);
+          if (fullySettled) {
+            updateInvoice.mutate(
+              { id: invoice.id, values: { status: "Paid" } },
+              { onSuccess: () => toast.success(`${payMethod} payment recorded — invoice settled`) },
+            );
+          } else {
+            toast.success(
+              `${payMethod} payment of ${money(amount)} recorded — ${money(
+                Number(invoice.total) - settled,
+              )} still due`,
+            );
+          }
+        },
+        onError: (e) => toast.error(e.message),
+      },
+    );
+  };
+
   const patientOf = (id: string) => {
     const p = patients.data?.find((x) => x.id === id);
     return p ? patientName(p) : "Unknown";
   };
+
 
   const selectedPatient = patients.data?.find((p) => p.id === patientId) ?? null;
   const clinicState = clinic.data?.state ?? "";
@@ -292,27 +361,11 @@ function BillingPage() {
                             </button>
                             <button
                               className={ghostButton}
-                              onClick={() =>
-                                addPayment.mutate(
-                                  {
-                                    invoice_id: inv.id,
-                                    amount: Number(inv.total),
-                                    method: "Cash",
-                                    status: "Paid",
-                                  },
-                                  {
-                                    onSuccess: () =>
-                                      updateInvoice.mutate(
-                                        { id: inv.id, values: { status: "Paid" } },
-                                        { onSuccess: () => toast.success("Payment recorded") },
-                                      ),
-                                    onError: (e) => toast.error(e.message),
-                                  },
-                                )
-                              }
+                              onClick={() => openPayment(inv)}
                             >
                               Record payment
                             </button>
+
                           </>
                         ) : null}
                         {inv.doc_type === "invoice" && inv.status !== "Void" ? (
@@ -348,6 +401,84 @@ function BillingPage() {
       </div>
 
       <SellPackageDialog open={sellOpen} onOpenChange={setSellOpen} />
+
+      <Dialog open={Boolean(payFor)} onOpenChange={(v) => !v && setPayFor(null)}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Record payment</DialogTitle>
+          </DialogHeader>
+          {payFor ? (
+            <form
+              className="grid gap-4"
+              onSubmit={(e) => {
+                e.preventDefault();
+                submitPayment();
+              }}
+            >
+              <div className="rounded-lg border border-border bg-secondary/40 px-3 py-2 text-xs text-muted-foreground">
+                <div className="font-medium text-foreground">{payFor.number}</div>
+                <div>
+                  {patientOf(payFor.patient_id)} · Invoice {money(payFor.total)} · Balance{" "}
+                  {money(balanceOf(payFor))}
+                </div>
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field label="Amount received">
+                  <input
+                    required
+                    type="number"
+                    min={1}
+                    step="0.01"
+                    className={inputClass}
+                    value={payAmount}
+                    onChange={(e) =>
+                      setPayAmount(e.target.value === "" ? "" : Number(e.target.value))
+                    }
+                  />
+                </Field>
+                <Field label="Payment mode">
+                  <select
+                    className={inputClass}
+                    value={payMethod}
+                    onChange={(e) => setPayMethod(e.target.value)}
+                  >
+                    {PAYMENT_METHODS.map((m) => (
+                      <option key={m} value={m}>
+                        {m}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+                <Field label="Date">
+                  <input
+                    type="date"
+                    className={inputClass}
+                    value={payDate}
+                    onChange={(e) => setPayDate(e.target.value)}
+                  />
+                </Field>
+                <Field label="Reference (optional)">
+                  <input
+                    className={inputClass}
+                    placeholder="UPI ref / cheque no."
+                    value={payReference}
+                    onChange={(e) => setPayReference(e.target.value)}
+                  />
+                </Field>
+              </div>
+              <DialogFooter>
+                <button type="button" className={ghostButton} onClick={() => setPayFor(null)}>
+                  Cancel
+                </button>
+                <button type="submit" className={primaryButton} disabled={addPayment.isPending}>
+                  Save payment
+                </button>
+              </DialogFooter>
+            </form>
+          ) : null}
+        </DialogContent>
+      </Dialog>
+
 
       <InvoiceDocument
         invoice={preview}

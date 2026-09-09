@@ -2,6 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { AppShell } from "@/components/clinic/AppShell";
 import { Chip, EmptyState, Field, Panel, StatCard, inputClass } from "@/components/clinic/bits";
+import { GstFilingTab } from "@/components/clinic/GstFilingTab";
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatDate, formatDateTime, money, patientName } from "@/data/clinic";
 import {
@@ -285,7 +287,13 @@ function ReportsPage() {
           <TabsTrigger value="incentives">Doctor & service revenue</TabsTrigger>
           <TabsTrigger value="feedback">Feedback & reviews</TabsTrigger>
           <TabsTrigger value="cancellations">Cancellations</TabsTrigger>
+          <TabsTrigger value="gst">GST filing</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="gst">
+          <GstFilingTab />
+        </TabsContent>
+
 
         {/* --------------------------- Day close --------------------------- */}
         <TabsContent value="day-close" className="print-scope mt-4 space-y-6">
