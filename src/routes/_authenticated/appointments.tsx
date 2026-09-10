@@ -26,6 +26,8 @@ import {
   appointmentTone,
   cleanPhoneDigits,
   formatDateTime,
+  handlePhoneInput,
+  handlePhonePaste,
   patientName,
   temperatureTone,
   toLocalInputValue,
@@ -728,13 +730,11 @@ function AppointmentsPage() {
                       name="new_patient_phone"
                       type="tel"
                       inputMode="numeric"
-                      maxLength={10}
                       placeholder="10-digit mobile number"
                       required
                       className={inputClass}
-                      onInput={(e) => {
-                        e.currentTarget.value = cleanPhoneDigits(e.currentTarget.value);
-                      }}
+                      onPaste={handlePhonePaste}
+                      onInput={handlePhoneInput}
                     />
                   </Field>
                 </div>

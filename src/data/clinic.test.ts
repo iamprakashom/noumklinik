@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, setSystemTime } from "bun:test";
-import { age, cleanPhoneDigits, isFutureDate, todayDateStr } from "./clinic";
+import { age, cleanPhoneDigits, handlePhoneInput, handlePhonePaste, isFutureDate, todayDateStr } from "./clinic";
 
 afterEach(() => {
   // Restore the real clock so a mocked time never leaks between test files.
@@ -18,9 +18,14 @@ describe("cleanPhoneDigits", () => {
   });
 
   it("strips the +91 country code from pasted numbers", () => {
+    expect(cleanPhoneDigits("+919876543210")).toBe("9876543210");
     expect(cleanPhoneDigits("+91 98765 43210")).toBe("9876543210");
     expect(cleanPhoneDigits("+91 98765-43210")).toBe("9876543210");
     expect(cleanPhoneDigits("919876543210")).toBe("9876543210");
+  });
+
+  it("does not strip 91 when typing an 11th digit on a number starting with 91", () => {
+    expect(cleanPhoneDigits("91987654321")).toBe("9198765432");
   });
 
   it("strips a leading 0 STD prefix", () => {
@@ -52,6 +57,98 @@ describe("cleanPhoneDigits", () => {
     expect(cleanPhoneDigits("")).toBe("");
     expect(cleanPhoneDigits(null)).toBe("");
     expect(cleanPhoneDigits(undefined)).toBe("");
+  });
+});
+
+describe("handlePhonePaste", () => {
+  it("strips +91 and formats to 10 digits on paste", () => {
+    let prevented = false;
+    const target = { value: "", selectionStart: 0, selectionEnd: 0 };
+    handlePhonePaste({
+      preventDefault: () => {
+        prevented = true;
+      },
+      clipboardData: { getData: () => "+919876543210" },
+      currentTarget: target,
+    });
+    expect(prevented).toBe(true);
+    expect(target.value).toBe("9876543210");
+  });
+
+  it("handles pasting with spaces, dashes, and brackets", () => {
+    let prevented = false;
+    const target = { value: "", selectionStart: 0, selectionEnd: 0 };
+    handlePhonePaste({
+      preventDefault: () => {
+        prevented = true;
+      },
+      clipboardData: { getData: () => "+91 (98765) 432-10" },
+      currentTarget: target,
+    });
+    expect(prevented).toBe(true);
+    expect(target.value).toBe("9876543210");
+  });
+
+  it("caps numbers exceeding 10 digits on paste", () => {
+    let prevented = false;
+    const target = { value: "", selectionStart: 0, selectionEnd: 0 };
+    handlePhonePaste({
+      preventDefault: () => {
+        prevented = true;
+      },
+      clipboardData: { getData: () => "98765432109999" },
+      currentTarget: target,
+    });
+    expect(prevented).toBe(true);
+    expect(target.value).toBe("9876543210");
+  });
+
+  it("replaces highlighted/selected text when pasting", () => {
+    let prevented = false;
+    const target = { value: "0000000000", selectionStart: 0, selectionEnd: 10 };
+    handlePhonePaste({
+      preventDefault: () => {
+        prevented = true;
+      },
+      clipboardData: { getData: () => "+919876543210" },
+      currentTarget: target,
+    });
+    expect(prevented).toBe(true);
+    expect(target.value).toBe("9876543210");
+  });
+
+  it("strips leading 0 STD code when pasted", () => {
+    let prevented = false;
+    const target = { value: "", selectionStart: 0, selectionEnd: 0 };
+    handlePhonePaste({
+      preventDefault: () => {
+        prevented = true;
+      },
+      clipboardData: { getData: () => "098765 43210" },
+      currentTarget: target,
+    });
+    expect(prevented).toBe(true);
+    expect(target.value).toBe("9876543210");
+  });
+});
+
+describe("handlePhoneInput", () => {
+  it("caps input at 10 digits on typing", () => {
+    const target = { value: "98765432101234" };
+    handlePhoneInput({ currentTarget: target });
+    expect(target.value).toBe("9876543210");
+  });
+
+  it("strips non-numeric characters typed into the field", () => {
+    const target = { value: "98765abc!@#" };
+    handlePhoneInput({ currentTarget: target });
+    expect(target.value).toBe("98765");
+  });
+
+  it("leaves a valid 10-digit number intact", () => {
+    const target = { value: "9876543210" };
+    handlePhoneInput({ currentTarget: target });
+    expect(target.value).toBe("9876543210");
   });
 });
 

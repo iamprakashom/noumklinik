@@ -34,6 +34,8 @@ import {
   age,
   cleanPhoneDigits,
   formatDate,
+  handlePhoneInput,
+  handlePhonePaste,
   initials,
   isFutureDate,
   patientName,
@@ -115,7 +117,7 @@ function PatientsPage() {
   function performInsert(values: PatientInsertValues) {
     createPatient.mutate(values, {
       onSuccess: () => {
-        toast.success("Patient added");
+        toast.success("Patient created");
         setDupeMatch(null);
         setOpen(false);
       },
@@ -274,12 +276,10 @@ function PatientsPage() {
                 name="phone"
                 type="tel"
                 inputMode="numeric"
-                maxLength={10}
                 placeholder="10-digit mobile number"
                 className={inputClass}
-                onInput={(e) => {
-                  e.currentTarget.value = cleanPhoneDigits(e.currentTarget.value);
-                }}
+                onPaste={handlePhonePaste}
+                onInput={handlePhoneInput}
               />
             </Field>
             <Field label="Date of birth">
@@ -327,7 +327,7 @@ function PatientsPage() {
               className={primaryButton}
               disabled={createPatient.isPending}
             >
-              Add patient
+              Create patient
             </button>
           </DialogFooter>
         </DialogContent>

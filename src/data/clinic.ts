@@ -248,12 +248,40 @@ export function renderTemplate(body: string, vars: Record<string, string>) {
 
 export function cleanPhoneDigits(val: string | null | undefined): string {
   if (!val) return "";
-  let digits = String(val).replace(/\D/g, "");
-  if (digits.length > 10 && digits.startsWith("91")) {
+  let s = String(val).trim();
+  if (/^\+\s*91/.test(s)) {
+    s = s.replace(/^\+\s*91\s*/, "");
+  } else if (s.startsWith("+")) {
+    s = s.replace(/^\+\s*/, "");
+  }
+  let digits = s.replace(/\D/g, "");
+  if (digits.length >= 12 && digits.startsWith("91")) {
     digits = digits.slice(2);
   }
   if (digits.length > 10 && digits.startsWith("0")) {
     digits = digits.slice(1);
   }
   return digits.slice(0, 10);
+}
+
+export function handlePhonePaste(e: {
+  preventDefault: () => void;
+  clipboardData: { getData: (format: string) => string };
+  currentTarget: {
+    value: string;
+    selectionStart?: number | null;
+    selectionEnd?: number | null;
+  };
+}) {
+  e.preventDefault();
+  const text = e.clipboardData.getData("text");
+  const target = e.currentTarget;
+  const start = target.selectionStart ?? 0;
+  const end = target.selectionEnd ?? target.value.length;
+  const combined = target.value.slice(0, start) + text + target.value.slice(end);
+  target.value = cleanPhoneDigits(combined);
+}
+
+export function handlePhoneInput(e: { currentTarget: { value: string } }) {
+  e.currentTarget.value = cleanPhoneDigits(e.currentTarget.value);
 }

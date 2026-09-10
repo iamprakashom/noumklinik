@@ -31,6 +31,8 @@ import {
   cleanPhoneDigits,
   formatDate,
   formatDateTime,
+  handlePhoneInput,
+  handlePhonePaste,
   initials,
   invoiceTone,
   isFutureDate,
@@ -253,13 +255,11 @@ function PatientDetail() {
                 name="phone"
                 type="tel"
                 inputMode="numeric"
-                maxLength={10}
                 placeholder="10-digit mobile number"
                 defaultValue={patient.phone ?? ""}
                 className={inputClass}
-                onInput={(e) => {
-                  e.currentTarget.value = cleanPhoneDigits(e.currentTarget.value);
-                }}
+                onPaste={handlePhonePaste}
+                onInput={handlePhoneInput}
               />
             </Field>
             <Field label="Date of birth">

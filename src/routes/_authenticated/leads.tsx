@@ -23,12 +23,14 @@ import {
   age,
   cleanPhoneDigits,
   daysSince,
-  isFutureDate,
-  todayDateStr,
   formatDate,
+  handlePhoneInput,
+  handlePhonePaste,
+  isFutureDate,
   leadTone,
   patientName,
   temperatureTone,
+  todayDateStr,
   toLocalInputValue,
 } from "@/data/clinic";
 import type { Lead } from "@/data/clinic";
@@ -581,6 +583,10 @@ function LeadsPage() {
                 return;
               }
               const phone = cleanPhoneDigits(String(fd.get("phone") || ""));
+              if (phone && phone.length !== 10) {
+                toast.error("Phone number must be 10 digits");
+                return;
+              }
               const payload = {
                 full_name: String(fd.get("full_name")),
                 email: String(fd.get("email")) || null,
@@ -646,12 +652,10 @@ function LeadsPage() {
                 name="phone"
                 type="tel"
                 inputMode="numeric"
-                maxLength={10}
                 placeholder="10-digit mobile number"
                 className={inputClass}
-                onInput={(e) => {
-                  e.currentTarget.value = cleanPhoneDigits(e.currentTarget.value);
-                }}
+                onPaste={handlePhonePaste}
+                onInput={handlePhoneInput}
               />
             </Field>
             <Field label="Source group">

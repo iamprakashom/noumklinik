@@ -27,7 +27,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { money } from "@/data/clinic";
+import { cleanPhoneDigits, handlePhoneInput, handlePhonePaste, money } from "@/data/clinic";
 import type { ConsentTemplate, Provider, Room, Service } from "@/data/clinic";
 import {
   useConsentTemplates,
@@ -274,6 +274,7 @@ function SettingsPage() {
                       <p className="text-xs text-muted-foreground">
                         {p.title ?? "Provider"}
                         {p.email ? ` · ${p.email}` : ""}
+                        {p.phone ? ` · ${p.phone}` : ""}
                       </p>
                     </div>
                     <button
@@ -546,11 +547,16 @@ function SettingsPage() {
                   toast.error(`Provider "${name}" already exists`);
                   return;
                 }
+                const phone = cleanPhoneDigits(String(fd.get("phone") || ""));
+                if (phone && phone.length !== 10) {
+                  toast.error("Phone number must be 10 digits");
+                  return;
+                }
                 const values = {
                   name,
                   title: String(fd.get("title")) || null,
                   email: String(fd.get("email")) || null,
-                  phone: String(fd.get("phone")) || null,
+                  phone: phone || null,
                 };
                 if (editingProvider) {
                   updateProvider.mutate(
@@ -742,8 +748,13 @@ function SettingsPage() {
                 <Field label="Phone" className="sm:col-span-2">
                   <input
                     name="phone"
+                    type="tel"
+                    inputMode="numeric"
+                    placeholder="10-digit mobile number"
                     defaultValue={editingProvider?.phone ?? ""}
                     className={inputClass}
+                    onPaste={handlePhonePaste}
+                    onInput={handlePhoneInput}
                   />
                 </Field>
               </>
