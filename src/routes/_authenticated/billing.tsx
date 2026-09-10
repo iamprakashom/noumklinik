@@ -2,7 +2,15 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { FileText, Link2, Package as PackageIcon, Plus, Sparkles, Trash2, Undo2 } from "lucide-react";
+import {
+  FileText,
+  Link2,
+  Package as PackageIcon,
+  Plus,
+  Sparkles,
+  Trash2,
+  Undo2,
+} from "lucide-react";
 import { AppShell, ghostButton, primaryButton } from "@/components/clinic/AppShell";
 import { Chip, EmptyState, Field, StatCard, inputClass } from "@/components/clinic/bits";
 import { InvoiceDocument } from "@/components/clinic/InvoiceDocument";
@@ -48,7 +56,8 @@ export const Route = createFileRoute("/_authenticated/billing")({
       { property: "og:title", content: "Billing — Noum Klinik" },
       {
         property: "og:description",
-        content: "GST invoices, credit notes, payment links and outstanding balances for the clinic.",
+        content:
+          "GST invoices, credit notes, payment links and outstanding balances for the clinic.",
       },
     ],
   }),
@@ -63,13 +72,18 @@ type Line = {
   sac_code: string;
 };
 
-const emptyLine: Line = { description: "", quantity: 1, unit_price: 0, gst_rate: 18, sac_code: "999722" };
+const emptyLine: Line = {
+  description: "",
+  quantity: 1,
+  unit_price: 0,
+  gst_rate: 18,
+  sac_code: "999722",
+};
 
 /** Modes a clinic actually collects money in — the day-close report groups on these. */
 export const PAYMENT_METHODS = ["Cash", "UPI", "Card", "Bank transfer", "Cheque"] as const;
 
 const todayISO = () => new Date().toISOString().slice(0, 10);
-
 
 function BillingPage() {
   const [open, setOpen] = useState(false);
@@ -84,7 +98,8 @@ function BillingPage() {
   const [payMethod, setPayMethod] = useState<string>(PAYMENT_METHODS[0]!);
   const [payReference, setPayReference] = useState("");
   const [payDate, setPayDate] = useState(todayISO());
-
+  const [creditFor, setCreditFor] = useState<Invoice | null>(null);
+  const [creditReason, setCreditReason] = useState("");
 
   const invoices = useInvoices();
   const items = useInvoiceItems();
@@ -122,6 +137,27 @@ function BillingPage() {
     setPayMethod(PAYMENT_METHODS[0]!);
     setPayReference("");
     setPayDate(todayISO());
+  };
+
+  const submitCreditNote = () => {
+    const reason = creditReason.trim();
+    if (!reason || !creditFor || creditNote.isPending) return;
+    const invoice = creditFor;
+    creditNote.mutate(
+      {
+        invoice,
+        items: (items.data ?? []).filter((i) => i.invoice_id === invoice.id),
+        reason,
+      },
+      {
+        onSuccess: () => {
+          toast.success("Credit note issued");
+          setCreditFor(null);
+          setCreditReason("");
+        },
+        onError: (e) => toast.error(e.message),
+      },
+    );
   };
 
   const submitPayment = () => {
@@ -168,7 +204,6 @@ function BillingPage() {
     const p = patients.data?.find((x) => x.id === id);
     return p ? patientName(p) : "Unknown";
   };
-
 
   const selectedPatient = patients.data?.find((p) => p.id === patientId) ?? null;
   const clinicState = clinic.data?.state ?? "";
@@ -273,7 +308,11 @@ function BillingPage() {
           value={money(outstanding)}
           hint={`${all.filter((i) => i.status === "Open").length} open invoices`}
         />
-        <StatCard label="Collected" value={money(collected)} hint={`${payments.data?.length ?? 0} payments`} />
+        <StatCard
+          label="Collected"
+          value={money(collected)}
+          hint={`${payments.data?.length ?? 0} payments`}
+        />
         <StatCard label="Invoices" value={all.length} />
         <StatCard
           label="Prepaid liability"
@@ -376,32 +415,17 @@ function BillingPage() {
                             >
                               <Link2 className="size-3.5" /> Payment link
                             </button>
-                            <button
-                              className={ghostButton}
-                              onClick={() => openPayment(inv)}
-                            >
+                            <button className={ghostButton} onClick={() => openPayment(inv)}>
                               Record payment
                             </button>
-
                           </>
                         ) : null}
                         {inv.doc_type === "invoice" && inv.status !== "Void" ? (
                           <button
                             className={ghostButton}
                             onClick={() => {
-                              const reason = window.prompt("Reason for the credit note?");
-                              if (!reason) return;
-                              creditNote.mutate(
-                                {
-                                  invoice: inv,
-                                  items: (items.data ?? []).filter((i) => i.invoice_id === inv.id),
-                                  reason,
-                                },
-                                {
-                                  onSuccess: () => toast.success("Credit note issued"),
-                                  onError: (e) => toast.error(e.message),
-                                },
-                              );
+                              setCreditFor(inv);
+                              setCreditReason("");
                             }}
                           >
                             <Undo2 className="size-3.5" /> Credit note
@@ -496,6 +520,61 @@ function BillingPage() {
         </DialogContent>
       </Dialog>
 
+      <Dialog
+        open={creditFor !== null}
+        onOpenChange={(o) => {
+          if (!o) {
+            setCreditFor(null);
+            setCreditReason("");
+          }
+        }}
+      >
+        <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              Issue credit note{creditFor ? ` for ${creditFor.number}` : ""}?
+            </DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            This voids the original invoice and issues a matching credit note. Reason is required.
+          </p>
+          <Field label="Reason">
+            <input
+              autoFocus
+              className={inputClass}
+              placeholder="Reason for the credit note"
+              value={creditReason}
+              onChange={(e) => setCreditReason(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  submitCreditNote();
+                }
+              }}
+            />
+          </Field>
+          <DialogFooter>
+            <button
+              type="button"
+              className={ghostButton}
+              onClick={() => {
+                setCreditFor(null);
+                setCreditReason("");
+              }}
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              className={primaryButton}
+              disabled={!creditReason.trim() || creditNote.isPending}
+              onClick={submitCreditNote}
+            >
+              Issue credit note
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <InvoiceDocument
         invoice={preview}
@@ -570,7 +649,10 @@ function BillingPage() {
             <div className="grid gap-2">
               <span className="text-xs font-medium text-muted-foreground">Line items</span>
               {lines.map((line, idx) => (
-                <div key={idx} className="grid grid-cols-2 gap-2 sm:grid-cols-[1fr_60px_90px_70px_auto] sm:items-center">
+                <div
+                  key={idx}
+                  className="grid grid-cols-2 gap-2 sm:grid-cols-[1fr_60px_90px_70px_auto] sm:items-center"
+                >
                   <select
                     value={line.description}
                     onChange={(e) => {

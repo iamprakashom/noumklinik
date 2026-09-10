@@ -15,13 +15,16 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
-  LEAD_SOURCES,
   LEAD_SOURCE_GROUPS,
   LEAD_STAGES,
   SOURCE_GROUP_BY_SOURCE,
   TEMPERATURES,
   TEMPERATURE_HINT,
+  age,
+  cleanPhoneDigits,
   daysSince,
+  isFutureDate,
+  todayDateStr,
   formatDate,
   leadTone,
   patientName,
@@ -113,8 +116,7 @@ function LeadsPage() {
   // Any filter/search/sort change resets to page 1.
   const setSearch = (patch: Partial<typeof leadsSearchDefaults>) =>
     void navigate({ search: (prev) => ({ ...prev, page: 1, ...patch }), replace: true });
-  const setPage = (page: number) =>
-    void navigate({ search: (prev) => ({ ...prev, page }) });
+  const setPage = (page: number) => void navigate({ search: (prev) => ({ ...prev, page }) });
 
   const query = search.q;
   const stage = search.stage;
@@ -122,9 +124,9 @@ function LeadsPage() {
   const group = search.group;
   const doctor = search.doctor;
   const followUp = search.followUp;
-  const sort = (["oldest", "newest", "follow_up"].includes(search.sort)
-    ? search.sort
-    : "oldest") as SortKey;
+  const sort = (
+    ["oldest", "newest", "follow_up"].includes(search.sort) ? search.sort : "oldest"
+  ) as SortKey;
 
   const leads = useLeads();
   const patients = usePatients();
@@ -157,12 +159,9 @@ function LeadsPage() {
         (stage === "all" || l.stage === stage) &&
         (treatment === "all" || l.service_id === treatment) &&
         (group === "all" || sourceGroupOf(l) === group) &&
-        (doctor === "all" ||
-          (doctor === "unassigned" ? !l.owner_id : l.owner_id === doctor)) &&
-        (followUp === "all" ||
-          (followUp === "overdue" ? isOverdueLead(l) : isScheduledLead(l))) &&
-        (!q ||
-          [l.full_name, l.phone, l.email].some((v) => v?.toLowerCase().includes(q))),
+        (doctor === "all" || (doctor === "unassigned" ? !l.owner_id : l.owner_id === doctor)) &&
+        (followUp === "all" || (followUp === "overdue" ? isOverdueLead(l) : isScheduledLead(l))) &&
+        (!q || [l.full_name, l.phone, l.email].some((v) => v?.toLowerCase().includes(q))),
     );
     return [...filtered].sort((a, b) => {
       if (sort === "newest") return b.created_at.localeCompare(a.created_at);
@@ -180,11 +179,9 @@ function LeadsPage() {
   const page = Math.min(Math.max(1, search.page), pageCount);
   const pageRows = rows.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
-
   const providerName = (id: string | null) =>
     providers.data?.find((p) => p.id === id)?.name ?? "Unassigned";
-  const serviceName = (id: string | null) =>
-    services.data?.find((s) => s.id === id)?.name ?? "—";
+  const serviceName = (id: string | null) => services.data?.find((s) => s.id === id)?.name ?? "—";
 
   const setField = (id: string, values: Record<string, unknown>) =>
     updateLead.mutate({ id, values }, { onSuccess: () => toast.success("Lead updated") });
@@ -228,9 +225,7 @@ function LeadsPage() {
             {overdue.slice(0, 3).map((l) => (
               <li key={l.id} className="flex items-center justify-between text-xs">
                 <span>{l.full_name}</span>
-                <span className="text-status-overdue">
-                  due {formatDate(l.next_follow_up_at)}
-                </span>
+                <span className="text-status-overdue">due {formatDate(l.next_follow_up_at)}</span>
               </li>
             ))}
             {overdue.length === 0 ? (
@@ -260,14 +255,20 @@ function LeadsPage() {
         </button>
       </div>
 
-
       <LeadsToolbar
         query={query}
         onQueryChange={(q) => setSearch({ q })}
         shown={rows.length}
         total={all.length}
         onClearAll={() =>
-          setSearch({ q: "", stage: "all", treatment: "all", group: "all", doctor: "all", followUp: "all" })
+          setSearch({
+            q: "",
+            stage: "all",
+            treatment: "all",
+            group: "all",
+            doctor: "all",
+            followUp: "all",
+          })
         }
         filters={[
           {
@@ -328,7 +329,6 @@ function LeadsPage() {
         }}
       />
 
-
       {rows.length === 0 ? (
         <div className="mt-4">
           <EmptyState>No leads match these filters.</EmptyState>
@@ -356,13 +356,20 @@ function LeadsPage() {
                   <tr key={l.id} className="transition-colors hover:bg-secondary/60">
                     <td className="px-5 py-3">
                       <p className="font-medium">{l.full_name}</p>
-                      <p className="text-xs text-muted-foreground">{l.phone ?? l.email ?? "—"}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {l.birth_date ? `${age(l.birth_date)} yrs · ` : ""}
+                        {l.phone ?? l.email ?? "—"}
+                      </p>
                     </td>
                     <td className="px-5 py-3 text-xs text-muted-foreground">
                       {sourceGroupOf(l)}
-                      <span className="block">{l.source}</span>
+                      {l.source && l.source !== sourceGroupOf(l) ? (
+                        <span className="block">{l.source}</span>
+                      ) : null}
                     </td>
-                    <td className="px-5 py-3 text-xs">{l.service_id ? serviceName(l.service_id) : (l.interest ?? "—")}</td>
+                    <td className="px-5 py-3 text-xs">
+                      {l.service_id ? serviceName(l.service_id) : (l.interest ?? "—")}
+                    </td>
                     <td className="px-5 py-3">
                       <select
                         value={l.temperature}
@@ -416,7 +423,7 @@ function LeadsPage() {
                         value={l.next_follow_up_at ? l.next_follow_up_at.slice(0, 10) : ""}
                         onChange={(e) => {
                           const val = e.target.value;
-                          if (val && val<toLocalInputValue(new Date()).slice(0, 10)) {
+                          if (val && val < toLocalInputValue(new Date()).slice(0, 10)) {
                             toast.error("Follow-up date cannot be in the past");
                             return;
                           }
@@ -459,6 +466,7 @@ function LeadsPage() {
                 <div>
                   <p className="text-sm font-medium">{l.full_name}</p>
                   <p className="text-xs text-muted-foreground">
+                    {l.birth_date ? `${age(l.birth_date)} yrs · ` : ""}
                     {l.service_id ? serviceName(l.service_id) : (l.interest ?? "General enquiry")}
                   </p>
                 </div>
@@ -467,7 +475,9 @@ function LeadsPage() {
               <div className="mt-3 flex flex-wrap items-center gap-1.5">
                 <Chip tone={leadTone(l.stage)}>{l.stage}</Chip>
                 <Chip>{sourceGroupOf(l)}</Chip>
-                <span className="text-[11px] text-muted-foreground">{daysSince(l.created_at)}d old</span>
+                <span className="text-[11px] text-muted-foreground">
+                  {daysSince(l.created_at)}d old
+                </span>
               </div>
               <p className="mt-2 text-[11px] text-muted-foreground">
                 {providerName(l.owner_id)} ·{" "}
@@ -494,9 +504,13 @@ function LeadsPage() {
       )}
 
       {rows.length > 0 && pageCount > 1 ? (
-        <nav aria-label="Leads pages" className="mt-4 flex flex-wrap items-center justify-between gap-3">
+        <nav
+          aria-label="Leads pages"
+          className="mt-4 flex flex-wrap items-center justify-between gap-3"
+        >
           <p className="text-xs tabular-nums text-muted-foreground">
-            Showing {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, rows.length)} of {rows.length}
+            Showing {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, rows.length)} of{" "}
+            {rows.length}
           </p>
           <div className="flex items-center gap-1">
             <button
@@ -552,19 +566,28 @@ function LeadsPage() {
             onSubmit={(e) => {
               e.preventDefault();
               const fd = new FormData(e.currentTarget);
-              const source = String(fd.get("source"));
+              const sourceGroup = String(fd.get("source_group") || "Organic");
               const followUp = String(fd.get("next_follow_up_at"));
-              if (followUp && new Date(`${followUp}T23:59:59Z`).getTime() < new Date().setHours(0, 0, 0, 0)) {
+              if (
+                followUp &&
+                new Date(`${followUp}T23:59:59Z`).getTime() < new Date().setHours(0, 0, 0, 0)
+              ) {
                 toast.error("Follow-up date cannot be in the past");
                 return;
               }
-              const phoneDigits = String(fd.get("phone") || "").replace(/\D/g, "").slice(-10);
+              const birthDate = String(fd.get("birth_date") || "");
+              if (isFutureDate(birthDate)) {
+                toast.error("Date of birth cannot be in the future");
+                return;
+              }
+              const phone = cleanPhoneDigits(String(fd.get("phone") || ""));
               const payload = {
                 full_name: String(fd.get("full_name")),
                 email: String(fd.get("email")) || null,
-                phone: String(fd.get("phone")) || null,
-                source,
-                source_group: String(fd.get("source_group")),
+                phone: phone || null,
+                birth_date: birthDate || null,
+                source: sourceGroup,
+                source_group: sourceGroup,
                 service_id: String(fd.get("service_id")) || null,
                 interest: String(fd.get("interest")) || null,
                 owner_id: String(fd.get("owner_id")) || null,
@@ -574,14 +597,14 @@ function LeadsPage() {
                 stage: "New",
               };
 
-              if (phoneDigits.length === 10) {
+              if (phone.length === 10) {
                 if (!patients.isSuccess || !leads.isSuccess) {
                   toast.error("Unable to verify duplicate phone numbers. Please try again.");
                   return;
                 }
 
                 const existingPatient = patients.data?.find(
-                  (p) => (p.phone ?? "").replace(/\D/g, "").slice(-10) === phoneDigits,
+                  (p) => cleanPhoneDigits(p.phone) === phone,
                 );
                 if (existingPatient) {
                   setDuplicateWarning({
@@ -592,9 +615,7 @@ function LeadsPage() {
                   return;
                 }
 
-                const existingLead = leads.data?.find(
-                  (l) => (l.phone ?? "").replace(/\D/g, "").slice(-10) === phoneDigits,
-                );
+                const existingLead = leads.data?.find((l) => cleanPhoneDigits(l.phone) === phone);
                 if (existingLead) {
                   setDuplicateWarning({
                     matchedName: existingLead.full_name,
@@ -621,7 +642,17 @@ function LeadsPage() {
               <input name="email" type="email" className={inputClass} />
             </Field>
             <Field label="Phone">
-              <input name="phone" className={inputClass} />
+              <input
+                name="phone"
+                type="tel"
+                inputMode="numeric"
+                maxLength={10}
+                placeholder="10-digit mobile number"
+                className={inputClass}
+                onInput={(e) => {
+                  e.currentTarget.value = cleanPhoneDigits(e.currentTarget.value);
+                }}
+              />
             </Field>
             <Field label="Source group">
               <select name="source_group" className={inputClass} defaultValue="Organic">
@@ -632,14 +663,8 @@ function LeadsPage() {
                 ))}
               </select>
             </Field>
-            <Field label="Source detail">
-              <select name="source" className={inputClass}>
-                {LEAD_SOURCES.map((s) => (
-                  <option key={s} value={s}>
-                    {s}
-                  </option>
-                ))}
-              </select>
+            <Field label="Date of birth (optional)">
+              <input name="birth_date" type="date" max={todayDateStr()} className={inputClass} />
             </Field>
             <Field label="Treatment interest">
               <select name="service_id" className={inputClass}>
@@ -679,7 +704,11 @@ function LeadsPage() {
               />
             </Field>
             <Field label="Other interest note" className="sm:col-span-2">
-              <input name="interest" className={inputClass} placeholder="Laser hair removal — legs" />
+              <input
+                name="interest"
+                className={inputClass}
+                placeholder="Laser hair removal — legs"
+              />
             </Field>
             <Field label="Notes" className="sm:col-span-2">
               <textarea name="notes" className={textareaClass} />
@@ -701,22 +730,23 @@ function LeadsPage() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={Boolean(duplicateWarning)} onOpenChange={(v) => !v && setDuplicateWarning(null)}>
+      <Dialog
+        open={Boolean(duplicateWarning)}
+        onOpenChange={(v) => !v && setDuplicateWarning(null)}
+      >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Duplicate phone number warning</DialogTitle>
           </DialogHeader>
           <p className="text-sm text-muted-foreground">
             A {duplicateWarning?.type === "patient" ? "patient" : "lead"} named{" "}
-            <strong className="font-semibold text-foreground">{duplicateWarning?.matchedName}</strong>{" "}
+            <strong className="font-semibold text-foreground">
+              {duplicateWarning?.matchedName}
+            </strong>{" "}
             is already registered with this phone number.
           </p>
           <DialogFooter className="gap-2 sm:gap-0">
-            <button
-              type="button"
-              className={ghostButton}
-              onClick={() => setDuplicateWarning(null)}
-            >
+            <button type="button" className={ghostButton} onClick={() => setDuplicateWarning(null)}>
               Cancel
             </button>
             <button

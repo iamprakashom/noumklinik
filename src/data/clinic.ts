@@ -203,6 +203,18 @@ export function formatDate(iso: string | null | undefined) {
   });
 }
 
+export function todayDateStr() {
+  const d = new Date();
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
+/** True when the given YYYY-MM-DD string is after today (local). */
+export function isFutureDate(value: string | null | undefined) {
+  if (!value) return false;
+  return value > todayDateStr();
+}
+
 export function age(birth: string | null) {
   if (!birth) return null;
   const b = new Date(`${birth}T00:00:00Z`);
@@ -232,4 +244,16 @@ export function toLocalInputValue(date: Date) {
 
 export function renderTemplate(body: string, vars: Record<string, string>) {
   return body.replace(/\{\{\s*(\w+)\s*\}\}/g, (_m, key: string) => vars[key] ?? `{{${key}}}`);
+}
+
+export function cleanPhoneDigits(val: string | null | undefined): string {
+  if (!val) return "";
+  let digits = String(val).replace(/\D/g, "");
+  if (digits.length > 10 && digits.startsWith("91")) {
+    digits = digits.slice(2);
+  }
+  if (digits.length > 10 && digits.startsWith("0")) {
+    digits = digits.slice(1);
+  }
+  return digits.slice(0, 10);
 }

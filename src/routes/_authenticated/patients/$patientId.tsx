@@ -28,12 +28,15 @@ import { AppointmentDetailDialog } from "@/components/clinic/AppointmentDetailDi
 import {
   age,
   appointmentTone,
+  cleanPhoneDigits,
   formatDate,
   formatDateTime,
   initials,
   invoiceTone,
+  isFutureDate,
   money,
   patientName,
+  todayDateStr,
   type Appointment,
 } from "@/data/clinic";
 import {
@@ -220,16 +223,17 @@ function PatientDetail() {
               e.preventDefault();
               const fd = new FormData(e.currentTarget);
               const birthDate = String(fd.get("birth_date") || "");
-              if (birthDate && birthDate > new Date().toLocaleDateString("en-CA")) {
+              if (isFutureDate(birthDate)) {
                 toast.error("Date of birth cannot be in the future");
                 return;
               }
+              const cleanPhone = cleanPhoneDigits(String(fd.get("phone") ?? ""));
               updatePatient.mutate(
                 {
                   id: patientId,
                   values: {
                     email: String(fd.get("email")) || null,
-                    phone: String(fd.get("phone")) || null,
+                    phone: cleanPhone || null,
                     birth_date: birthDate || null,
                     preferred_channel: String(fd.get("preferred_channel")),
                     allergies: String(fd.get("allergies")) || null,
@@ -245,13 +249,24 @@ function PatientDetail() {
               <input name="email" defaultValue={patient.email ?? ""} className={inputClass} />
             </Field>
             <Field label="Phone">
-              <input name="phone" defaultValue={patient.phone ?? ""} className={inputClass} />
+              <input
+                name="phone"
+                type="tel"
+                inputMode="numeric"
+                maxLength={10}
+                placeholder="10-digit mobile number"
+                defaultValue={patient.phone ?? ""}
+                className={inputClass}
+                onInput={(e) => {
+                  e.currentTarget.value = cleanPhoneDigits(e.currentTarget.value);
+                }}
+              />
             </Field>
             <Field label="Date of birth">
               <input
                 name="birth_date"
                 type="date"
-                max={new Date().toISOString().slice(0, 10)}
+                max={todayDateStr()}
                 defaultValue={patient.birth_date ?? ""}
                 className={inputClass}
               />

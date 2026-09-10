@@ -398,6 +398,7 @@ export function useConvertLead() {
           last_name: rest.join(" ") || "—",
           email: lead.email,
           phone: lead.phone,
+          birth_date: lead.birth_date ?? null,
           source: lead.source,
           notes: lead.notes,
           tags: lead.interest ? [lead.interest] : [],

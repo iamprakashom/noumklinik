@@ -24,6 +24,7 @@ import {
   CANCELLATION_REASONS,
   TEMPERATURES,
   appointmentTone,
+  cleanPhoneDigits,
   formatDateTime,
   patientName,
   temperatureTone,
@@ -275,14 +276,16 @@ function AppointmentsPage() {
     let patientId = String(fd.get("patient_id") ?? "");
     if (quickAdd) {
       const name = String(fd.get("new_patient_name") ?? "").trim();
-      const phone = String(fd.get("new_patient_phone") ?? "").trim();
+      const phone = cleanPhoneDigits(String(fd.get("new_patient_phone") ?? ""));
       if (!name || !phone) {
         toast.error("New patient needs a name and mobile number");
         return;
       }
-      const existing = patients.data?.find(
-        (p) => (p.phone ?? "").replace(/\D/g, "") === phone.replace(/\D/g, ""),
-      );
+      if (phone.length !== 10) {
+        toast.error("Mobile number must be 10 digits");
+        return;
+      }
+      const existing = patients.data?.find((p) => cleanPhoneDigits(p.phone) === phone);
       if (existing) {
         patientId = existing.id;
         toast.info(`${patientName(existing)} already exists — booking against that record`);
@@ -723,9 +726,15 @@ function AppointmentsPage() {
                   <Field label="Mobile number">
                     <input
                       name="new_patient_phone"
-                      inputMode="tel"
+                      type="tel"
+                      inputMode="numeric"
+                      maxLength={10}
+                      placeholder="10-digit mobile number"
                       required
                       className={inputClass}
+                      onInput={(e) => {
+                        e.currentTarget.value = cleanPhoneDigits(e.currentTarget.value);
+                      }}
                     />
                   </Field>
                 </div>

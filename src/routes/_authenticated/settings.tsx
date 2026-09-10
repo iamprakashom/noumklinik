@@ -723,12 +723,12 @@ function SettingsPage() {
 
             {dialog === "provider" ? (
               <>
-                <Field label="Title">
+                <Field label="Title / Speciality">
                   <input
                     name="title"
                     defaultValue={editingProvider?.title ?? ""}
                     className={inputClass}
-                    placeholder="Nurse Injector"
+                    placeholder="e.g. Dermatologist · Laser Specialist"
                   />
                 </Field>
                 <Field label="Email">
