@@ -9,7 +9,9 @@ import {
   LayoutDashboard,
   LogOut,
   Menu,
+  RotateCcw,
   Search,
+
   Settings,
   Sparkles,
   Stethoscope,
@@ -25,6 +27,8 @@ import { CommandPalette } from "@/components/clinic/CommandPalette";
 const NAV = [
   { to: "/dashboard", label: "Today", icon: LayoutDashboard },
   { to: "/appointments", label: "Appointments", icon: CalendarDays },
+  { to: "/recalls", label: "Recalls", icon: RotateCcw },
+
   { to: "/patients", label: "Patients", icon: Users },
   { to: "/leads", label: "Leads", icon: UserPlus },
   { to: "/inbox", label: "Inbox", icon: MessageSquare },
