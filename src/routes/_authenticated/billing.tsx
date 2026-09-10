@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { FileText, Link2, Package as PackageIcon, Plus, Sparkles, Undo2 } from "lucide-react";
+import { FileText, Link2, Package as PackageIcon, Plus, Sparkles, Trash2, Undo2 } from "lucide-react";
 import { AppShell, ghostButton, primaryButton } from "@/components/clinic/AppShell";
 import { Chip, EmptyState, Field, StatCard, inputClass } from "@/components/clinic/bits";
 import { InvoiceDocument } from "@/components/clinic/InvoiceDocument";
@@ -55,7 +55,13 @@ export const Route = createFileRoute("/_authenticated/billing")({
   component: BillingPage,
 });
 
-type Line = { description: string; quantity: number; unit_price: number; gst_rate: number; sac_code: string };
+type Line = {
+  description: string;
+  quantity: number | "";
+  unit_price: number | "";
+  gst_rate: number | "";
+  sac_code: string;
+};
 
 const emptyLine: Line = { description: "", quantity: 1, unit_price: 0, gst_rate: 18, sac_code: "999722" };
 
@@ -180,9 +186,20 @@ function BillingPage() {
     );
   }, [mainService, addons.data, services.data, lines]);
 
+  const sanitizedLines = useMemo(
+    () =>
+      lines.map((l) => ({
+        ...l,
+        quantity: l.quantity === "" ? 1 : Number(l.quantity),
+        unit_price: l.unit_price === "" ? 0 : Number(l.unit_price),
+        gst_rate: l.gst_rate === "" ? 0 : Number(l.gst_rate),
+      })),
+    [lines],
+  );
+
   const totals = useMemo(
-    () => computeGstTotals(lines, discount === "" ? 0 : discount, interState),
-    [lines, discount, interState],
+    () => computeGstTotals(sanitizedLines, discount === "" ? 0 : discount, interState),
+    [sanitizedLines, discount, interState],
   );
   const addonCount = Math.max(0, lines.filter((l) => l.description).length - 1);
 
@@ -502,7 +519,7 @@ function BillingPage() {
               createInvoice.mutate(
                 {
                   patient_id: patientId,
-                  items: lines.filter((l) => l.description),
+                  items: sanitizedLines.filter((l) => l.description),
                   discount: discount === "" ? 0 : discount,
                   clinic: clinic.data ?? null,
                   placeOfSupply: placeOfSupply || null,
@@ -553,7 +570,7 @@ function BillingPage() {
             <div className="grid gap-2">
               <span className="text-xs font-medium text-muted-foreground">Line items</span>
               {lines.map((line, idx) => (
-                <div key={idx} className="grid grid-cols-2 gap-2 sm:grid-cols-[1fr_60px_90px_70px]">
+                <div key={idx} className="grid grid-cols-2 gap-2 sm:grid-cols-[1fr_60px_90px_70px_auto] sm:items-center">
                   <select
                     value={line.description}
                     onChange={(e) => {
@@ -586,13 +603,19 @@ function BillingPage() {
                     min={1}
                     aria-label="Quantity"
                     value={line.quantity}
-                    onChange={(e) =>
+                    onChange={(e) => {
+                      const val = e.target.value === "" ? "" : Math.max(1, Number(e.target.value));
                       setLines((prev) =>
-                        prev.map((l, i) =>
-                          i === idx ? { ...l, quantity: Number(e.target.value) } : l,
-                        ),
-                      )
-                    }
+                        prev.map((l, i) => (i === idx ? { ...l, quantity: val } : l)),
+                      );
+                    }}
+                    onBlur={() => {
+                      if (line.quantity === "" || line.quantity < 1) {
+                        setLines((prev) =>
+                          prev.map((l, i) => (i === idx ? { ...l, quantity: 1 } : l)),
+                        );
+                      }
+                    }}
                     className={inputClass}
                   />
                   <input
@@ -600,13 +623,19 @@ function BillingPage() {
                     step="0.01"
                     aria-label="Rate"
                     value={line.unit_price}
-                    onChange={(e) =>
+                    onChange={(e) => {
+                      const val = e.target.value === "" ? "" : Math.max(0, Number(e.target.value));
                       setLines((prev) =>
-                        prev.map((l, i) =>
-                          i === idx ? { ...l, unit_price: Number(e.target.value) } : l,
-                        ),
-                      )
-                    }
+                        prev.map((l, i) => (i === idx ? { ...l, unit_price: val } : l)),
+                      );
+                    }}
+                    onBlur={() => {
+                      if (line.unit_price === "") {
+                        setLines((prev) =>
+                          prev.map((l, i) => (i === idx ? { ...l, unit_price: 0 } : l)),
+                        );
+                      }
+                    }}
                     className={inputClass}
                   />
                   <input
@@ -614,15 +643,35 @@ function BillingPage() {
                     step="0.1"
                     aria-label="GST %"
                     value={line.gst_rate}
-                    onChange={(e) =>
+                    onChange={(e) => {
+                      const val = e.target.value === "" ? "" : Math.max(0, Number(e.target.value));
                       setLines((prev) =>
-                        prev.map((l, i) =>
-                          i === idx ? { ...l, gst_rate: Number(e.target.value) } : l,
-                        ),
-                      )
-                    }
+                        prev.map((l, i) => (i === idx ? { ...l, gst_rate: val } : l)),
+                      );
+                    }}
+                    onBlur={() => {
+                      if (line.gst_rate === "") {
+                        setLines((prev) =>
+                          prev.map((l, i) => (i === idx ? { ...l, gst_rate: 0 } : l)),
+                        );
+                      }
+                    }}
                     className={inputClass}
                   />
+                  <button
+                    type="button"
+                    title="Remove line item"
+                    aria-label="Remove line item"
+                    className="flex size-9 items-center justify-center rounded-md border border-border text-muted-foreground hover:border-destructive hover:bg-destructive/10 hover:text-destructive"
+                    onClick={() => {
+                      setLines((prev) => {
+                        const next = prev.filter((_, i) => i !== idx);
+                        return next.length > 0 ? next : [{ ...emptyLine }];
+                      });
+                    }}
+                  >
+                    <Trash2 className="size-4" />
+                  </button>
                 </div>
               ))}
               <button

@@ -86,15 +86,19 @@ export function TeamTab() {
 
   const members = team.data?.members ?? [];
   const invites = team.data?.invites ?? [];
+  const myMember = members.find((m) => m.user_id === team.data?.me);
+  const isAdmin = myMember?.role === "admin" && myMember?.status === "active";
 
   return (
     <div className="space-y-4">
       <Panel
         title="Team"
         action={
-          <button className={primaryButton} onClick={() => setOpen(true)}>
-            <Plus className="size-3.5" /> Invite colleague
-          </button>
+          isAdmin ? (
+            <button className={primaryButton} onClick={() => setOpen(true)}>
+              <Plus className="size-3.5" /> Invite colleague
+            </button>
+          ) : null
         }
       >
         {members.length === 0 ? (
@@ -111,34 +115,42 @@ export function TeamTab() {
                   <p className="text-xs text-muted-foreground">{m.email ?? "—"}</p>
                 </div>
                 {m.status !== "active" ? <Chip tone="overdue">Suspended</Chip> : null}
-                <select
-                  className={`${inputClass} w-36`}
-                  value={m.role}
-                  aria-label={`Role for ${m.email ?? "colleague"}`}
-                  onChange={(e) => update.mutate({ id: m.id, role: e.target.value })}
-                >
-                  {ROLES.map((r) => (
-                    <option key={r.value} value={r.value}>
-                      {r.label}
-                    </option>
-                  ))}
-                </select>
-                <button
-                  className={ghostButton}
-                  onClick={() =>
-                    update.mutate({ id: m.id, status: m.status === "active" ? "suspended" : "active" })
-                  }
-                >
-                  {m.status === "active" ? "Suspend" : "Reactivate"}
-                </button>
-                {m.user_id === team.data?.me ? null : (
-                  <button
-                    className={ghostButton}
-                    aria-label={`Remove ${m.email ?? "colleague"}`}
-                    onClick={() => remove.mutate(m.id)}
-                  >
-                    <Trash2 className="size-3.5" />
-                  </button>
+                {isAdmin ? (
+                  <>
+                    <select
+                      className={`${inputClass} w-36`}
+                      value={m.role}
+                      aria-label={`Role for ${m.email ?? "colleague"}`}
+                      onChange={(e) => update.mutate({ id: m.id, role: e.target.value })}
+                    >
+                      {ROLES.map((r) => (
+                        <option key={r.value} value={r.value}>
+                          {r.label}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      className={ghostButton}
+                      onClick={() =>
+                        update.mutate({ id: m.id, status: m.status === "active" ? "suspended" : "active" })
+                      }
+                    >
+                      {m.status === "active" ? "Suspend" : "Reactivate"}
+                    </button>
+                    {m.user_id === team.data?.me ? null : (
+                      <button
+                        className={ghostButton}
+                        aria-label={`Remove ${m.email ?? "colleague"}`}
+                        onClick={() => remove.mutate(m.id)}
+                      >
+                        <Trash2 className="size-3.5" />
+                      </button>
+                    )}
+                  </>
+                ) : (
+                  <span className="text-xs font-medium capitalize text-muted-foreground">
+                    {m.role.replace("_", " ")}
+                  </span>
                 )}
               </li>
             ))}
@@ -159,9 +171,11 @@ export function TeamTab() {
                     {i.role.replace("_", " ")} · expires {new Date(i.expires_at).toLocaleDateString("en-IN")}
                   </p>
                 </div>
-                <button className={ghostButton} onClick={() => revoke.mutate(i.id)}>
-                  Revoke
-                </button>
+                {isAdmin ? (
+                  <button className={ghostButton} onClick={() => revoke.mutate(i.id)}>
+                    Revoke
+                  </button>
+                ) : null}
               </li>
             ))}
           </ul>

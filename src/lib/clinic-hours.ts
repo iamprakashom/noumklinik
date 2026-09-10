@@ -214,6 +214,7 @@ export function checkAppointmentConflict({
   excludeId,
 }: AppointmentConflictParams): ConflictingAppointmentInfo | null {
   if (!appointments.length) return null;
+
   const reqStart = startsAt.getTime();
   const reqEnd = reqStart + durationMin * 60_000;
 

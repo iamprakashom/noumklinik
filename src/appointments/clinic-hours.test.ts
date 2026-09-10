@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, setSystemTime } from "bun:test";
 import {
   getDayOfWeek,
   getMinDateTimeLocal,
@@ -27,10 +27,8 @@ describe("getMinDateTimeLocal", () => {
 
   it("returns current time if today and past open time", () => {
     const today = new Date(2026, 8, 8, 14, 15);
-    vi.useFakeTimers();
-    vi.setSystemTime(today);
+    setSystemTime(today);
     expect(getMinDateTimeLocal(today)).toBe("2026-09-08T14:15");
-    vi.useRealTimers();
   });
 });
 
@@ -47,15 +45,12 @@ describe("validateAppointmentTime", () => {
 
   it("handles minMinutesInFuture option", () => {
     const now = new Date(2026, 8, 8, 10, 0);
-    vi.useFakeTimers();
-    vi.setSystemTime(now);
+    setSystemTime(now);
 
     const in5m = new Date(2026, 8, 8, 10, 5);
     expect(validateAppointmentTime(in5m, null, { minMinutesInFuture: 10 })).toBe(
       "Appointment time must be at least 10 minutes in the future."
     );
-
-    vi.useRealTimers();
   });
 
   it("rejects non-working days", () => {
@@ -74,8 +69,7 @@ describe("validateAppointmentTime", () => {
 describe("getAvailableTimeSlots", () => {
   it("returns slots with availability based on past/working day", () => {
     const now = new Date(2026, 8, 8, 10, 0);
-    vi.useFakeTimers();
-    vi.setSystemTime(now);
+    setSystemTime(now);
 
     const slots = getAvailableTimeSlots(now, { open_time: "09:00", close_time: "11:00" }, 60);
     expect(slots).toEqual([
@@ -83,8 +77,6 @@ describe("getAvailableTimeSlots", () => {
       { time: "10:00", label: "10:00 AM", available: false },
       { time: "11:00", label: "11:00 AM", available: true },
     ]);
-
-    vi.useRealTimers();
   });
 });
 

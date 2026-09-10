@@ -24,6 +24,7 @@ import {
   daysSince,
   formatDate,
   leadTone,
+  patientName,
   temperatureTone,
   toLocalInputValue,
 } from "@/data/clinic";
@@ -32,6 +33,7 @@ import {
   useConvertLead,
   useInsert,
   useLeads,
+  usePatients,
   useProviders,
   useServices,
   useUpdate,
@@ -125,11 +127,17 @@ function LeadsPage() {
     : "oldest") as SortKey;
 
   const leads = useLeads();
+  const patients = usePatients();
   const providers = useProviders();
   const services = useServices();
   const createLead = useInsert("leads");
   const updateLead = useUpdate("leads");
   const convertLead = useConvertLead();
+  const [duplicateWarning, setDuplicateWarning] = useState<{
+    matchedName: string;
+    type: "lead" | "patient";
+    payload: Record<string, unknown>;
+  } | null>(null);
 
   const all = useMemo(() => leads.data ?? [], [leads.data]);
 
@@ -550,29 +558,60 @@ function LeadsPage() {
                 toast.error("Follow-up date cannot be in the past");
                 return;
               }
-              createLead.mutate(
-                {
-                  full_name: String(fd.get("full_name")),
-                  email: String(fd.get("email")) || null,
-                  phone: String(fd.get("phone")) || null,
-                  source,
-                  source_group: String(fd.get("source_group")),
-                  service_id: String(fd.get("service_id")) || null,
-                  interest: String(fd.get("interest")) || null,
-                  owner_id: String(fd.get("owner_id")) || null,
-                  temperature: String(fd.get("temperature")),
-                  next_follow_up_at: followUp ? new Date(`${followUp}T09:00:00`).toISOString() : null,
-                  notes: String(fd.get("notes")) || null,
-                  stage: "New",
+              const phoneDigits = String(fd.get("phone") || "").replace(/\D/g, "").slice(-10);
+              const payload = {
+                full_name: String(fd.get("full_name")),
+                email: String(fd.get("email")) || null,
+                phone: String(fd.get("phone")) || null,
+                source,
+                source_group: String(fd.get("source_group")),
+                service_id: String(fd.get("service_id")) || null,
+                interest: String(fd.get("interest")) || null,
+                owner_id: String(fd.get("owner_id")) || null,
+                temperature: String(fd.get("temperature")),
+                next_follow_up_at: followUp ? new Date(`${followUp}T09:00:00`).toISOString() : null,
+                notes: String(fd.get("notes")) || null,
+                stage: "New",
+              };
+
+              if (phoneDigits.length === 10) {
+                if (!patients.isSuccess || !leads.isSuccess) {
+                  toast.error("Unable to verify duplicate phone numbers. Please try again.");
+                  return;
+                }
+
+                const existingPatient = patients.data?.find(
+                  (p) => (p.phone ?? "").replace(/\D/g, "").slice(-10) === phoneDigits,
+                );
+                if (existingPatient) {
+                  setDuplicateWarning({
+                    matchedName: patientName(existingPatient),
+                    type: "patient",
+                    payload,
+                  });
+                  return;
+                }
+
+                const existingLead = leads.data?.find(
+                  (l) => (l.phone ?? "").replace(/\D/g, "").slice(-10) === phoneDigits,
+                );
+                if (existingLead) {
+                  setDuplicateWarning({
+                    matchedName: existingLead.full_name,
+                    type: "lead",
+                    payload,
+                  });
+                  return;
+                }
+              }
+
+              createLead.mutate(payload, {
+                onSuccess: () => {
+                  toast.success("Lead added");
+                  setOpen(false);
                 },
-                {
-                  onSuccess: () => {
-                    toast.success("Lead added");
-                    setOpen(false);
-                  },
-                  onError: (err) => toast.error(err.message),
-                },
-              );
+                onError: (err) => toast.error(err.message),
+              });
             }}
           >
             <Field label="Full name" className="sm:col-span-2">
@@ -650,8 +689,53 @@ function LeadsPage() {
             <button type="button" className={ghostButton} onClick={() => setOpen(false)}>
               Cancel
             </button>
-            <button type="submit" form="new-lead" className={primaryButton} disabled={createLead.isPending}>
+            <button
+              type="submit"
+              form="new-lead"
+              className={primaryButton}
+              disabled={createLead.isPending}
+            >
               Add lead
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={Boolean(duplicateWarning)} onOpenChange={(v) => !v && setDuplicateWarning(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Duplicate phone number warning</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            A {duplicateWarning?.type === "patient" ? "patient" : "lead"} named{" "}
+            <strong className="font-semibold text-foreground">{duplicateWarning?.matchedName}</strong>{" "}
+            is already registered with this phone number.
+          </p>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <button
+              type="button"
+              className={ghostButton}
+              onClick={() => setDuplicateWarning(null)}
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              className={primaryButton}
+              disabled={createLead.isPending}
+              onClick={() => {
+                if (!duplicateWarning) return;
+                createLead.mutate(duplicateWarning.payload, {
+                  onSuccess: () => {
+                    toast.success("Lead added");
+                    setDuplicateWarning(null);
+                    setOpen(false);
+                  },
+                  onError: (err) => toast.error(err.message),
+                });
+              }}
+            >
+              Create anyway
             </button>
           </DialogFooter>
         </DialogContent>

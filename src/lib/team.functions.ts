@@ -165,11 +165,19 @@ export const revokeInvite = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
-    const { error } = await context.supabase
+    const { data: updated, error } = await context.supabase
       .from("clinic_invites")
       .update({ status: "revoked" })
-      .eq("id", data.id);
-    if (error) throw new Error(error.message);
+      .eq("id", data.id)
+      .select("id");
+
+    if (error || !updated || updated.length === 0) {
+      throw new Error(
+        error?.message.includes("row-level security")
+          ? "Only clinic admins can revoke invites"
+          : error?.message ?? "Only clinic admins can revoke invites",
+      );
+    }
     return { ok: true };
   });
 
@@ -207,12 +215,17 @@ export const updateTeamMember = createServerFn({ method: "POST" })
     if (data.role) values.role = data.role;
     if (data.status) values.status = data.status;
 
-    const { error } = await context.supabase.from("clinic_members").update(values).eq("id", data.id);
-    if (error) {
+    const { data: updated, error } = await context.supabase
+      .from("clinic_members")
+      .update(values)
+      .eq("id", data.id)
+      .select("id");
+
+    if (error || !updated || updated.length === 0) {
       throw new Error(
-        error.message.includes("row-level security")
+        error?.message.includes("row-level security")
           ? "Only clinic admins can change team access"
-          : error.message,
+          : error?.message ?? "Only clinic admins can change team access",
       );
     }
     return { ok: true };
@@ -230,12 +243,17 @@ export const removeTeamMember = createServerFn({ method: "POST" })
     if (!target) throw new Error("Member not found");
     if (target.user_id === context.userId) throw new Error("You cannot remove yourself");
 
-    const { error } = await context.supabase.from("clinic_members").delete().eq("id", data.id);
-    if (error) {
+    const { data: deleted, error } = await context.supabase
+      .from("clinic_members")
+      .delete()
+      .eq("id", data.id)
+      .select("id");
+
+    if (error || !deleted || deleted.length === 0) {
       throw new Error(
-        error.message.includes("row-level security")
+        error?.message.includes("row-level security")
           ? "Only clinic admins can remove colleagues"
-          : error.message,
+          : error?.message ?? "Only clinic admins can remove colleagues",
       );
     }
     return { ok: true };
