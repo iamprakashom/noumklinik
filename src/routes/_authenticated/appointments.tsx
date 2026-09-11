@@ -6,6 +6,7 @@ import { BellRing, CalendarClock, Eye, Plus } from "lucide-react";
 import { AppShell, ghostButton, primaryButton } from "@/components/clinic/AppShell";
 import { BookingRequests } from "@/components/clinic/BookingRequests";
 import { Chip, EmptyState, Field, inputClass, textareaClass } from "@/components/clinic/bits";
+import { PhoneInput } from "@/components/clinic/PhoneInput";
 import {
   ConflictAlertDialog,
   type ConflictModalState,
@@ -24,11 +25,10 @@ import {
   CANCELLATION_REASONS,
   TEMPERATURES,
   appointmentTone,
-  cleanPhoneDigits,
   formatDateTime,
-  handlePhoneInput,
-  handlePhonePaste,
   patientName,
+  phoneDigits,
+  phoneError,
   temperatureTone,
   toLocalInputValue,
   type Appointment,
@@ -278,16 +278,18 @@ function AppointmentsPage() {
     let patientId = String(fd.get("patient_id") ?? "");
     if (quickAdd) {
       const name = String(fd.get("new_patient_name") ?? "").trim();
-      const phone = cleanPhoneDigits(String(fd.get("new_patient_phone") ?? ""));
+      const rawPhone = String(fd.get("new_patient_phone") ?? "");
+      const phoneErr = phoneError(rawPhone);
+      if (phoneErr) {
+        toast.error(phoneErr);
+        return;
+      }
+      const phone = phoneDigits(rawPhone);
       if (!name || !phone) {
         toast.error("New patient needs a name and mobile number");
         return;
       }
-      if (phone.length !== 10) {
-        toast.error("Mobile number must be 10 digits");
-        return;
-      }
-      const existing = patients.data?.find((p) => cleanPhoneDigits(p.phone) === phone);
+      const existing = patients.data?.find((p) => phoneDigits(p.phone).slice(-10) === phone);
       if (existing) {
         patientId = existing.id;
         toast.info(`${patientName(existing)} already exists — booking against that record`);
@@ -297,7 +299,7 @@ function AppointmentsPage() {
           const created = (await createPatient.mutateAsync({
             first_name: first ?? name,
             last_name: rest.join(" ") || "—",
-            phone,
+            phone: `+${String(fd.get("new_patient_phone_country") || "91")}${phone}`,
             source: "Walk-in",
           })) as { id: string }[];
           patientId = created[0]?.id ?? "";
@@ -726,16 +728,7 @@ function AppointmentsPage() {
                     <input name="new_patient_name" required className={inputClass} autoFocus />
                   </Field>
                   <Field label="Mobile number">
-                    <input
-                      name="new_patient_phone"
-                      type="tel"
-                      inputMode="numeric"
-                      placeholder="10-digit mobile number"
-                      required
-                      className={inputClass}
-                      onPaste={handlePhonePaste}
-                      onInput={handlePhoneInput}
-                    />
+                    <PhoneInput name="new_patient_phone" required />
                   </Field>
                 </div>
               ) : (

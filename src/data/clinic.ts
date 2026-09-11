@@ -217,9 +217,16 @@ export function isFutureDate(value: string | null | undefined) {
 
 export function age(birth: string | null) {
   if (!birth) return null;
-  const b = new Date(`${birth}T00:00:00Z`);
-  const diff = Date.now() - b.getTime();
-  return Math.floor(diff / (365.25 * 86_400_000));
+  const b = new Date(
+    Number(birth.slice(0, 4)),
+    Number(birth.slice(5, 7)) - 1,
+    Number(birth.slice(8, 10)),
+  );
+  const now = new Date();
+  let years = now.getFullYear() - b.getFullYear();
+  const m = now.getMonth() - b.getMonth();
+  if (m < 0 || (m === 0 && now.getDate() < b.getDate())) years -= 1;
+  return years;
 }
 
 export function isSameDay(iso: string, day: Date) {
@@ -246,42 +253,14 @@ export function renderTemplate(body: string, vars: Record<string, string>) {
   return body.replace(/\{\{\s*(\w+)\s*\}\}/g, (_m, key: string) => vars[key] ?? `{{${key}}}`);
 }
 
-export function cleanPhoneDigits(val: string | null | undefined): string {
-  if (!val) return "";
-  let s = String(val).trim();
-  if (/^\+\s*91/.test(s)) {
-    s = s.replace(/^\+\s*91\s*/, "");
-  } else if (s.startsWith("+")) {
-    s = s.replace(/^\+\s*/, "");
-  }
-  let digits = s.replace(/\D/g, "");
-  if (digits.length >= 12 && digits.startsWith("91")) {
-    digits = digits.slice(2);
-  }
-  if (digits.length > 10 && digits.startsWith("0")) {
-    digits = digits.slice(1);
-  }
-  return digits.slice(0, 10);
+export function phoneDigits(val: string | null | undefined): string {
+  return String(val ?? "").replace(/\D/g, "");
 }
 
-export function handlePhonePaste(e: {
-  preventDefault: () => void;
-  clipboardData: { getData: (format: string) => string };
-  currentTarget: {
-    value: string;
-    selectionStart?: number | null;
-    selectionEnd?: number | null;
-  };
-}) {
-  e.preventDefault();
-  const text = e.clipboardData.getData("text");
-  const target = e.currentTarget;
-  const start = target.selectionStart ?? 0;
-  const end = target.selectionEnd ?? target.value.length;
-  const combined = target.value.slice(0, start) + text + target.value.slice(end);
-  target.value = cleanPhoneDigits(combined);
-}
-
-export function handlePhoneInput(e: { currentTarget: { value: string } }) {
-  e.currentTarget.value = cleanPhoneDigits(e.currentTarget.value);
+export function phoneError(val: string | null | undefined): string | null {
+  if (!val) return null;
+  if (/[a-zA-Z]/.test(String(val))) return "Only numbers allowed";
+  const digits = phoneDigits(val);
+  if (digits.length !== 10) return "Phone number must be 10 digits";
+  return null;
 }

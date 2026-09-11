@@ -7,6 +7,7 @@ import { LayoutGrid, Plus, Rows3, UserRoundCheck } from "lucide-react";
 import { AppShell, ghostButton, primaryButton } from "@/components/clinic/AppShell";
 import { Chip, EmptyState, Field, inputClass, textareaClass } from "@/components/clinic/bits";
 import { LeadsToolbar } from "@/components/clinic/LeadsToolbar";
+import { PhoneInput } from "@/components/clinic/PhoneInput";
 import {
   Dialog,
   DialogContent,
@@ -21,14 +22,13 @@ import {
   TEMPERATURES,
   TEMPERATURE_HINT,
   age,
-  cleanPhoneDigits,
   daysSince,
   formatDate,
-  handlePhoneInput,
-  handlePhonePaste,
   isFutureDate,
   leadTone,
   patientName,
+  phoneDigits,
+  phoneError,
   temperatureTone,
   todayDateStr,
   toLocalInputValue,
@@ -582,15 +582,17 @@ function LeadsPage() {
                 toast.error("Date of birth cannot be in the future");
                 return;
               }
-              const phone = cleanPhoneDigits(String(fd.get("phone") || ""));
-              if (phone && phone.length !== 10) {
-                toast.error("Phone number must be 10 digits");
+              const phone = String(fd.get("phone") || "");
+              const phoneErr = phoneError(phone);
+              if (phoneErr) {
+                toast.error(phoneErr);
                 return;
               }
+              const phoneNum = phoneDigits(phone);
               const payload = {
                 full_name: String(fd.get("full_name")),
                 email: String(fd.get("email")) || null,
-                phone: phone || null,
+                phone: phoneNum ? `+${String(fd.get("phone_country") || "91")}${phoneNum}` : null,
                 birth_date: birthDate || null,
                 source: sourceGroup,
                 source_group: sourceGroup,
@@ -603,14 +605,14 @@ function LeadsPage() {
                 stage: "New",
               };
 
-              if (phone.length === 10) {
+              if (phoneNum.length === 10) {
                 if (!patients.isSuccess || !leads.isSuccess) {
                   toast.error("Unable to verify duplicate phone numbers. Please try again.");
                   return;
                 }
 
                 const existingPatient = patients.data?.find(
-                  (p) => cleanPhoneDigits(p.phone) === phone,
+                  (p) => phoneDigits(p.phone).slice(-10) === phoneNum,
                 );
                 if (existingPatient) {
                   setDuplicateWarning({
@@ -621,7 +623,9 @@ function LeadsPage() {
                   return;
                 }
 
-                const existingLead = leads.data?.find((l) => cleanPhoneDigits(l.phone) === phone);
+                const existingLead = leads.data?.find(
+                  (l) => phoneDigits(l.phone).slice(-10) === phoneNum,
+                );
                 if (existingLead) {
                   setDuplicateWarning({
                     matchedName: existingLead.full_name,
@@ -648,15 +652,7 @@ function LeadsPage() {
               <input name="email" type="email" className={inputClass} />
             </Field>
             <Field label="Phone">
-              <input
-                name="phone"
-                type="tel"
-                inputMode="numeric"
-                placeholder="10-digit mobile number"
-                className={inputClass}
-                onPaste={handlePhonePaste}
-                onInput={handlePhoneInput}
-              />
+              <PhoneInput name="phone" />
             </Field>
             <Field label="Source group">
               <select name="source_group" className={inputClass} defaultValue="Organic">

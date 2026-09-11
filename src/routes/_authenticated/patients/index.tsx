@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Plus, Search } from "lucide-react";
 import { AppShell, ghostButton, primaryButton } from "@/components/clinic/AppShell";
+import { PhoneInput } from "@/components/clinic/PhoneInput";
 import {
   Avatar,
   Chip,
@@ -32,13 +33,12 @@ import {
   CHANNELS,
   LEAD_SOURCES,
   age,
-  cleanPhoneDigits,
   formatDate,
-  handlePhoneInput,
-  handlePhonePaste,
   initials,
   isFutureDate,
   patientName,
+  phoneDigits,
+  phoneError,
   todayDateStr,
 } from "@/data/clinic";
 import type { Patient } from "@/data/clinic";
@@ -127,13 +127,19 @@ function PatientsPage() {
 
   function submit(form: HTMLFormElement) {
     const fd = new FormData(form);
-    const cleanPhone = cleanPhoneDigits(String(fd.get("phone") ?? ""));
+    const rawPhone = String(fd.get("phone") ?? "");
+    const phoneErr = phoneError(rawPhone);
+    if (phoneErr) {
+      toast.error(phoneErr);
+      return;
+    }
+    const cleanPhone = phoneDigits(rawPhone);
     const email = String(fd.get("email") ?? "")
       .trim()
       .toLowerCase();
     const dupe = (patients.data ?? []).find(
       (p) =>
-        (cleanPhone.length === 10 && cleanPhoneDigits(p.phone) === cleanPhone) ||
+        (cleanPhone.length === 10 && phoneDigits(p.phone).slice(-10) === cleanPhone) ||
         (email && (p.email ?? "").toLowerCase() === email),
     );
 
@@ -142,16 +148,12 @@ function PatientsPage() {
       toast.error("Date of birth cannot be in the future");
       return;
     }
-    if (cleanPhone && cleanPhone.length !== 10) {
-      toast.error("Phone number must be 10 digits");
-      return;
-    }
 
     const payload = {
       first_name: String(fd.get("first_name")),
       last_name: String(fd.get("last_name")),
       email: String(fd.get("email")) || null,
-      phone: cleanPhone || null,
+      phone: cleanPhone ? `+${String(fd.get("phone_country") || "91")}${cleanPhone}` : null,
       birth_date: birthDate || null,
       gender: String(fd.get("gender")) || null,
       source: String(fd.get("source")),
@@ -272,15 +274,7 @@ function PatientsPage() {
               <input name="email" type="email" className={inputClass} />
             </Field>
             <Field label="Phone">
-              <input
-                name="phone"
-                type="tel"
-                inputMode="numeric"
-                placeholder="10-digit mobile number"
-                className={inputClass}
-                onPaste={handlePhonePaste}
-                onInput={handlePhoneInput}
-              />
+              <PhoneInput name="phone" />
             </Field>
             <Field label="Date of birth">
               <input name="birth_date" type="date" max={todayDateStr()} className={inputClass} />

@@ -1,154 +1,55 @@
 import { afterEach, describe, expect, it, setSystemTime } from "bun:test";
-import { age, cleanPhoneDigits, handlePhoneInput, handlePhonePaste, isFutureDate, todayDateStr } from "./clinic";
+import { age, isFutureDate, phoneDigits, phoneError, todayDateStr } from "./clinic";
 
 afterEach(() => {
   // Restore the real clock so a mocked time never leaks between test files.
   setSystemTime();
 });
 
-describe("cleanPhoneDigits", () => {
-  it("keeps a clean 10-digit number unchanged", () => {
-    expect(cleanPhoneDigits("9876543210")).toBe("9876543210");
+describe("phoneDigits", () => {
+  it("extracts digits from a plain number", () => {
+    expect(phoneDigits("9876543210")).toBe("9876543210");
   });
 
-  it("does not strip a leading 91 from a valid 10-digit mobile", () => {
-    // "9198765432" is a legitimate Indian mobile number — the 91 prefix is only
-    // stripped when the input is longer than 10 digits.
-    expect(cleanPhoneDigits("9198765432")).toBe("9198765432");
+  it("leaves formatting (spaces, dashes, plus) out", () => {
+    expect(phoneDigits("+91 98765-43210")).toBe("919876543210");
   });
 
-  it("strips the +91 country code from pasted numbers", () => {
-    expect(cleanPhoneDigits("+919876543210")).toBe("9876543210");
-    expect(cleanPhoneDigits("+91 98765 43210")).toBe("9876543210");
-    expect(cleanPhoneDigits("+91 98765-43210")).toBe("9876543210");
-    expect(cleanPhoneDigits("919876543210")).toBe("9876543210");
-  });
-
-  it("does not strip 91 when typing an 11th digit on a number starting with 91", () => {
-    expect(cleanPhoneDigits("91987654321")).toBe("9198765432");
-  });
-
-  it("strips a leading 0 STD prefix", () => {
-    expect(cleanPhoneDigits("098765 43210")).toBe("9876543210");
-    expect(cleanPhoneDigits("0 98765 43210")).toBe("9876543210");
-  });
-
-  it("strips both the +91 country code and a 0 STD prefix when chained", () => {
-    expect(cleanPhoneDigits("+91 098765 43210")).toBe("9876543210");
-  });
-
-  it("removes spaces, dashes and brackets", () => {
-    expect(cleanPhoneDigits("(98765) 432-10")).toBe("9876543210");
-  });
-
-  it("caps input at 10 digits", () => {
-    expect(cleanPhoneDigits("98765432101234")).toBe("9876543210");
-  });
-
-  it("keeps shorter entries as-is so forms can validate the length", () => {
-    expect(cleanPhoneDigits("98765")).toBe("98765");
-  });
-
-  it("drops stray letters mixed into the number", () => {
-    expect(cleanPhoneDigits("abc 98765 43210")).toBe("9876543210");
+  it("drops non-digit characters entirely", () => {
+    expect(phoneDigits("abc123-xyz")).toBe("123");
   });
 
   it("returns an empty string for empty, null or undefined input", () => {
-    expect(cleanPhoneDigits("")).toBe("");
-    expect(cleanPhoneDigits(null)).toBe("");
-    expect(cleanPhoneDigits(undefined)).toBe("");
+    expect(phoneDigits("")).toBe("");
+    expect(phoneDigits(null)).toBe("");
+    expect(phoneDigits(undefined)).toBe("");
   });
 });
 
-describe("handlePhonePaste", () => {
-  it("strips +91 and formats to 10 digits on paste", () => {
-    let prevented = false;
-    const target = { value: "", selectionStart: 0, selectionEnd: 0 };
-    handlePhonePaste({
-      preventDefault: () => {
-        prevented = true;
-      },
-      clipboardData: { getData: () => "+919876543210" },
-      currentTarget: target,
-    });
-    expect(prevented).toBe(true);
-    expect(target.value).toBe("9876543210");
+describe("phoneError", () => {
+  it("returns null for empty, null or undefined input", () => {
+    expect(phoneError("")).toBe(null);
+    expect(phoneError(null)).toBe(null);
+    expect(phoneError(undefined)).toBe(null);
   });
 
-  it("handles pasting with spaces, dashes, and brackets", () => {
-    let prevented = false;
-    const target = { value: "", selectionStart: 0, selectionEnd: 0 };
-    handlePhonePaste({
-      preventDefault: () => {
-        prevented = true;
-      },
-      clipboardData: { getData: () => "+91 (98765) 432-10" },
-      currentTarget: target,
-    });
-    expect(prevented).toBe(true);
-    expect(target.value).toBe("9876543210");
+  it("returns null for a valid 10-digit number", () => {
+    expect(phoneError("9876543210")).toBe(null);
   });
 
-  it("caps numbers exceeding 10 digits on paste", () => {
-    let prevented = false;
-    const target = { value: "", selectionStart: 0, selectionEnd: 0 };
-    handlePhonePaste({
-      preventDefault: () => {
-        prevented = true;
-      },
-      clipboardData: { getData: () => "98765432109999" },
-      currentTarget: target,
-    });
-    expect(prevented).toBe(true);
-    expect(target.value).toBe("9876543210");
+  it("rejects letters pasted or typed into the field", () => {
+    expect(phoneError("abc 98765 43210")).toBe("Only numbers allowed");
+    expect(phoneError("98765abc")).toBe("Only numbers allowed");
   });
 
-  it("replaces highlighted/selected text when pasting", () => {
-    let prevented = false;
-    const target = { value: "0000000000", selectionStart: 0, selectionEnd: 10 };
-    handlePhonePaste({
-      preventDefault: () => {
-        prevented = true;
-      },
-      clipboardData: { getData: () => "+919876543210" },
-      currentTarget: target,
-    });
-    expect(prevented).toBe(true);
-    expect(target.value).toBe("9876543210");
+  it("rejects numbers longer than 10 digits", () => {
+    expect(phoneError("9876543210")).toBe(null);
+    expect(phoneError("98765432109")).toBe("Phone number must be 10 digits");
+    expect(phoneError("+91 98765 43210")).toBe("Phone number must be 10 digits");
   });
 
-  it("strips leading 0 STD code when pasted", () => {
-    let prevented = false;
-    const target = { value: "", selectionStart: 0, selectionEnd: 0 };
-    handlePhonePaste({
-      preventDefault: () => {
-        prevented = true;
-      },
-      clipboardData: { getData: () => "098765 43210" },
-      currentTarget: target,
-    });
-    expect(prevented).toBe(true);
-    expect(target.value).toBe("9876543210");
-  });
-});
-
-describe("handlePhoneInput", () => {
-  it("caps input at 10 digits on typing", () => {
-    const target = { value: "98765432101234" };
-    handlePhoneInput({ currentTarget: target });
-    expect(target.value).toBe("9876543210");
-  });
-
-  it("strips non-numeric characters typed into the field", () => {
-    const target = { value: "98765abc!@#" };
-    handlePhoneInput({ currentTarget: target });
-    expect(target.value).toBe("98765");
-  });
-
-  it("leaves a valid 10-digit number intact", () => {
-    const target = { value: "9876543210" };
-    handlePhoneInput({ currentTarget: target });
-    expect(target.value).toBe("9876543210");
+  it("rejects numbers shorter than 10 digits", () => {
+    expect(phoneError("98765")).toBe("Phone number must be 10 digits");
   });
 });
 

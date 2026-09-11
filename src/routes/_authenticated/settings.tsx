@@ -27,7 +27,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { cleanPhoneDigits, handlePhoneInput, handlePhonePaste, money } from "@/data/clinic";
+import { PhoneInput } from "@/components/clinic/PhoneInput";
+import { money, phoneDigits, phoneError } from "@/data/clinic";
 import type { ConsentTemplate, Provider, Room, Service } from "@/data/clinic";
 import {
   useConsentTemplates,
@@ -547,16 +548,18 @@ function SettingsPage() {
                   toast.error(`Provider "${name}" already exists`);
                   return;
                 }
-                const phone = cleanPhoneDigits(String(fd.get("phone") || ""));
-                if (phone && phone.length !== 10) {
-                  toast.error("Phone number must be 10 digits");
+                const rawPhone = String(fd.get("phone") || "");
+                const phoneErr = phoneError(rawPhone);
+                if (phoneErr) {
+                  toast.error(phoneErr);
                   return;
                 }
+                const phoneNum = phoneDigits(rawPhone);
                 const values = {
                   name,
                   title: String(fd.get("title")) || null,
                   email: String(fd.get("email")) || null,
-                  phone: phone || null,
+                  phone: phoneNum ? `+${String(fd.get("phone_country") || "91")}${phoneNum}` : null,
                 };
                 if (editingProvider) {
                   updateProvider.mutate(
@@ -746,16 +749,7 @@ function SettingsPage() {
                   />
                 </Field>
                 <Field label="Phone" className="sm:col-span-2">
-                  <input
-                    name="phone"
-                    type="tel"
-                    inputMode="numeric"
-                    placeholder="10-digit mobile number"
-                    defaultValue={editingProvider?.phone ?? ""}
-                    className={inputClass}
-                    onPaste={handlePhonePaste}
-                    onInput={handlePhoneInput}
-                  />
+                  <PhoneInput name="phone" defaultValue={editingProvider?.phone ?? ""} />
                 </Field>
               </>
             ) : null}
