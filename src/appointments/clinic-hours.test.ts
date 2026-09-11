@@ -1,4 +1,7 @@
-import { describe, it, expect, setSystemTime } from "bun:test";
+import { describe, it, expect, vi, afterEach } from "vitest";
+
+const setSystemTime = (d: Date) => vi.setSystemTime(d);
+afterEach(() => vi.useRealTimers());
 import {
   getDayOfWeek,
   getMinDateTimeLocal,
@@ -27,6 +30,7 @@ describe("getMinDateTimeLocal", () => {
 
   it("returns current time if today and past open time", () => {
     const today = new Date(2026, 8, 8, 14, 15);
+    vi.useFakeTimers();
     setSystemTime(today);
     expect(getMinDateTimeLocal(today)).toBe("2026-09-08T14:15");
   });
@@ -45,6 +49,7 @@ describe("validateAppointmentTime", () => {
 
   it("handles minMinutesInFuture option", () => {
     const now = new Date(2026, 8, 8, 10, 0);
+    vi.useFakeTimers();
     setSystemTime(now);
 
     const in5m = new Date(2026, 8, 8, 10, 5);
@@ -69,6 +74,7 @@ describe("validateAppointmentTime", () => {
 describe("getAvailableTimeSlots", () => {
   it("returns slots with availability based on past/working day", () => {
     const now = new Date(2026, 8, 8, 10, 0);
+    vi.useFakeTimers();
     setSystemTime(now);
 
     const slots = getAvailableTimeSlots(now, { open_time: "09:00", close_time: "11:00" }, 60);
