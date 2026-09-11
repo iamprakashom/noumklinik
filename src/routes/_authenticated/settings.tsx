@@ -27,7 +27,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { money } from "@/data/clinic";
+import { PhoneInput } from "@/components/clinic/PhoneInput";
+import { money, phoneDigits, phoneError } from "@/data/clinic";
 import type { ConsentTemplate, Provider, Room, Service } from "@/data/clinic";
 import {
   useConsentTemplates,
@@ -274,6 +275,7 @@ function SettingsPage() {
                       <p className="text-xs text-muted-foreground">
                         {p.title ?? "Provider"}
                         {p.email ? ` · ${p.email}` : ""}
+                        {p.phone ? ` · ${p.phone}` : ""}
                       </p>
                     </div>
                     <button
@@ -546,11 +548,19 @@ function SettingsPage() {
                   toast.error(`Provider "${name}" already exists`);
                   return;
                 }
+                const rawPhone = String(fd.get("phone") || "");
+                const phoneCountry = String(fd.get("phone_country") || "91");
+                const phoneErr = phoneError(rawPhone, phoneCountry);
+                if (phoneErr) {
+                  toast.error(phoneErr);
+                  return;
+                }
+                const phoneNum = phoneDigits(rawPhone);
                 const values = {
                   name,
                   title: String(fd.get("title")) || null,
                   email: String(fd.get("email")) || null,
-                  phone: String(fd.get("phone")) || null,
+                  phone: phoneNum ? `+${String(fd.get("phone_country") || "91")}${phoneNum}` : null,
                 };
                 if (editingProvider) {
                   updateProvider.mutate(
@@ -723,12 +733,12 @@ function SettingsPage() {
 
             {dialog === "provider" ? (
               <>
-                <Field label="Title">
+                <Field label="Title / Speciality">
                   <input
                     name="title"
                     defaultValue={editingProvider?.title ?? ""}
                     className={inputClass}
-                    placeholder="Nurse Injector"
+                    placeholder="e.g. Dermatologist · Laser Specialist"
                   />
                 </Field>
                 <Field label="Email">
@@ -740,11 +750,7 @@ function SettingsPage() {
                   />
                 </Field>
                 <Field label="Phone" className="sm:col-span-2">
-                  <input
-                    name="phone"
-                    defaultValue={editingProvider?.phone ?? ""}
-                    className={inputClass}
-                  />
+                  <PhoneInput name="phone" defaultValue={editingProvider?.phone ?? ""} />
                 </Field>
               </>
             ) : null}

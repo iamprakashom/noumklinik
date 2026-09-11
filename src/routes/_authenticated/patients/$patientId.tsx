@@ -25,6 +25,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { AppointmentDetailDialog } from "@/components/clinic/AppointmentDetailDialog";
+import { PhoneInput } from "@/components/clinic/PhoneInput";
 import {
   age,
   appointmentTone,
@@ -32,8 +33,12 @@ import {
   formatDateTime,
   initials,
   invoiceTone,
+  isFutureDate,
   money,
   patientName,
+  phoneDigits,
+  phoneError,
+  todayDateStr,
   type Appointment,
 } from "@/data/clinic";
 import {
@@ -220,16 +225,26 @@ function PatientDetail() {
               e.preventDefault();
               const fd = new FormData(e.currentTarget);
               const birthDate = String(fd.get("birth_date") || "");
-              if (birthDate && birthDate > new Date().toLocaleDateString("en-CA")) {
+              if (isFutureDate(birthDate)) {
                 toast.error("Date of birth cannot be in the future");
                 return;
               }
+              const rawPhone = String(fd.get("phone") ?? "");
+              const phoneCountry = String(fd.get("phone_country") || "91");
+              const phoneErr = phoneError(rawPhone, phoneCountry);
+              if (phoneErr) {
+                toast.error(phoneErr);
+                return;
+              }
+              const phoneNum = phoneDigits(rawPhone);
               updatePatient.mutate(
                 {
                   id: patientId,
                   values: {
                     email: String(fd.get("email")) || null,
-                    phone: String(fd.get("phone")) || null,
+                    phone: phoneNum
+                      ? `+${String(fd.get("phone_country") || "91")}${phoneNum}`
+                      : null,
                     birth_date: birthDate || null,
                     preferred_channel: String(fd.get("preferred_channel")),
                     allergies: String(fd.get("allergies")) || null,
@@ -245,13 +260,13 @@ function PatientDetail() {
               <input name="email" defaultValue={patient.email ?? ""} className={inputClass} />
             </Field>
             <Field label="Phone">
-              <input name="phone" defaultValue={patient.phone ?? ""} className={inputClass} />
+              <PhoneInput name="phone" defaultValue={patient.phone ?? ""} />
             </Field>
             <Field label="Date of birth">
               <input
                 name="birth_date"
                 type="date"
-                max={new Date().toISOString().slice(0, 10)}
+                max={todayDateStr()}
                 defaultValue={patient.birth_date ?? ""}
                 className={inputClass}
               />

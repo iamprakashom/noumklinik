@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Plus, Search } from "lucide-react";
 import { AppShell, ghostButton, primaryButton } from "@/components/clinic/AppShell";
+import { PhoneInput } from "@/components/clinic/PhoneInput";
 import {
   Avatar,
   Chip,
@@ -28,7 +29,18 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { CHANNELS, LEAD_SOURCES, age, formatDate, initials, patientName } from "@/data/clinic";
+import {
+  CHANNELS,
+  LEAD_SOURCES,
+  age,
+  formatDate,
+  initials,
+  isFutureDate,
+  patientName,
+  phoneDigits,
+  phoneError,
+  todayDateStr,
+} from "@/data/clinic";
 import type { Patient } from "@/data/clinic";
 import { useAppointments, useInsert, usePatients } from "@/lib/clinic-data";
 
@@ -105,7 +117,7 @@ function PatientsPage() {
   function performInsert(values: PatientInsertValues) {
     createPatient.mutate(values, {
       onSuccess: () => {
-        toast.success("Patient added");
+        toast.success("Patient created");
         setDupeMatch(null);
         setOpen(false);
       },
@@ -115,19 +127,26 @@ function PatientsPage() {
 
   function submit(form: HTMLFormElement) {
     const fd = new FormData(form);
-    const digits = (v: string) => v.replace(/\D/g, "").slice(-10);
-    const phone = String(fd.get("phone") ?? "");
+    const rawPhone = String(fd.get("phone") ?? "");
+    const phoneCountry = String(fd.get("phone_country") || "91");
+    const phoneErr = phoneError(rawPhone, phoneCountry);
+    if (phoneErr) {
+      toast.error(phoneErr);
+      return;
+    }
+    const cleanPhone = phoneDigits(rawPhone);
     const email = String(fd.get("email") ?? "")
       .trim()
       .toLowerCase();
     const dupe = (patients.data ?? []).find(
       (p) =>
-        (phone.length >= 10 && digits(p.phone ?? "") === digits(phone)) ||
+        (cleanPhone.length === 10 && phoneDigits(p.phone).slice(-10) === cleanPhone) ||
+        (cleanPhone && p.phone === `+${phoneCountry}${cleanPhone}`) ||
         (email && (p.email ?? "").toLowerCase() === email),
     );
 
     const birthDate = String(fd.get("birth_date") || "");
-    if (birthDate && birthDate > new Date().toLocaleDateString("en-CA")) {
+    if (isFutureDate(birthDate)) {
       toast.error("Date of birth cannot be in the future");
       return;
     }
@@ -136,7 +155,7 @@ function PatientsPage() {
       first_name: String(fd.get("first_name")),
       last_name: String(fd.get("last_name")),
       email: String(fd.get("email")) || null,
-      phone: String(fd.get("phone")) || null,
+      phone: cleanPhone ? `+${String(fd.get("phone_country") || "91")}${cleanPhone}` : null,
       birth_date: birthDate || null,
       gender: String(fd.get("gender")) || null,
       source: String(fd.get("source")),
@@ -257,15 +276,10 @@ function PatientsPage() {
               <input name="email" type="email" className={inputClass} />
             </Field>
             <Field label="Phone">
-              <input name="phone" className={inputClass} />
+              <PhoneInput name="phone" />
             </Field>
             <Field label="Date of birth">
-              <input
-                name="birth_date"
-                type="date"
-                max={new Date().toISOString().slice(0, 10)}
-                className={inputClass}
-              />
+              <input name="birth_date" type="date" max={todayDateStr()} className={inputClass} />
             </Field>
             <Field label="Gender">
               <select name="gender" className={inputClass} defaultValue="">
@@ -309,7 +323,7 @@ function PatientsPage() {
               className={primaryButton}
               disabled={createPatient.isPending}
             >
-              Add patient
+              Create patient
             </button>
           </DialogFooter>
         </DialogContent>

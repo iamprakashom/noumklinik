@@ -203,11 +203,30 @@ export function formatDate(iso: string | null | undefined) {
   });
 }
 
+export function todayDateStr() {
+  const d = new Date();
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
+/** True when the given YYYY-MM-DD string is after today (local). */
+export function isFutureDate(value: string | null | undefined) {
+  if (!value) return false;
+  return value > todayDateStr();
+}
+
 export function age(birth: string | null) {
   if (!birth) return null;
-  const b = new Date(`${birth}T00:00:00Z`);
-  const diff = Date.now() - b.getTime();
-  return Math.floor(diff / (365.25 * 86_400_000));
+  const b = new Date(
+    Number(birth.slice(0, 4)),
+    Number(birth.slice(5, 7)) - 1,
+    Number(birth.slice(8, 10)),
+  );
+  const now = new Date();
+  let years = now.getFullYear() - b.getFullYear();
+  const m = now.getMonth() - b.getMonth();
+  if (m < 0 || (m === 0 && now.getDate() < b.getDate())) years -= 1;
+  return years;
 }
 
 export function isSameDay(iso: string, day: Date) {
@@ -232,4 +251,26 @@ export function toLocalInputValue(date: Date) {
 
 export function renderTemplate(body: string, vars: Record<string, string>) {
   return body.replace(/\{\{\s*(\w+)\s*\}\}/g, (_m, key: string) => vars[key] ?? `{{${key}}}`);
+}
+
+export function phoneDigits(val: string | null | undefined): string {
+  return String(val ?? "").replace(/\D/g, "");
+}
+
+export function isIndia(countryCode?: string | null): boolean {
+  if (!countryCode) return true;
+  const clean = String(countryCode).trim().replace(/^\+/, "").toUpperCase();
+  return clean === "91" || clean === "IN" || clean === "IND";
+}
+
+export function phoneError(
+  val: string | null | undefined,
+  countryCode: string | null = "91",
+): string | null {
+  if (!isIndia(countryCode)) return null;
+  if (!val) return null;
+  if (/[a-zA-Z]/.test(String(val))) return "Only numbers allowed";
+  const digits = phoneDigits(val);
+  if (digits.length !== 10) return "Phone number must be 10 digits";
+  return null;
 }
