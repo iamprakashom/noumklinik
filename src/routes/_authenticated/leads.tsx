@@ -337,18 +337,18 @@ function LeadsPage() {
         </div>
       ) : view === "table" ? (
         <div className="mt-4 overflow-x-auto rounded-xl border border-border bg-card">
-          <table className="w-full min-w-[980px] text-sm">
+          <table className="w-full min-w-[1100px] text-sm">
             <thead>
               <tr className="border-b border-border text-left text-xs text-muted-foreground">
-                <th className="px-5 py-3 font-medium">Name</th>
-                <th className="px-5 py-3 font-medium">Source</th>
-                <th className="px-5 py-3 font-medium">Treatment</th>
-                <th className="px-5 py-3 font-medium">Interest</th>
-                <th className="px-5 py-3 font-medium">Status</th>
-                <th className="px-5 py-3 font-medium">Doctor</th>
-                <th className="px-5 py-3 font-medium">Ageing</th>
-                <th className="px-5 py-3 font-medium">Next follow-up</th>
-                <th className="px-5 py-3" />
+                <th className="px-4 py-3 font-medium">Name</th>
+                <th className="px-4 py-3 font-medium">Source</th>
+                <th className="px-4 py-3 font-medium">Treatment</th>
+                <th className="px-4 py-3 font-medium">Interest</th>
+                <th className="px-4 py-3 font-medium">Status</th>
+                <th className="px-4 py-3 font-medium">Doctor</th>
+                <th className="px-4 py-3 font-medium">Ageing</th>
+                <th className="px-4 py-3 font-medium">Next follow-up</th>
+                <th className="px-4 py-3" />
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
@@ -356,27 +356,23 @@ function LeadsPage() {
                 const isOverdue = !!l.next_follow_up_at && l.next_follow_up_at < today;
                 return (
                   <tr key={l.id} className="transition-colors hover:bg-secondary/60">
-                    <td className="px-5 py-3">
-                      <p className="font-medium">{l.full_name}</p>
-                      <p className="text-xs text-muted-foreground">
+<td className="px-4 py-3">
+                      <p className="font-medium whitespace-nowrap">{l.full_name}</p>
+                      <p className="text-xs text-muted-foreground whitespace-nowrap">
                         {l.birth_date ? `${age(l.birth_date)} yrs · ` : ""}
                         {l.phone ?? l.email ?? "—"}
                       </p>
                     </td>
-                    <td className="px-5 py-3 text-xs text-muted-foreground">
-                      {sourceGroupOf(l)}
-                      {l.source && l.source !== sourceGroupOf(l) ? (
-                        <span className="block">{l.source}</span>
-                      ) : null}
+                    <td className="px-4 py-3 text-xs text-muted-foreground">
+                      <span className="whitespace-nowrap">{sourceGroupOf(l)}</span>
+                      <span className="block whitespace-nowrap">{l.source}</span>
                     </td>
-                    <td className="px-5 py-3 text-xs">
-                      {l.service_id ? serviceName(l.service_id) : (l.interest ?? "—")}
-                    </td>
-                    <td className="px-5 py-3">
+                    <td className="px-4 py-3 text-xs whitespace-nowrap">{l.service_id ? serviceName(l.service_id) : (l.interest ?? "—")}</td>
+                    <td className="px-4 py-3">
                       <select
                         value={l.temperature}
                         onChange={(e) => setField(l.id, { temperature: e.target.value })}
-                        className={`${inputClass} h-8 w-24 text-xs`}
+                        className={`${inputClass} h-8 w-full min-w-24 text-xs`}
                         aria-label="Interest strength"
                       >
                         {TEMPERATURES.map((t) => (
@@ -386,11 +382,11 @@ function LeadsPage() {
                         ))}
                       </select>
                     </td>
-                    <td className="px-5 py-3">
+                    <td className="px-4 py-3">
                       <select
                         value={l.stage}
                         onChange={(e) => setField(l.id, { stage: e.target.value })}
-                        className={`${inputClass} h-8 w-36 text-xs`}
+                        className={`${inputClass} h-8 w-full min-w-40 text-xs`}
                         aria-label="Lead status"
                       >
                         {LEAD_STAGES.map((s) => (
@@ -400,11 +396,11 @@ function LeadsPage() {
                         ))}
                       </select>
                     </td>
-                    <td className="px-5 py-3">
+                    <td className="px-4 py-3">
                       <select
                         value={l.owner_id ?? ""}
                         onChange={(e) => setField(l.id, { owner_id: e.target.value || null })}
-                        className={`${inputClass} h-8 w-36 text-xs`}
+                        className={`${inputClass} h-8 w-full min-w-32 text-xs`}
                         aria-label="Assigned doctor"
                       >
                         <option value="">Unassigned</option>
@@ -415,10 +411,10 @@ function LeadsPage() {
                         ))}
                       </select>
                     </td>
-                    <td className="px-5 py-3 text-xs tabular-nums text-muted-foreground">
+                    <td className="px-4 py-3 text-xs tabular-nums text-muted-foreground whitespace-nowrap">
                       {daysSince(l.created_at)}d
                     </td>
-                    <td className="px-5 py-3">
+                    <td className="px-4 py-3">
                       <input
                         type="date"
                         min={toLocalInputValue(new Date()).slice(0, 10)}
@@ -435,11 +431,11 @@ function LeadsPage() {
                               : null,
                           });
                         }}
-                        className={`${inputClass} h-8 w-36 text-xs ${isOverdue ? "border-status-overdue text-status-overdue" : ""}`}
+                        className={`${inputClass} h-8 w-full min-w-36 text-xs ${isOverdue ? "border-status-overdue text-status-overdue" : ""}`}
                         aria-label="Next follow-up"
                       />
                     </td>
-                    <td className="px-5 py-3 text-right">
+                    <td className="px-4 py-3 text-right whitespace-nowrap">
                       {l.stage !== "Converted" ? (
                         <button
                           className={ghostButton}
