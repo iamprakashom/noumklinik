@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, setSystemTime } from "bun:test";
-import { age, isFutureDate, phoneDigits, phoneError, todayDateStr } from "./clinic";
+import { age, isFutureDate, isIndia, phoneDigits, phoneError, todayDateStr } from "./clinic";
 
 afterEach(() => {
   // Restore the real clock so a mocked time never leaks between test files.
@@ -26,30 +26,95 @@ describe("phoneDigits", () => {
   });
 });
 
+describe("isIndia", () => {
+  it("identifies India by default or by 91, +91, IN, IND", () => {
+    expect(isIndia()).toBe(true);
+    expect(isIndia(null)).toBe(true);
+    expect(isIndia(undefined)).toBe(true);
+    expect(isIndia("91")).toBe(true);
+    expect(isIndia("+91")).toBe(true);
+    expect(isIndia("IN")).toBe(true);
+    expect(isIndia("in")).toBe(true);
+    expect(isIndia("IND")).toBe(true);
+    expect(isIndia(" +91 ")).toBe(true);
+  });
+
+  it("returns false for non-India countries", () => {
+    expect(isIndia("1")).toBe(false);
+    expect(isIndia("44")).toBe(false);
+    expect(isIndia("US")).toBe(false);
+    expect(isIndia("GB")).toBe(false);
+    expect(isIndia("977")).toBe(false);
+    expect(isIndia("61")).toBe(false);
+  });
+});
+
 describe("phoneError", () => {
-  it("returns null for empty, null or undefined input", () => {
-    expect(phoneError("")).toBe(null);
-    expect(phoneError(null)).toBe(null);
-    expect(phoneError(undefined)).toBe(null);
+  describe("India (10 digits validation)", () => {
+    it("returns null for empty, null or undefined input", () => {
+      expect(phoneError("")).toBe(null);
+      expect(phoneError(null)).toBe(null);
+      expect(phoneError(undefined)).toBe(null);
+      expect(phoneError("", "91")).toBe(null);
+      expect(phoneError("", "+91")).toBe(null);
+      expect(phoneError("", "IN")).toBe(null);
+    });
+
+    it("returns null for a valid 10-digit number", () => {
+      expect(phoneError("9876543210")).toBe(null);
+      expect(phoneError("9876543210", "91")).toBe(null);
+      expect(phoneError("9876543210", "+91")).toBe(null);
+      expect(phoneError("9876543210", "IN")).toBe(null);
+    });
+
+    it("rejects letters pasted or typed into the field", () => {
+      expect(phoneError("abc 98765 43210")).toBe("Only numbers allowed");
+      expect(phoneError("98765abc")).toBe("Only numbers allowed");
+      expect(phoneError("98765abc", "91")).toBe("Only numbers allowed");
+    });
+
+    it("rejects numbers longer than 10 digits", () => {
+      expect(phoneError("98765432109")).toBe("Phone number must be 10 digits");
+      expect(phoneError("+91 98765 43210")).toBe("Phone number must be 10 digits");
+      expect(phoneError("98765432109", "91")).toBe("Phone number must be 10 digits");
+    });
+
+    it("rejects numbers shorter than 10 digits", () => {
+      expect(phoneError("98765")).toBe("Phone number must be 10 digits");
+      expect(phoneError("98765", "91")).toBe("Phone number must be 10 digits");
+      expect(phoneError("98765", "+91")).toBe("Phone number must be 10 digits");
+    });
   });
 
-  it("returns null for a valid 10-digit number", () => {
-    expect(phoneError("9876543210")).toBe(null);
-  });
+  describe("Rest of countries (no validation required)", () => {
+    it("allows any phone number for United States (+1)", () => {
+      expect(phoneError("", "1")).toBe(null);
+      expect(phoneError("123", "1")).toBe(null);
+      expect(phoneError("1234567", "1")).toBe(null);
+      expect(phoneError("2025550123", "1")).toBe(null);
+      expect(phoneError("123456789012345", "1")).toBe(null);
+      expect(phoneError("abc-123", "1")).toBe(null);
+    });
 
-  it("rejects letters pasted or typed into the field", () => {
-    expect(phoneError("abc 98765 43210")).toBe("Only numbers allowed");
-    expect(phoneError("98765abc")).toBe("Only numbers allowed");
-  });
+    it("allows any phone number for United Kingdom (+44)", () => {
+      expect(phoneError("7911123456", "44")).toBe(null);
+      expect(phoneError("12345", "44")).toBe(null);
+      expect(phoneError("447911123456", "44")).toBe(null);
+      expect(phoneError("text", "44")).toBe(null);
+    });
 
-  it("rejects numbers longer than 10 digits", () => {
-    expect(phoneError("9876543210")).toBe(null);
-    expect(phoneError("98765432109")).toBe("Phone number must be 10 digits");
-    expect(phoneError("+91 98765 43210")).toBe("Phone number must be 10 digits");
-  });
+    it("allows any phone number for Nepal (+977)", () => {
+      expect(phoneError("9812345678", "977")).toBe(null);
+      expect(phoneError("12345", "977")).toBe(null);
+      expect(phoneError("981234567890123", "977")).toBe(null);
+    });
 
-  it("rejects numbers shorter than 10 digits", () => {
-    expect(phoneError("98765")).toBe("Phone number must be 10 digits");
+    it("allows any phone number for other countries", () => {
+      expect(phoneError("12345", "61")).toBe(null); // Australia
+      expect(phoneError("555", "33")).toBe(null); // France
+      expect(phoneError("abc", "49")).toBe(null); // Germany
+      expect(phoneError("", "81")).toBe(null); // Japan
+    });
   });
 });
 

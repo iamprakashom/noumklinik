@@ -257,7 +257,17 @@ export function phoneDigits(val: string | null | undefined): string {
   return String(val ?? "").replace(/\D/g, "");
 }
 
-export function phoneError(val: string | null | undefined): string | null {
+export function isIndia(countryCode?: string | null): boolean {
+  if (!countryCode) return true;
+  const clean = String(countryCode).trim().replace(/^\+/, "").toUpperCase();
+  return clean === "91" || clean === "IN" || clean === "IND";
+}
+
+export function phoneError(
+  val: string | null | undefined,
+  countryCode: string | null = "91",
+): string | null {
+  if (!isIndia(countryCode)) return null;
   if (!val) return null;
   if (/[a-zA-Z]/.test(String(val))) return "Only numbers allowed";
   const digits = phoneDigits(val);

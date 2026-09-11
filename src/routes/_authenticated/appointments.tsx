@@ -279,7 +279,8 @@ function AppointmentsPage() {
     if (quickAdd) {
       const name = String(fd.get("new_patient_name") ?? "").trim();
       const rawPhone = String(fd.get("new_patient_phone") ?? "");
-      const phoneErr = phoneError(rawPhone);
+      const phoneCountry = String(fd.get("new_patient_phone_country") || "91");
+      const phoneErr = phoneError(rawPhone, phoneCountry);
       if (phoneErr) {
         toast.error(phoneErr);
         return;
@@ -289,7 +290,12 @@ function AppointmentsPage() {
         toast.error("New patient needs a name and mobile number");
         return;
       }
-      const existing = patients.data?.find((p) => phoneDigits(p.phone).slice(-10) === phone);
+      const fullPhone = `+${phoneCountry}${phone}`;
+      const existing = patients.data?.find((p) =>
+        phoneCountry === "91" && phone.length === 10
+          ? phoneDigits(p.phone).slice(-10) === phone
+          : p.phone === fullPhone,
+      );
       if (existing) {
         patientId = existing.id;
         toast.info(`${patientName(existing)} already exists — booking against that record`);

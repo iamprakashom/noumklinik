@@ -128,7 +128,8 @@ function PatientsPage() {
   function submit(form: HTMLFormElement) {
     const fd = new FormData(form);
     const rawPhone = String(fd.get("phone") ?? "");
-    const phoneErr = phoneError(rawPhone);
+    const phoneCountry = String(fd.get("phone_country") || "91");
+    const phoneErr = phoneError(rawPhone, phoneCountry);
     if (phoneErr) {
       toast.error(phoneErr);
       return;
@@ -140,6 +141,7 @@ function PatientsPage() {
     const dupe = (patients.data ?? []).find(
       (p) =>
         (cleanPhone.length === 10 && phoneDigits(p.phone).slice(-10) === cleanPhone) ||
+        (cleanPhone && p.phone === `+${phoneCountry}${cleanPhone}`) ||
         (email && (p.email ?? "").toLowerCase() === email),
     );
 

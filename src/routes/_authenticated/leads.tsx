@@ -356,7 +356,7 @@ function LeadsPage() {
                 const isOverdue = !!l.next_follow_up_at && l.next_follow_up_at < today;
                 return (
                   <tr key={l.id} className="transition-colors hover:bg-secondary/60">
-<td className="px-4 py-3">
+                    <td className="px-4 py-3">
                       <p className="font-medium whitespace-nowrap">{l.full_name}</p>
                       <p className="text-xs text-muted-foreground whitespace-nowrap">
                         {l.birth_date ? `${age(l.birth_date)} yrs · ` : ""}
@@ -367,7 +367,9 @@ function LeadsPage() {
                       <span className="whitespace-nowrap">{sourceGroupOf(l)}</span>
                       <span className="block whitespace-nowrap">{l.source}</span>
                     </td>
-                    <td className="px-4 py-3 text-xs whitespace-nowrap">{l.service_id ? serviceName(l.service_id) : (l.interest ?? "—")}</td>
+                    <td className="px-4 py-3 text-xs whitespace-nowrap">
+                      {l.service_id ? serviceName(l.service_id) : (l.interest ?? "—")}
+                    </td>
                     <td className="px-4 py-3">
                       <select
                         value={l.temperature}
@@ -579,7 +581,8 @@ function LeadsPage() {
                 return;
               }
               const phone = String(fd.get("phone") || "");
-              const phoneErr = phoneError(phone);
+              const phoneCountry = String(fd.get("phone_country") || "91");
+              const phoneErr = phoneError(phone, phoneCountry);
               if (phoneErr) {
                 toast.error(phoneErr);
                 return;
@@ -601,14 +604,17 @@ function LeadsPage() {
                 stage: "New",
               };
 
-              if (phoneNum.length === 10) {
+              const fullPhone = phoneNum ? `+${phoneCountry}${phoneNum}` : "";
+              if (phoneNum) {
                 if (!patients.isSuccess || !leads.isSuccess) {
                   toast.error("Unable to verify duplicate phone numbers. Please try again.");
                   return;
                 }
 
-                const existingPatient = patients.data?.find(
-                  (p) => phoneDigits(p.phone).slice(-10) === phoneNum,
+                const existingPatient = patients.data?.find((p) =>
+                  phoneCountry === "91" && phoneNum.length === 10
+                    ? phoneDigits(p.phone).slice(-10) === phoneNum
+                    : fullPhone && p.phone === fullPhone,
                 );
                 if (existingPatient) {
                   setDuplicateWarning({
@@ -619,8 +625,10 @@ function LeadsPage() {
                   return;
                 }
 
-                const existingLead = leads.data?.find(
-                  (l) => phoneDigits(l.phone).slice(-10) === phoneNum,
+                const existingLead = leads.data?.find((l) =>
+                  phoneCountry === "91" && phoneNum.length === 10
+                    ? phoneDigits(l.phone).slice(-10) === phoneNum
+                    : fullPhone && l.phone === fullPhone,
                 );
                 if (existingLead) {
                   setDuplicateWarning({

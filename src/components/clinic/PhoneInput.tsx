@@ -2,25 +2,7 @@ import { useState } from "react";
 import { inputClass } from "@/components/clinic/bits";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
 import { phoneError } from "@/data/clinic";
-
-const COUNTRIES = [
-  { code: "91", label: "India", flag: "+91" },
-  { code: "1", label: "United States", flag: "+1" },
-  { code: "44", label: "United Kingdom", flag: "+44" },
-  { code: "977", label: "Nepal", flag: "+977" },
-];
-
-function splitDefault(val: string | null | undefined): { code: string; value: string } {
-  if (!val) return { code: "91", value: "" };
-  const s = String(val).trim();
-  const digits = s.replace(/\D/g, "");
-  if (s.startsWith("+") && digits.length > 10) {
-    for (const c of COUNTRIES) {
-      if (digits.startsWith(c.code)) return { code: c.code, value: digits.slice(c.code.length) };
-    }
-  }
-  return { code: "91", value: digits };
-}
+import { COUNTRIES, DEFAULT_COUNTRY, splitDefault } from "@/data/countries";
 
 interface PhoneInputProps {
   name: string;
@@ -31,21 +13,23 @@ interface PhoneInputProps {
 
 export function PhoneInput({ name, defaultValue, required, className }: PhoneInputProps) {
   const initial = splitDefault(defaultValue ?? "");
-  const [countryCode, setCountryCode] = useState(initial.code);
+  const [countryIso, setCountryIso] = useState(initial.iso);
   const [value, setValue] = useState(initial.value);
-  const error = phoneError(value);
+
+  const currentCountry = COUNTRIES.find((c) => c.iso === countryIso) ?? DEFAULT_COUNTRY;
+  const error = phoneError(value, currentCountry.code);
 
   return (
     <div className={className}>
-      <input type="hidden" name={`${name}_country`} value={countryCode} />
+      <input type="hidden" name={`${name}_country`} value={currentCountry.code} />
       <div className="flex gap-1.5">
-        <Select value={countryCode} onValueChange={setCountryCode}>
-          <SelectTrigger className="w-[4.25rem] shrink-0">
-            <span>+{countryCode}</span>
+        <Select value={countryIso} onValueChange={setCountryIso}>
+          <SelectTrigger className="w-[4.75rem] shrink-0">
+            <span>+{currentCountry.code}</span>
           </SelectTrigger>
-          <SelectContent className="min-w-48">
+          <SelectContent className="min-w-64 max-h-72">
             {COUNTRIES.map((c) => (
-              <SelectItem key={c.code} value={c.code}>
+              <SelectItem key={c.iso} value={c.iso}>
                 <span className="font-medium">{c.flag}</span>
                 <span className="ml-2">{c.label}</span>
               </SelectItem>
@@ -56,7 +40,7 @@ export function PhoneInput({ name, defaultValue, required, className }: PhoneInp
           name={name}
           type="text"
           inputMode="tel"
-          placeholder="10-digit mobile number"
+          placeholder={currentCountry.code === "91" ? "10-digit mobile number" : "Mobile number"}
           className={inputClass}
           value={value}
           onChange={(e) => setValue(e.target.value)}

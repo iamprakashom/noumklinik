@@ -230,7 +230,8 @@ function PatientDetail() {
                 return;
               }
               const rawPhone = String(fd.get("phone") ?? "");
-              const phoneErr = phoneError(rawPhone);
+              const phoneCountry = String(fd.get("phone_country") || "91");
+              const phoneErr = phoneError(rawPhone, phoneCountry);
               if (phoneErr) {
                 toast.error(phoneErr);
                 return;
