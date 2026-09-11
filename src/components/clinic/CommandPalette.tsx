@@ -6,7 +6,9 @@ import {
   CreditCard,
   LayoutDashboard,
   MessageSquare,
+  RotateCcw,
   Settings,
+
   Sparkles,
   UserPlus,
   Users,
@@ -26,6 +28,8 @@ import { useLeads, usePatients } from "@/lib/clinic-data";
 const PAGES = [
   { to: "/dashboard", label: "Today", icon: LayoutDashboard },
   { to: "/appointments", label: "Appointments", icon: CalendarDays },
+  { to: "/recalls", label: "Recalls", icon: RotateCcw },
+
   { to: "/patients", label: "Patients", icon: Users },
   { to: "/leads", label: "Leads", icon: UserPlus },
   { to: "/inbox", label: "Inbox", icon: MessageSquare },
