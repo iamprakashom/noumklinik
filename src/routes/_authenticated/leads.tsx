@@ -381,7 +381,7 @@ function LeadsPage() {
                       <select
                         value={l.stage}
                         onChange={(e) => setField(l.id, { stage: e.target.value })}
-                        className={`${inputClass} h-8 w-full min-w-32 text-xs`}
+                        className={`${inputClass} h-8 w-full min-w-40 text-xs`}
                         aria-label="Lead status"
                       >
                         {LEAD_STAGES.map((s) => (
