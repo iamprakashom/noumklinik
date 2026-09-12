@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { toast } from "sonner";
-import { Plus, Trash2 } from "lucide-react";
+import { Pencil, Plus, Trash2 } from "lucide-react";
 import { ghostButton, primaryButton } from "@/components/clinic/AppShell";
 import { EmptyState, Field, Panel, inputClass, textareaClass } from "@/components/clinic/bits";
 import { Switch } from "@/components/ui/switch";
@@ -11,7 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { money } from "@/data/clinic";
+import { money, type Package } from "@/data/clinic";
 import {
   useInsert,
   usePackageItems,
@@ -35,6 +35,7 @@ export function PackagesTab() {
     message: string;
     onConfirm: () => void;
   } | null>(null);
+  const [editing, setEditing] = useState<Package | null>(null);
   const [refundable, setRefundable] = useState(false);
   const [drafts, setDrafts] = useState<Draft[]>([{ service_id: "", sessions: 6 }]);
 
@@ -45,10 +46,12 @@ export function PackagesTab() {
   const addItems = useInsert("package_items");
   const updatePackage = useUpdate("packages");
   const removePackage = useRemove("packages");
+  const removeItem = useRemove("package_items");
 
   const serviceName = (id: string) => services.data?.find((s) => s.id === id)?.name ?? "Service";
 
   const reset = () => {
+    setEditing(null);
     setName("");
     setDescription("");
     setPrice(0);
@@ -57,11 +60,33 @@ export function PackagesTab() {
     setDrafts([{ service_id: "", sessions: 6 }]);
   };
 
+  const startEdit = (p: Package) => {
+    const existing = (items.data ?? []).filter((i) => i.package_id === p.id);
+    setEditing(p);
+    setName(p.name);
+    setDescription(p.description ?? "");
+    setPrice(p.price);
+    setValidity(p.validity_days);
+    setRefundable(p.refundable);
+    setDrafts(
+      existing.length > 0
+        ? existing.map((i) => ({ service_id: i.service_id, sessions: i.sessions }))
+        : [{ service_id: "", sessions: 1 }],
+    );
+    setOpen(true);
+  };
+
   return (
     <Panel
       title="Packages"
       action={
-        <button className={primaryButton} onClick={() => setOpen(true)}>
+        <button
+          className={primaryButton}
+          onClick={() => {
+            setEditing(null);
+            setOpen(true);
+          }}
+        >
           <Plus className="size-3.5" /> New package
         </button>
       }
@@ -77,20 +102,23 @@ export function PackagesTab() {
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-medium">{p.name}</p>
                   <p className="text-xs text-muted-foreground">
-                    {included.map((i) => `${i.sessions} × ${serviceName(i.service_id)}`).join(", ") ||
-                      "No sessions defined"}{" "}
+                    {included
+                      .map((i) => `${i.sessions} × ${serviceName(i.service_id)}`)
+                      .join(", ") || "No sessions defined"}{" "}
                     · valid {p.validity_days} days ·{" "}
                     {p.refundable ? "unused refundable" : "non-refundable"}
                   </p>
                 </div>
                 <span className="text-sm tabular-nums">{money(p.price)}</span>
-                <Switch
-                  checked={p.active}
-                  aria-label={`Toggle ${p.name}`}
-                  onCheckedChange={(v) =>
-                    updatePackage.mutate({ id: p.id, values: { active: v } })
-                  }
-                />
+                <button
+                  type="button"
+                  className={ghostButton}
+                  aria-label={`Edit ${p.name}`}
+                  title="Edit package"
+                  onClick={() => startEdit(p)}
+                >
+                  <Pencil className="size-3.5" />
+                </button>
                 <button
                   className={ghostButton}
                   aria-label={`Delete ${p.name}`}
@@ -123,28 +151,55 @@ export function PackagesTab() {
       >
         <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>New package</DialogTitle>
+            <DialogTitle>{editing ? "Edit package" : "New package"}</DialogTitle>
           </DialogHeader>
           <form
             id="new-package"
             className="grid gap-4"
             onSubmit={(e) => {
               e.preventDefault();
-              const lines = drafts.filter((d) => d.service_id && (d.sessions === "" || d.sessions > 0))
+              const lines = drafts
+                .filter((d) => d.service_id && (d.sessions === "" || d.sessions > 0))
                 .map((d) => ({ ...d, sessions: d.sessions === "" ? 1 : d.sessions }));
               if (lines.length === 0) {
                 toast.error("Add at least one service with sessions");
                 return;
               }
-              addPackage.mutate(
-                {
-                  name,
-                  description: description || null,
-                  price: price === "" ? 0 : price,
-                  validity_days: validity === "" ? 180 : validity,
-                  refundable,
-                },
-                {
+              const values = {
+                name,
+                description: description || null,
+                price: price === "" ? 0 : price,
+                validity_days: validity === "" ? 180 : validity,
+                refundable,
+              };
+              if (editing) {
+                updatePackage.mutate(
+                  { id: editing.id, values },
+                  {
+                    onSuccess: () => {
+                      const keep = (items.data ?? []).filter((i) => i.package_id === editing.id);
+                      keep.forEach((item) => removeItem.mutate(item.id));
+                      addItems.mutate(
+                        lines.map((l) => ({
+                          package_id: editing.id,
+                          service_id: l.service_id,
+                          sessions: l.sessions,
+                        })),
+                        {
+                          onSuccess: () => {
+                            toast.success("Package updated");
+                            setOpen(false);
+                            reset();
+                          },
+                          onError: (err) => toast.error(err.message),
+                        },
+                      );
+                    },
+                    onError: (err) => toast.error(err.message),
+                  },
+                );
+              } else {
+                addPackage.mutate(values, {
                   onSuccess: (rows) => {
                     const created = (rows as { id: string }[])[0];
                     if (!created) return;
@@ -165,8 +220,8 @@ export function PackagesTab() {
                     );
                   },
                   onError: (err) => toast.error(err.message),
-                },
-              );
+                });
+              }
             }}
           >
             <Field label="Package name">
@@ -282,7 +337,7 @@ export function PackagesTab() {
               Cancel
             </button>
             <button type="submit" form="new-package" className={primaryButton}>
-              Create package
+              {editing ? "Save changes" : "Create package"}
             </button>
           </DialogFooter>
         </DialogContent>
@@ -295,10 +350,7 @@ export function PackagesTab() {
           </DialogHeader>
           <p className="text-sm text-muted-foreground">{confirmDelete?.message}</p>
           <DialogFooter>
-            <button
-              className={ghostButton}
-              type="button"
-              onClick={() => setConfirmDelete(null)}>
+            <button className={ghostButton} type="button" onClick={() => setConfirmDelete(null)}>
               Cancel
             </button>
             <button
@@ -307,7 +359,8 @@ export function PackagesTab() {
               onClick={() => {
                 confirmDelete?.onConfirm();
                 setConfirmDelete(null);
-              }}>
+              }}
+            >
               Delete
             </button>
           </DialogFooter>
