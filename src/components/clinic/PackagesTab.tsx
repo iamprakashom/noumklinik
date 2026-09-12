@@ -173,28 +173,35 @@ export function PackagesTab() {
                 refundable,
               };
               if (editing) {
+                const replaceItems = async () => {
+                  try {
+                    const existingItems = (items.data ?? []).filter(
+                      (i) => i.package_id === editing.id,
+                    );
+                    await Promise.all(existingItems.map((item) => removeItem.mutateAsync(item.id)));
+                    addItems.mutate(
+                      lines.map((l) => ({
+                        package_id: editing.id,
+                        service_id: l.service_id,
+                        sessions: l.sessions,
+                      })),
+                      {
+                        onSuccess: () => {
+                          toast.success("Package updated");
+                          setOpen(false);
+                          reset();
+                        },
+                        onError: (err) => toast.error(err.message),
+                      },
+                    );
+                  } catch (err) {
+                    toast.error((err as Error).message);
+                  }
+                };
                 updatePackage.mutate(
                   { id: editing.id, values },
                   {
-                    onSuccess: () => {
-                      const keep = (items.data ?? []).filter((i) => i.package_id === editing.id);
-                      keep.forEach((item) => removeItem.mutate(item.id));
-                      addItems.mutate(
-                        lines.map((l) => ({
-                          package_id: editing.id,
-                          service_id: l.service_id,
-                          sessions: l.sessions,
-                        })),
-                        {
-                          onSuccess: () => {
-                            toast.success("Package updated");
-                            setOpen(false);
-                            reset();
-                          },
-                          onError: (err) => toast.error(err.message),
-                        },
-                      );
-                    },
+                    onSuccess: () => void replaceItems(),
                     onError: (err) => toast.error(err.message),
                   },
                 );
