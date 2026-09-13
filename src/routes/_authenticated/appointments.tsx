@@ -2,10 +2,10 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { BellRing, CalendarClock, Eye, Plus } from "lucide-react";
+import { BellRing, CalendarClock, CalendarDays, Eye, Plus, RotateCcw } from "lucide-react";
 import { AppShell, ghostButton, primaryButton } from "@/components/clinic/AppShell";
 import { BookingRequests } from "@/components/clinic/BookingRequests";
-import { Chip, EmptyState, Field, inputClass, textareaClass } from "@/components/clinic/bits";
+import { Chip, Field, inputClass, textareaClass } from "@/components/clinic/bits";
 import { PhoneInput } from "@/components/clinic/PhoneInput";
 import {
   ConflictAlertDialog,
@@ -423,56 +423,89 @@ function AppointmentsPage() {
       title="Appointments"
       subtitle="Bookings across WhatsApp, Instagram and walk-ins — reschedule, assign a doctor or send a reminder"
       actions={
-        <>
-          <select
-            value={range}
-            onChange={(e) => setRange(e.target.value as RangeKey)}
-            className={`${inputClass} w-32`}
-            aria-label="Date range"
-          >
-            <option value="today">Today</option>
-            <option value="upcoming">Upcoming</option>
-            <option value="past">Past</option>
-            <option value="all">All</option>
-          </select>
-          <select
-            value={sourceFilter}
-            onChange={(e) => setSourceFilter(e.target.value)}
-            className={`${inputClass} w-36`}
-            aria-label="Filter by source"
-          >
-            <option value="all">All sources</option>
-            {APPOINTMENT_SOURCES.map((s) => (
-              <option key={s} value={s}>
-                {s}
-              </option>
-            ))}
-          </select>
-          <select
-            value={doctorFilter}
-            onChange={(e) => setDoctorFilter(e.target.value)}
-            className={`${inputClass} w-40`}
-            aria-label="Filter by doctor"
-          >
-            <option value="all">All doctors</option>
-            <option value="unassigned">Unassigned</option>
-            {providers.data?.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
-              </option>
-            ))}
-          </select>
-          <button className={primaryButton} onClick={() => setOpen(true)}>
-            <Plus className="size-3.5" /> New appointment
-          </button>
-        </>
+        <button className={primaryButton} onClick={() => setOpen(true)}>
+          <Plus className="size-3.5" /> New appointment
+        </button>
       }
     >
       <BookingRequests />
-      {rows.length === 0 ? (
-        <EmptyState>No appointments match these filters.</EmptyState>
-      ) : (
-        <div className="overflow-x-auto rounded-xl border border-border bg-card">
+      <section aria-label="Appointment list" className="overflow-hidden rounded-xl border border-border bg-card">
+        <div className="grid gap-2 border-b border-border bg-card p-3 sm:grid-cols-3 lg:flex lg:items-center">
+          <label className="grid min-w-0 gap-1 lg:flex lg:items-center lg:gap-2">
+            <span className="flex shrink-0 items-center gap-1.5 text-[11px] font-semibold text-muted-foreground">
+              <CalendarDays className="size-3.5" aria-hidden /> Date
+            </span>
+            <select
+              value={range}
+              onChange={(e) => setRange(e.target.value as RangeKey)}
+              className={`${inputClass} min-w-0 lg:w-32`}
+              aria-label="Filter appointments by date"
+            >
+              <option value="today">Today</option>
+              <option value="upcoming">Upcoming</option>
+              <option value="past">Past</option>
+              <option value="all">All dates</option>
+            </select>
+          </label>
+          <label className="grid min-w-0 gap-1 lg:flex lg:items-center lg:gap-2">
+            <span className="shrink-0 text-[11px] font-semibold text-muted-foreground">Source</span>
+            <select
+              value={sourceFilter}
+              onChange={(e) => setSourceFilter(e.target.value)}
+              className={`${inputClass} min-w-0 lg:w-36`}
+              aria-label="Filter appointments by source"
+            >
+              <option value="all">All sources</option>
+              {APPOINTMENT_SOURCES.map((s) => (
+                <option key={s} value={s}>
+                  {s}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="grid min-w-0 gap-1 lg:flex lg:items-center lg:gap-2">
+            <span className="shrink-0 text-[11px] font-semibold text-muted-foreground">Doctor</span>
+            <select
+              value={doctorFilter}
+              onChange={(e) => setDoctorFilter(e.target.value)}
+              className={`${inputClass} min-w-0 lg:w-44`}
+              aria-label="Filter appointments by doctor"
+            >
+              <option value="all">All doctors</option>
+              <option value="unassigned">Unassigned</option>
+              {providers.data?.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <div className="flex min-w-0 items-center justify-between gap-3 sm:col-span-3 lg:ml-auto lg:justify-end">
+            <span aria-live="polite" className="whitespace-nowrap text-xs tabular-nums text-muted-foreground">
+              {rows.length} {rows.length === 1 ? "appointment" : "appointments"}
+            </span>
+            {range !== "upcoming" || sourceFilter !== "all" || doctorFilter !== "all" ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setRange("upcoming");
+                  setSourceFilter("all");
+                  setDoctorFilter("all");
+                }}
+                className={`${ghostButton} shrink-0`}
+                aria-label="Clear appointment filters"
+              >
+                <RotateCcw className="size-3.5" aria-hidden /> Clear
+              </button>
+            ) : null}
+          </div>
+        </div>
+        {rows.length === 0 ? (
+          <p className="px-4 py-12 text-center text-xs text-muted-foreground">
+            No appointments match these filters.
+          </p>
+        ) : (
+          <div className="overflow-x-auto">
           <table className="w-full min-w-[900px] text-sm">
             <thead>
               <tr className="border-b border-border text-left text-xs text-muted-foreground">
@@ -677,8 +710,9 @@ function AppointmentsPage() {
               })}
             </tbody>
           </table>
-        </div>
-      )}
+          </div>
+        )}
+      </section>
 
       <Dialog open={!!reschedule} onOpenChange={(v) => !v && setReschedule(null)}>
         <DialogContent className="sm:max-w-md">
