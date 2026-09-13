@@ -755,7 +755,6 @@ export type Database = {
       }
       leads: {
         Row: {
-          birth_date: string | null
           clinic_id: string
           converted_patient_id: string | null
           created_at: string
@@ -776,7 +775,6 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          birth_date?: string | null
           clinic_id?: string
           converted_patient_id?: string | null
           created_at?: string
@@ -797,7 +795,6 @@ export type Database = {
           updated_at?: string
         }
         Update: {
-          birth_date?: string | null
           clinic_id?: string
           converted_patient_id?: string | null
           created_at?: string
