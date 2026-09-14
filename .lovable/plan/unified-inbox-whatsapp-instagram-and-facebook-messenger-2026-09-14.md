@@ -8,7 +8,7 @@ Give clinic staff one Inbox for customer conversations from:
 - Facebook Page Messenger
 - Instagram Direct Messages
 
-A clinic admin connects its Facebook Page once, selects the linked Instagram professional account, and enables the channels. Existing WhatsApp conversations and replies continue working throughout the change.
+A clinic admin connects its Facebook Page once, selects the linked Instagram professional account, and enables the channels. Existing WhatsApp conversations and replies continue working throughout the change. WhatsApp inbox feature continue along with Facebook Page messanger and Instagram Direct Messages.
 
 ## Clinic experience
 
