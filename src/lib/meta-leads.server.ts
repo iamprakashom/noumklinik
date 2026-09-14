@@ -152,7 +152,15 @@ export function loginUrl(redirectUri: string, state: string) {
   url.searchParams.set("response_type", "code");
   url.searchParams.set(
     "scope",
-    "pages_show_list,pages_manage_metadata,leads_retrieval,pages_read_engagement",
+    [
+      "pages_show_list",
+      "pages_manage_metadata",
+      "leads_retrieval",
+      "pages_read_engagement",
+      "pages_messaging",
+      "instagram_basic",
+      "instagram_manage_messages",
+    ].join(","),
   );
   return url.toString();
 }
