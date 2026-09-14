@@ -4,25 +4,27 @@ const GRAPH = "https://graph.facebook.com/v20.0";
 
 export type InboxChannel = "whatsapp" | "messenger" | "instagram";
 
+type JsonObject = Record<string, unknown>;
+
 export type StoreMessageInput = {
   clinicId: string;
   channel: InboxChannel;
   providerConversationId: string;
   providerCustomerId: string;
-  providerMessageId?: string | null;
-  customerName?: string | null;
-  customerUsername?: string | null;
-  customerAvatarUrl?: string | null;
-  patientId?: string | null;
-  leadId?: string | null;
+  providerMessageId?: string | null | undefined;
+  customerName?: string | null | undefined;
+  customerUsername?: string | null | undefined;
+  customerAvatarUrl?: string | null | undefined;
+  patientId?: string | null | undefined;
+  leadId?: string | null | undefined;
   direction: "incoming" | "outgoing";
   body: string;
-  messageType?: string;
-  attachment?: Record<string, unknown> | null;
+  messageType?: string | undefined;
+  attachment?: JsonObject | null | undefined;
   status: string;
-  error?: string | null;
-  sentAt?: string;
-  legacyWhatsAppMessageId?: string | null;
+  error?: string | null | undefined;
+  sentAt?: string | undefined;
+  legacyWhatsAppMessageId?: string | null | undefined;
 };
 
 export async function getConnection(
@@ -68,7 +70,7 @@ export async function upsertConnection(input: {
         picture_url: input.pictureUrl ?? null,
         status: input.status ?? "connected",
         enabled: input.enabled ?? true,
-        capabilities: input.capabilities ?? { text: true, attachments: true },
+        capabilities: (input.capabilities ?? { text: true, attachments: true }) as never,
         last_error: input.lastError ?? null,
         last_checked_at: new Date().toISOString(),
         connected_at: new Date().toISOString(),
@@ -109,10 +111,13 @@ export async function storeMessage(input: StoreMessageInput) {
     last_message_at: sentAt,
     last_direction: input.direction,
     unread_count: unread,
-    reply_window_expires_at:
-      input.direction === "incoming"
-        ? new Date(new Date(sentAt).getTime() + 24 * 60 * 60_000).toISOString()
-        : undefined,
+    ...(input.direction === "incoming"
+      ? {
+          reply_window_expires_at: new Date(
+            new Date(sentAt).getTime() + 24 * 60 * 60_000,
+          ).toISOString(),
+        }
+      : {}),
   };
   const { data: conversation, error: conversationError } = await supabaseAdmin
     .from("inbox_conversations")
@@ -130,7 +135,7 @@ export async function storeMessage(input: StoreMessageInput) {
       direction: input.direction,
       body: input.body,
       message_type: input.messageType ?? "text",
-      attachment: input.attachment ?? null,
+      attachment: (input.attachment ?? null) as never,
       status: input.status,
       error: input.error ?? null,
       provider_sent_at: sentAt,

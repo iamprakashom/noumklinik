@@ -75,7 +75,7 @@ export const sendInboxReply = createServerFn({ method: "POST" })
     const expiry = conversation.reply_window_expires_at ? new Date(conversation.reply_window_expires_at).getTime() : 0;
     if (Date.now() > expiry) throw new Error("The 24-hour reply window has closed for this conversation");
 
-    let result: { ok: boolean; providerId?: string; error?: string };
+    let result: { ok: boolean; providerId?: string | undefined; error?: string | undefined };
     if (conversation.channel === "whatsapp") {
       const { sendText } = await import("@/lib/whatsapp.server");
       result = await sendText(clinicId, conversation.provider_customer_id, data.body);
