@@ -574,6 +574,235 @@ export type Database = {
           },
         ]
       }
+      inbox_connections: {
+        Row: {
+          capabilities: Json
+          channel: string
+          clinic_id: string
+          connected_at: string | null
+          created_at: string
+          display_name: string | null
+          enabled: boolean
+          id: string
+          last_checked_at: string | null
+          last_error: string | null
+          picture_url: string | null
+          provider_account_id: string
+          provider_parent_id: string | null
+          status: string
+          updated_at: string
+          username: string | null
+        }
+        Insert: {
+          capabilities?: Json
+          channel: string
+          clinic_id?: string
+          connected_at?: string | null
+          created_at?: string
+          display_name?: string | null
+          enabled?: boolean
+          id?: string
+          last_checked_at?: string | null
+          last_error?: string | null
+          picture_url?: string | null
+          provider_account_id: string
+          provider_parent_id?: string | null
+          status?: string
+          updated_at?: string
+          username?: string | null
+        }
+        Update: {
+          capabilities?: Json
+          channel?: string
+          clinic_id?: string
+          connected_at?: string | null
+          created_at?: string
+          display_name?: string | null
+          enabled?: boolean
+          id?: string
+          last_checked_at?: string | null
+          last_error?: string | null
+          picture_url?: string | null
+          provider_account_id?: string
+          provider_parent_id?: string | null
+          status?: string
+          updated_at?: string
+          username?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inbox_connections_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      inbox_conversations: {
+        Row: {
+          channel: string
+          clinic_id: string
+          connection_id: string | null
+          created_at: string
+          customer_avatar_url: string | null
+          customer_name: string | null
+          customer_username: string | null
+          id: string
+          last_direction: string
+          last_message: string
+          last_message_at: string
+          lead_id: string | null
+          patient_id: string | null
+          provider_conversation_id: string
+          provider_customer_id: string
+          reply_window_expires_at: string | null
+          status: string
+          unread_count: number
+          updated_at: string
+        }
+        Insert: {
+          channel: string
+          clinic_id?: string
+          connection_id?: string | null
+          created_at?: string
+          customer_avatar_url?: string | null
+          customer_name?: string | null
+          customer_username?: string | null
+          id?: string
+          last_direction?: string
+          last_message?: string
+          last_message_at?: string
+          lead_id?: string | null
+          patient_id?: string | null
+          provider_conversation_id: string
+          provider_customer_id: string
+          reply_window_expires_at?: string | null
+          status?: string
+          unread_count?: number
+          updated_at?: string
+        }
+        Update: {
+          channel?: string
+          clinic_id?: string
+          connection_id?: string | null
+          created_at?: string
+          customer_avatar_url?: string | null
+          customer_name?: string | null
+          customer_username?: string | null
+          id?: string
+          last_direction?: string
+          last_message?: string
+          last_message_at?: string
+          lead_id?: string | null
+          patient_id?: string | null
+          provider_conversation_id?: string
+          provider_customer_id?: string
+          reply_window_expires_at?: string | null
+          status?: string
+          unread_count?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inbox_conversations_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inbox_conversations_connection_id_fkey"
+            columns: ["connection_id"]
+            isOneToOne: false
+            referencedRelation: "inbox_connections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inbox_conversations_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inbox_conversations_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      inbox_messages: {
+        Row: {
+          attachment: Json | null
+          body: string
+          clinic_id: string
+          conversation_id: string
+          created_at: string
+          direction: string
+          error: string | null
+          id: string
+          legacy_whatsapp_message_id: string | null
+          message_type: string
+          provider_message_id: string | null
+          provider_sent_at: string
+          read_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          attachment?: Json | null
+          body?: string
+          clinic_id?: string
+          conversation_id: string
+          created_at?: string
+          direction: string
+          error?: string | null
+          id?: string
+          legacy_whatsapp_message_id?: string | null
+          message_type?: string
+          provider_message_id?: string | null
+          provider_sent_at?: string
+          read_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          attachment?: Json | null
+          body?: string
+          clinic_id?: string
+          conversation_id?: string
+          created_at?: string
+          direction?: string
+          error?: string | null
+          id?: string
+          legacy_whatsapp_message_id?: string | null
+          message_type?: string
+          provider_message_id?: string | null
+          provider_sent_at?: string
+          read_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inbox_messages_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inbox_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "inbox_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invoice_items: {
         Row: {
           amount: number
@@ -998,7 +1227,15 @@ export type Database = {
           created_at: string
           error_message: string | null
           id: string
+          instagram_account_id: string | null
+          instagram_enabled: boolean
+          instagram_picture_url: string | null
+          instagram_username: string | null
           last_lead_at: string | null
+          messaging_connected_at: string | null
+          messaging_error: string | null
+          messaging_status: string
+          messenger_enabled: boolean
           page_access_token: string | null
           page_id: string
           page_name: string
@@ -1014,7 +1251,15 @@ export type Database = {
           created_at?: string
           error_message?: string | null
           id?: string
+          instagram_account_id?: string | null
+          instagram_enabled?: boolean
+          instagram_picture_url?: string | null
+          instagram_username?: string | null
           last_lead_at?: string | null
+          messaging_connected_at?: string | null
+          messaging_error?: string | null
+          messaging_status?: string
+          messenger_enabled?: boolean
           page_access_token?: string | null
           page_id: string
           page_name: string
@@ -1030,7 +1275,15 @@ export type Database = {
           created_at?: string
           error_message?: string | null
           id?: string
+          instagram_account_id?: string | null
+          instagram_enabled?: boolean
+          instagram_picture_url?: string | null
+          instagram_username?: string | null
           last_lead_at?: string | null
+          messaging_connected_at?: string | null
+          messaging_error?: string | null
+          messaging_status?: string
+          messenger_enabled?: boolean
           page_access_token?: string | null
           page_id?: string
           page_name?: string
