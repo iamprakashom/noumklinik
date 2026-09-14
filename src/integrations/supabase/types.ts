@@ -984,12 +984,14 @@ export type Database = {
       }
       leads: {
         Row: {
+          birth_date: string | null
           clinic_id: string
           converted_patient_id: string | null
           created_at: string
           email: string | null
           external_id: string | null
           full_name: string
+          gender: string | null
           id: string
           interest: string | null
           next_follow_up_at: string | null
@@ -1004,12 +1006,14 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          birth_date?: string | null
           clinic_id?: string
           converted_patient_id?: string | null
           created_at?: string
           email?: string | null
           external_id?: string | null
           full_name: string
+          gender?: string | null
           id?: string
           interest?: string | null
           next_follow_up_at?: string | null
@@ -1024,12 +1028,14 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          birth_date?: string | null
           clinic_id?: string
           converted_patient_id?: string | null
           created_at?: string
           email?: string | null
           external_id?: string | null
           full_name?: string
+          gender?: string | null
           id?: string
           interest?: string | null
           next_follow_up_at?: string | null
