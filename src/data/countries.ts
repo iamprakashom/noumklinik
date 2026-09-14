@@ -247,7 +247,12 @@ export const COUNTRIES: Country[] = [
   { code: "263", label: "Zimbabwe", flag: "+263", iso: "ZW" },
 ];
 
-export const DEFAULT_COUNTRY = COUNTRIES[0];
+export const DEFAULT_COUNTRY: Country = COUNTRIES[0] ?? {
+  code: "91",
+  label: "India",
+  flag: "+91",
+  iso: "IN",
+};
 
 const SORTED_COUNTRIES_DESC = [...COUNTRIES].sort((a, b) => {
   if (b.code.length !== a.code.length) {
