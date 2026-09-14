@@ -135,7 +135,7 @@ export async function storeMessage(input: StoreMessageInput) {
       direction: input.direction,
       body: input.body,
       message_type: input.messageType ?? "text",
-      attachment: input.attachment ?? null,
+      attachment: (input.attachment ?? null) as never,
       status: input.status,
       error: input.error ?? null,
       provider_sent_at: sentAt,
