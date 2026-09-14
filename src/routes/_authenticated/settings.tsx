@@ -140,6 +140,9 @@ function SettingsPage() {
         <TabsContent value="payments" className="mt-4">
           <PaymentsTab />
         </TabsContent>
+        <TabsContent value="messaging" className="mt-4">
+          <MessagingTab />
+        </TabsContent>
         <TabsContent value="whatsapp" className="mt-4">
           <WhatsAppTab />
         </TabsContent>
