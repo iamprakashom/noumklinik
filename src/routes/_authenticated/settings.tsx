@@ -8,6 +8,7 @@ import { PackagesTab } from "@/components/clinic/PackagesTab";
 import { AddonsTab } from "@/components/clinic/AddonsTab";
 import { PaymentsTab } from "@/components/clinic/PaymentsTab";
 import { WhatsAppTab } from "@/components/clinic/WhatsAppTab";
+import { MessagingTab } from "@/components/clinic/MessagingTab";
 import { LeadCaptureTab } from "@/components/clinic/LeadCaptureTab";
 import { TeamTab } from "@/components/clinic/TeamTab";
 import {
@@ -121,6 +122,7 @@ function SettingsPage() {
           <TabsTrigger value="packages">Packages</TabsTrigger>
           <TabsTrigger value="addons">Add-ons</TabsTrigger>
           <TabsTrigger value="payments">Payments</TabsTrigger>
+          <TabsTrigger value="messaging">Messaging</TabsTrigger>
           <TabsTrigger value="whatsapp">WhatsApp</TabsTrigger>
           <TabsTrigger value="lead-capture">Lead capture</TabsTrigger>
           <TabsTrigger value="team">Team</TabsTrigger>
