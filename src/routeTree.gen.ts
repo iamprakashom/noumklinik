@@ -29,6 +29,7 @@ import { Route as AuthenticatedPatientsIndexRouteImport } from './routes/_authen
 import { Route as AuthenticatedPatientsPatientIdRouteImport } from './routes/_authenticated/patients/$patientId'
 import { Route as ApiPublicHooksCashfreeRouteImport } from './routes/api/public/hooks/cashfree'
 import { Route as ApiPublicHooksMetaLeadsRouteImport } from './routes/api/public/hooks/meta-leads'
+import { Route as ApiPublicHooksMetaMessagesRouteImport } from './routes/api/public/hooks/meta-messages'
 import { Route as ApiPublicHooksMetaOauthCallbackRouteImport } from './routes/api/public/hooks/meta-oauth-callback'
 import { Route as ApiPublicHooksRazorpayRouteImport } from './routes/api/public/hooks/razorpay'
 import { Route as ApiPublicHooksRunRemindersRouteImport } from './routes/api/public/hooks/run-reminders'
@@ -137,6 +138,12 @@ const ApiPublicHooksMetaLeadsRoute = ApiPublicHooksMetaLeadsRouteImport.update({
   path: '/api/public/hooks/meta-leads',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicHooksMetaMessagesRoute =
+  ApiPublicHooksMetaMessagesRouteImport.update({
+    id: '/api/public/hooks/meta-messages',
+    path: '/api/public/hooks/meta-messages',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicHooksMetaOauthCallbackRoute =
   ApiPublicHooksMetaOauthCallbackRouteImport.update({
     id: '/api/public/hooks/meta-oauth-callback',
@@ -180,6 +187,7 @@ export interface FileRoutesByFullPath {
   '/patients/': typeof AuthenticatedPatientsIndexRoute
   '/api/public/hooks/cashfree': typeof ApiPublicHooksCashfreeRoute
   '/api/public/hooks/meta-leads': typeof ApiPublicHooksMetaLeadsRoute
+  '/api/public/hooks/meta-messages': typeof ApiPublicHooksMetaMessagesRoute
   '/api/public/hooks/meta-oauth-callback': typeof ApiPublicHooksMetaOauthCallbackRoute
   '/api/public/hooks/razorpay': typeof ApiPublicHooksRazorpayRoute
   '/api/public/hooks/run-reminders': typeof ApiPublicHooksRunRemindersRoute
@@ -205,6 +213,7 @@ export interface FileRoutesByTo {
   '/patients': typeof AuthenticatedPatientsIndexRoute
   '/api/public/hooks/cashfree': typeof ApiPublicHooksCashfreeRoute
   '/api/public/hooks/meta-leads': typeof ApiPublicHooksMetaLeadsRoute
+  '/api/public/hooks/meta-messages': typeof ApiPublicHooksMetaMessagesRoute
   '/api/public/hooks/meta-oauth-callback': typeof ApiPublicHooksMetaOauthCallbackRoute
   '/api/public/hooks/razorpay': typeof ApiPublicHooksRazorpayRoute
   '/api/public/hooks/run-reminders': typeof ApiPublicHooksRunRemindersRoute
@@ -232,6 +241,7 @@ export interface FileRoutesById {
   '/_authenticated/patients/': typeof AuthenticatedPatientsIndexRoute
   '/api/public/hooks/cashfree': typeof ApiPublicHooksCashfreeRoute
   '/api/public/hooks/meta-leads': typeof ApiPublicHooksMetaLeadsRoute
+  '/api/public/hooks/meta-messages': typeof ApiPublicHooksMetaMessagesRoute
   '/api/public/hooks/meta-oauth-callback': typeof ApiPublicHooksMetaOauthCallbackRoute
   '/api/public/hooks/razorpay': typeof ApiPublicHooksRazorpayRoute
   '/api/public/hooks/run-reminders': typeof ApiPublicHooksRunRemindersRoute
@@ -259,6 +269,7 @@ export interface FileRouteTypes {
     | '/patients/'
     | '/api/public/hooks/cashfree'
     | '/api/public/hooks/meta-leads'
+    | '/api/public/hooks/meta-messages'
     | '/api/public/hooks/meta-oauth-callback'
     | '/api/public/hooks/razorpay'
     | '/api/public/hooks/run-reminders'
@@ -284,6 +295,7 @@ export interface FileRouteTypes {
     | '/patients'
     | '/api/public/hooks/cashfree'
     | '/api/public/hooks/meta-leads'
+    | '/api/public/hooks/meta-messages'
     | '/api/public/hooks/meta-oauth-callback'
     | '/api/public/hooks/razorpay'
     | '/api/public/hooks/run-reminders'
@@ -310,6 +322,7 @@ export interface FileRouteTypes {
     | '/_authenticated/patients/'
     | '/api/public/hooks/cashfree'
     | '/api/public/hooks/meta-leads'
+    | '/api/public/hooks/meta-messages'
     | '/api/public/hooks/meta-oauth-callback'
     | '/api/public/hooks/razorpay'
     | '/api/public/hooks/run-reminders'
@@ -326,6 +339,7 @@ export interface RootRouteChildren {
   PTokenRoute: typeof PTokenRoute
   ApiPublicHooksCashfreeRoute: typeof ApiPublicHooksCashfreeRoute
   ApiPublicHooksMetaLeadsRoute: typeof ApiPublicHooksMetaLeadsRoute
+  ApiPublicHooksMetaMessagesRoute: typeof ApiPublicHooksMetaMessagesRoute
   ApiPublicHooksMetaOauthCallbackRoute: typeof ApiPublicHooksMetaOauthCallbackRoute
   ApiPublicHooksRazorpayRoute: typeof ApiPublicHooksRazorpayRoute
   ApiPublicHooksRunRemindersRoute: typeof ApiPublicHooksRunRemindersRoute
@@ -474,6 +488,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksMetaLeadsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/meta-messages': {
+      id: '/api/public/hooks/meta-messages'
+      path: '/api/public/hooks/meta-messages'
+      fullPath: '/api/public/hooks/meta-messages'
+      preLoaderRoute: typeof ApiPublicHooksMetaMessagesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/meta-oauth-callback': {
       id: '/api/public/hooks/meta-oauth-callback'
       path: '/api/public/hooks/meta-oauth-callback'
@@ -546,6 +567,7 @@ const rootRouteChildren: RootRouteChildren = {
   PTokenRoute: PTokenRoute,
   ApiPublicHooksCashfreeRoute: ApiPublicHooksCashfreeRoute,
   ApiPublicHooksMetaLeadsRoute: ApiPublicHooksMetaLeadsRoute,
+  ApiPublicHooksMetaMessagesRoute: ApiPublicHooksMetaMessagesRoute,
   ApiPublicHooksMetaOauthCallbackRoute: ApiPublicHooksMetaOauthCallbackRoute,
   ApiPublicHooksRazorpayRoute: ApiPublicHooksRazorpayRoute,
   ApiPublicHooksRunRemindersRoute: ApiPublicHooksRunRemindersRoute,
