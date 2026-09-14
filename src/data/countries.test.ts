@@ -9,8 +9,8 @@ describe("COUNTRIES", () => {
       flag: "+91",
       iso: "IN",
     });
-    expect(COUNTRIES[0].iso).toBe("IN");
-    expect(COUNTRIES[0].code).toBe("91");
+    expect(COUNTRIES[0]?.iso).toBe("IN");
+    expect(COUNTRIES[0]?.code).toBe("91");
   });
 
   it("contains over 200 countries and territories worldwide", () => {

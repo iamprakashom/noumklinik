@@ -59,6 +59,7 @@ function makeLead(overrides: Partial<Lead> = {}): Lead {
     phone: "9876543210",
     email: null,
     birth_date: null,
+    gender: null,
     source: "Organic",
     source_group: "Organic",
     interest: null,
