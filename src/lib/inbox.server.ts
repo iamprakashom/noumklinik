@@ -4,25 +4,27 @@ const GRAPH = "https://graph.facebook.com/v20.0";
 
 export type InboxChannel = "whatsapp" | "messenger" | "instagram";
 
+type JsonObject = Record<string, unknown>;
+
 export type StoreMessageInput = {
   clinicId: string;
   channel: InboxChannel;
   providerConversationId: string;
   providerCustomerId: string;
-  providerMessageId?: string | null;
-  customerName?: string | null;
-  customerUsername?: string | null;
-  customerAvatarUrl?: string | null;
-  patientId?: string | null;
-  leadId?: string | null;
+  providerMessageId?: string | null | undefined;
+  customerName?: string | null | undefined;
+  customerUsername?: string | null | undefined;
+  customerAvatarUrl?: string | null | undefined;
+  patientId?: string | null | undefined;
+  leadId?: string | null | undefined;
   direction: "incoming" | "outgoing";
   body: string;
-  messageType?: string;
-  attachment?: Record<string, unknown> | null;
+  messageType?: string | undefined;
+  attachment?: JsonObject | null | undefined;
   status: string;
-  error?: string | null;
-  sentAt?: string;
-  legacyWhatsAppMessageId?: string | null;
+  error?: string | null | undefined;
+  sentAt?: string | undefined;
+  legacyWhatsAppMessageId?: string | null | undefined;
 };
 
 export async function getConnection(
