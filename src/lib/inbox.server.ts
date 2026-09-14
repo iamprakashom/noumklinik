@@ -111,10 +111,13 @@ export async function storeMessage(input: StoreMessageInput) {
     last_message_at: sentAt,
     last_direction: input.direction,
     unread_count: unread,
-    reply_window_expires_at:
-      input.direction === "incoming"
-        ? new Date(new Date(sentAt).getTime() + 24 * 60 * 60_000).toISOString()
-        : undefined,
+    ...(input.direction === "incoming"
+      ? {
+          reply_window_expires_at: new Date(
+            new Date(sentAt).getTime() + 24 * 60 * 60_000,
+          ).toISOString(),
+        }
+      : {}),
   };
   const { data: conversation, error: conversationError } = await supabaseAdmin
     .from("inbox_conversations")
