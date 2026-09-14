@@ -70,7 +70,7 @@ export async function upsertConnection(input: {
         picture_url: input.pictureUrl ?? null,
         status: input.status ?? "connected",
         enabled: input.enabled ?? true,
-        capabilities: input.capabilities ?? { text: true, attachments: true },
+        capabilities: (input.capabilities ?? { text: true, attachments: true }) as never,
         last_error: input.lastError ?? null,
         last_checked_at: new Date().toISOString(),
         connected_at: new Date().toISOString(),
