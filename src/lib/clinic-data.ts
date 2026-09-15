@@ -1,6 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { computeGstTotals, stateCode, type GstLine } from "@/lib/gst";
+import { createInvoiceRecord } from "@/lib/invoices.functions";
 import type {
   AddonDiscountRule,
   Appointment,
@@ -257,6 +259,7 @@ export function useUpdateClinicProfile() {
 /** Creates a GST invoice with its line-level tax breakup in one go. */
 export function useCreateInvoice() {
   const invalidate = useInvalidate();
+  const createInvoice = useServerFn(createInvoiceRecord);
   return useMutation({
     mutationFn: async (input: {
       patient_id: string;
@@ -267,54 +270,16 @@ export function useCreateInvoice() {
       placeOfSupply: string | null;
       notes?: string | null;
     }) => {
-      const clinicState = input.clinic?.state ?? null;
-      const pos = input.placeOfSupply ?? clinicState;
-      const interState = Boolean(pos && clinicState && pos !== clinicState);
-      const t = computeGstTotals(input.items, input.discount, interState);
-
-      const { data, error } = await supabase
-        .from("invoices")
-        .insert({
+      return createInvoice({
+        data: {
           patient_id: input.patient_id,
           appointment_id: input.appointment_id ?? null,
-          number: "AUTO",
-          status: "Open",
-          doc_type: "invoice",
-          subtotal: t.subtotal,
-          discount: t.discount,
-          taxable_value: t.taxable_value,
-          cgst: t.cgst,
-          sgst: t.sgst,
-          igst: t.igst,
-          tax: t.tax,
-          round_off: t.round_off,
-          total: t.total,
-          supplier_gstin: input.clinic?.gstin ?? null,
-          place_of_supply: pos,
-          place_of_supply_code: stateCode(pos),
+          items: input.items,
+          discount: input.discount,
+          placeOfSupply: input.placeOfSupply,
           notes: input.notes ?? null,
-        })
-        .select("id")
-        .single();
-      if (error) throw error;
-
-      const { error: itemErr } = await supabase.from("invoice_items").insert(
-        t.lines.map((i) => ({
-          invoice_id: data.id,
-          description: i.description,
-          quantity: i.quantity,
-          unit_price: i.unit_price,
-          amount: i.amount,
-          sac_code: i.sac_code,
-          gst_rate: i.gst_rate,
-          taxable_amount: i.taxable_amount,
-          cgst: i.cgst,
-          sgst: i.sgst,
-          igst: i.igst,
-        })),
-      );
-      if (itemErr) throw itemErr;
-      return data.id;
+        },
+      });
     },
     onSuccess: () => invalidate("invoices"),
   });
