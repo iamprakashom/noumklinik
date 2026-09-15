@@ -43,6 +43,13 @@ import {
   useUpdate,
 } from "@/lib/clinic-data";
 import { createInvoicePaymentLink } from "@/lib/payments.functions";
+import {
+  creditByOriginalInvoice,
+  invoiceBalance,
+  isReceivableInvoice,
+  paymentEffect,
+  settledByInvoice,
+} from "@/lib/billing-math";
 
 export const Route = createFileRoute("/_authenticated/billing")({
   head: () => ({
@@ -118,18 +125,22 @@ function BillingPage() {
   const makeLink = useServerFn(createInvoicePaymentLink);
 
   const all = invoices.data ?? [];
-  const outstanding = all
-    .filter((i) => i.status === "Open")
-    .reduce((s, i) => s + Number(i.total), 0);
-  const collected = (payments.data ?? []).reduce((s, p) => s + Number(p.amount), 0);
+  const settled = useMemo(() => settledByInvoice(payments.data ?? []), [payments.data]);
+  const credits = useMemo(() => creditByOriginalInvoice(all), [all]);
+  const outstandingRows = all.filter(
+    (i) => isReceivableInvoice(i) && invoiceBalance(i, settled, credits) > 0.5,
+  );
+  const outstanding = outstandingRows.reduce(
+    (sum, invoice) => sum + invoiceBalance(invoice, settled, credits),
+    0,
+  );
+  const collected = (payments.data ?? []).reduce((s, p) => s + paymentEffect(p), 0);
 
   /** Amount already settled against an invoice, so we can offer part payments. */
   const paidOn = (invoiceId: string) =>
-    (payments.data ?? [])
-      .filter((p) => p.invoice_id === invoiceId && p.status !== "Refunded")
-      .reduce((s, p) => s + Number(p.amount), 0);
+    settled.get(invoiceId) ?? 0;
 
-  const balanceOf = (inv: Invoice) => Math.max(0, Number(inv.total) - paidOn(inv.id));
+  const balanceOf = (inv: Invoice) => invoiceBalance(inv, settled, credits);
 
   const openPayment = (inv: Invoice) => {
     setPayFor(inv);
@@ -306,20 +317,27 @@ function BillingPage() {
         <StatCard
           label="Outstanding"
           value={money(outstanding)}
-          hint={`${all.filter((i) => i.status === "Open").length} open invoices`}
+          hint={`${outstandingRows.length} unpaid or part-paid invoices`}
         />
         <StatCard
           label="Collected"
           value={money(collected)}
           hint={`${payments.data?.length ?? 0} payments`}
         />
-        <StatCard label="Invoices" value={all.length} />
+        <StatCard label="Invoices" value={all.filter(isReceivableInvoice).length} />
         <StatCard
           label="Prepaid liability"
           value={money(liability.total)}
           hint={`${liability.count} live packages`}
         />
       </div>
+
+      {all.some((i) => Number(i.total) <= 0 && i.status !== "Void") ? (
+        <div className="mt-4 rounded-lg border border-status-overdue/30 bg-status-overdue-soft px-4 py-3 text-xs text-status-overdue">
+          A zero-value invoice needs review. Open it below and issue a credit note or mark it void
+          before relying on invoice counts.
+        </div>
+      ) : null}
 
       {liability.months.length > 0 ? (
         <section className="mt-6 rounded-xl border border-border bg-card p-5">
@@ -595,10 +613,15 @@ function BillingPage() {
             className="grid gap-4"
             onSubmit={(e) => {
               e.preventDefault();
+                const invoiceLines = sanitizedLines.filter((l) => l.description);
+                if (invoiceLines.length === 0 || totals.total <= 0) {
+                  toast.error("Add a priced treatment before creating the invoice");
+                  return;
+                }
               createInvoice.mutate(
                 {
                   patient_id: patientId,
-                  items: sanitizedLines.filter((l) => l.description),
+                    items: invoiceLines,
                   discount: discount === "" ? 0 : discount,
                   clinic: clinic.data ?? null,
                   placeOfSupply: placeOfSupply || null,
@@ -855,7 +878,7 @@ function BillingPage() {
               type="submit"
               form="new-invoice"
               className={primaryButton}
-              disabled={createInvoice.isPending}
+              disabled={createInvoice.isPending || totals.total <= 0 || !lines.some((l) => l.description)}
             >
               Create invoice
             </button>

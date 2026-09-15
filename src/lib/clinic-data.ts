@@ -267,10 +267,14 @@ export function useCreateInvoice() {
       placeOfSupply: string | null;
       notes?: string | null;
     }) => {
+      if (input.items.length === 0) throw new Error("Add at least one line item before saving");
       const clinicState = input.clinic?.state ?? null;
       const pos = input.placeOfSupply ?? clinicState;
       const interState = Boolean(pos && clinicState && pos !== clinicState);
       const t = computeGstTotals(input.items, input.discount, interState);
+      if (t.total <= 0 || t.taxable_value <= 0) {
+        throw new Error("Invoice total must be greater than zero");
+      }
 
       const { data, error } = await supabase
         .from("invoices")

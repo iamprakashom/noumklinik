@@ -9,8 +9,10 @@ import { formatDate, formatDateTime, money, patientName } from "@/data/clinic";
 import {
   useAppointments,
   useClinicProfile,
+  useInvoiceItems,
   useInvoices,
   usePackageRedemptions,
+  usePatientPackages,
   usePatientFeedback,
   usePatients,
   usePayments,
@@ -18,6 +20,14 @@ import {
   useServices,
   useUpdate,
 } from "@/lib/clinic-data";
+import {
+  creditByOriginalInvoice,
+  invoiceBalance,
+  isReceivableInvoice,
+  paymentEffect,
+  refundAmount,
+  settledByInvoice,
+} from "@/lib/billing-math";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/reports")({
@@ -80,6 +90,7 @@ function ReportsPage() {
   const [cancellationDoctorFilter, setCancellationDoctorFilter] = useState("all");
 
   const invoices = useInvoices();
+  const invoiceItems = useInvoiceItems();
   const payments = usePayments();
   const clinicProfile = useClinicProfile();
   const patients = usePatients();
@@ -87,6 +98,7 @@ function ReportsPage() {
   const services = useServices();
   const appointments = useAppointments();
   const redemptions = usePackageRedemptions();
+  const patientPackages = usePatientPackages();
   const feedback = usePatientFeedback();
   const updateFeedback = useUpdate("patient_feedback");
 
@@ -102,13 +114,15 @@ function ReportsPage() {
     let refunded = 0;
     for (const p of rows) {
       const amount = Number(p.amount);
-      if (amount < 0 || p.status === "Refunded") refunded += Math.abs(amount);
-      else collected += amount;
+      const refund = refundAmount(p);
+      const received = paymentEffect(p);
+      if (refund) refunded += refund;
+      else collected += received;
       const cur = byMode.get(p.method) ?? { count: 0, amount: 0 };
-      byMode.set(p.method, { count: cur.count + 1, amount: cur.amount + amount });
+      byMode.set(p.method, { count: cur.count + 1, amount: cur.amount + received - refund });
     }
     const invoicesRaised = (invoices.data ?? []).filter(
-      (i) => i.issued_at === day && i.doc_type !== "credit_note",
+      (i) => i.issued_at === day && isReceivableInvoice(i),
     );
     const creditNotes = (invoices.data ?? []).filter(
       (i) => i.issued_at === day && i.doc_type === "credit_note",
@@ -128,15 +142,13 @@ function ReportsPage() {
 
   /* -------------------------------- Dues -------------------------------- */
   const dues = useMemo(() => {
-    const paidByInvoice = new Map<string, number>();
-    for (const p of payments.data ?? []) {
-      paidByInvoice.set(p.invoice_id, (paidByInvoice.get(p.invoice_id) ?? 0) + Number(p.amount));
-    }
+    const paidByInvoice = settledByInvoice(payments.data ?? []);
+    const credits = creditByOriginalInvoice(invoices.data ?? []);
     const list = (invoices.data ?? [])
-      .filter((i) => i.doc_type !== "credit_note")
+      .filter(isReceivableInvoice)
       .map((i) => {
         const paid = paidByInvoice.get(i.id) ?? 0;
-        const balance = Math.round((Number(i.total) - paid) * 100) / 100;
+        const balance = invoiceBalance(i, paidByInvoice, credits);
         const ageDays = Math.floor(
           (Date.now() - new Date(`${i.issued_at}T12:00:00`).getTime()) / 86_400_000,
         );
@@ -163,26 +175,46 @@ function ReportsPage() {
   const incentives = useMemo(() => {
     const inRange = (d: string) => d >= from && d <= to;
     const apptById = new Map((appointments.data ?? []).map((a) => [a.id, a]));
-    const serviceName = (id: string | null) =>
-      services.data?.find((s) => s.id === id)?.name ?? "Other";
+    const itemsByInvoice = new Map<string, typeof invoiceItems.data>();
+    for (const item of invoiceItems.data ?? []) {
+      const current = itemsByInvoice.get(item.invoice_id) ?? [];
+      current.push(item);
+      itemsByInvoice.set(item.invoice_id, current);
+    }
+    const packageInvoiceIds = new Set(
+      (patientPackages.data ?? []).map((p) => p.invoice_id).filter((id): id is string => Boolean(id)),
+    );
 
     const byProvider = new Map<string, { revenue: number; visits: number }>();
     const byService = new Map<string, { revenue: number; count: number }>();
     let unattributed = 0;
 
     for (const inv of invoices.data ?? []) {
-      if (inv.doc_type === "credit_note" || !inRange(inv.issued_at)) continue;
-      const value = Number(inv.taxable_value) || Number(inv.subtotal) - Number(inv.discount);
+      if (!isReceivableInvoice(inv) || !inRange(inv.issued_at) || packageInvoiceIds.has(inv.id)) continue;
       const appt = inv.appointment_id ? apptById.get(inv.appointment_id) : undefined;
       const key = appt?.provider_id ?? null;
+      const lines = itemsByInvoice.get(inv.id) ?? [];
+      const fallbackValue = Number(inv.taxable_value) || Number(inv.subtotal) - Number(inv.discount);
+      const value = lines.length
+        ? lines.reduce((sum, line) => sum + Number(line.taxable_amount), 0)
+        : fallbackValue;
       if (!key) unattributed += value;
       else {
         const cur = byProvider.get(key) ?? { revenue: 0, visits: 0 };
         byProvider.set(key, { revenue: cur.revenue + value, visits: cur.visits + 1 });
       }
-      const sName = serviceName(appt?.service_id ?? null);
-      const s = byService.get(sName) ?? { revenue: 0, count: 0 };
-      byService.set(sName, { revenue: s.revenue + value, count: s.count + 1 });
+      if (lines.length) {
+        for (const line of lines) {
+          const s = byService.get(line.description) ?? { revenue: 0, count: 0 };
+          byService.set(line.description, {
+            revenue: s.revenue + Number(line.taxable_amount),
+            count: s.count + 1,
+          });
+        }
+      } else {
+        const s = byService.get("Other") ?? { revenue: 0, count: 0 };
+        byService.set("Other", { revenue: s.revenue + value, count: s.count + 1 });
+      }
     }
 
     for (const r of redemptions.data ?? []) {
@@ -204,7 +236,7 @@ function ReportsPage() {
       unattributed,
       total: [...byProvider.values()].reduce((s, v) => s + v.revenue, 0) + unattributed,
     };
-  }, [invoices.data, appointments.data, redemptions.data, services.data, from, to]);
+  }, [invoices.data, invoiceItems.data, patientPackages.data, appointments.data, redemptions.data, from, to]);
 
   /* ----------------------------- Feedback ------------------------------ */
   const reviews = useMemo(() => {
@@ -326,7 +358,7 @@ function ReportsPage() {
 
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <StatCard
-              label="Collected"
+              label="Money received"
               value={money(dayClose.collected)}
               hint={`${dayClose.rows.length} payment${dayClose.rows.length === 1 ? "" : "s"}`}
             />
@@ -336,7 +368,7 @@ function ReportsPage() {
               hint="Cash payments only"
             />
             <StatCard
-              label="Billed"
+              label="Invoiced value"
               value={money(dayClose.billed)}
               hint={`${dayClose.invoiceCount} invoice${dayClose.invoiceCount === 1 ? "" : "s"} raised`}
             />
@@ -358,7 +390,7 @@ function ReportsPage() {
                       key={mode}
                       label={mode}
                       hint={`${v.count} transaction${v.count === 1 ? "" : "s"}`}
-                      value={money(v.amount)}
+                     value={money(v.amount)}
                     />
                   ))}
                   <li className="flex items-center justify-between pt-2.5 text-sm font-semibold">
@@ -392,6 +424,10 @@ function ReportsPage() {
               )}
             </Panel>
           </div>
+          <p className="text-xs text-muted-foreground">
+            Reconciliation: {money(dayClose.billed)} invoiced · {money(dayClose.collected)} received
+            · {money(dayClose.refunded)} refunded · {money(dayClose.billed - dayClose.collected + dayClose.refunded)} carried from today’s bills.
+          </p>
         </TabsContent>
 
         {/* ----------------------------- Dues ----------------------------- */}
@@ -483,9 +519,9 @@ function ReportsPage() {
 
           <div className="grid gap-4 sm:grid-cols-3">
             <StatCard
-              label="Net revenue (pre-GST)"
+              label="Invoiced value (pre-GST)"
               value={money(incentives.total)}
-              hint="Invoices plus package sessions used"
+              hint="Treatment lines plus package sessions used"
             />
             <StatCard
               label="Attributed to a doctor"
