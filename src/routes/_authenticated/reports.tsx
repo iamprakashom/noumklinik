@@ -119,7 +119,10 @@ function ReportsPage() {
       if (refund) refunded += refund;
       else collected += received;
       const cur = byMode.get(p.method) ?? { count: 0, amount: 0 };
-      byMode.set(p.method, { count: cur.count + 1, amount: cur.amount + received - refund });
+      byMode.set(p.method, {
+        count: cur.count + 1,
+        amount: cur.amount + (refund ? -refund : received),
+      });
     }
     const invoicesRaised = (invoices.data ?? []).filter(
       (i) => i.issued_at === day && isReceivableInvoice(i),
