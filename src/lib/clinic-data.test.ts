@@ -212,6 +212,7 @@ describe("unusedValue", () => {
         sessions_total: 10,
         sessions_used: 3,
         unit_value: 1000,
+        gap_days: null,
         created_at: "2026-01-01",
       },
       {
@@ -223,6 +224,7 @@ describe("unusedValue", () => {
         sessions_total: 5,
         sessions_used: 5,
         unit_value: 2000,
+        gap_days: null,
         created_at: "2026-01-01",
       },
     ];
@@ -241,6 +243,7 @@ describe("unusedValue", () => {
         sessions_total: 4,
         sessions_used: 4,
         unit_value: 500,
+        gap_days: null,
         created_at: "2026-01-01",
       },
     ];
@@ -259,6 +262,7 @@ describe("unusedValue", () => {
         sessions_total: 2,
         sessions_used: 3,
         unit_value: 500,
+        gap_days: null,
         created_at: "2026-01-01",
       },
     ];

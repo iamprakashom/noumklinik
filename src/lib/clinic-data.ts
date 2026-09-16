@@ -405,7 +405,7 @@ export function useSellPackage() {
     mutationFn: async (input: {
       patient_id: string;
       pkg: Package;
-      lines: { service_id: string | null; service_name: string; sessions: number; list_price: number }[];
+      lines: { service_id: string | null; service_name: string; sessions: number; list_price: number; gap_days: number | null }[];
       price: number;
       gst_rate: number;
       sac_code: string;
@@ -456,13 +456,27 @@ export function useSellPackage() {
           sessions_total: l.sessions,
           sessions_used: 0,
           unit_value: Math.round((l.list_price / listTotal) * input.price),
+          gap_days: l.gap_days,
         })),
       );
       if (itemErr) throw itemErr;
+      if (input.pkg.validity_days > 30) {
+        const warningDate = new Date(expires);
+        warningDate.setDate(warningDate.getDate() - 30);
+        const { error: expiryRecallError } = await supabase.from("patient_recalls").insert({
+          patient_id: input.patient_id,
+          service_id: null,
+          service_name: `Package expiry — ${input.pkg.name}`,
+          due_on: warningDate.toISOString().slice(0, 10),
+          status: "Due",
+          notes: `Package expires ${expires.toISOString().slice(0, 10)}. Contact patient to complete remaining sessions.`,
+        });
+        if (expiryRecallError) throw expiryRecallError;
+      }
       return data.id;
     },
     onSuccess: () => {
-      for (const k of ["patient_packages", "patient_package_items", "invoices", "invoice_items"])
+      for (const k of ["patient_packages", "patient_package_items", "invoices", "invoice_items", "patient_recalls"])
         void qc.invalidateQueries({ queryKey: [k] });
     },
   });
@@ -508,9 +522,25 @@ export function useRedeemSession() {
       if (allDone) {
         await supabase.from("patient_packages").update({ status: "Completed" }).eq("id", input.pkg.id);
       }
+
+      const sessionsRemain = input.item.sessions_used + 1 < input.item.sessions_total;
+      if (sessionsRemain && input.item.gap_days && input.item.gap_days > 0) {
+        const due = new Date();
+        due.setDate(due.getDate() + input.item.gap_days);
+        const { error: recallError } = await supabase.from("patient_recalls").insert({
+          patient_id: input.pkg.patient_id,
+          service_id: input.item.service_id,
+          service_name: input.item.service_name,
+          source_appointment_id: input.appointment_id ?? null,
+          due_on: due.toISOString().slice(0, 10),
+          status: "Due",
+          notes: `Next session from package: ${input.pkg.name}`,
+        });
+        if (recallError) throw recallError;
+      }
     },
     onSuccess: () => {
-      for (const k of ["patient_packages", "patient_package_items", "package_redemptions"])
+      for (const k of ["patient_packages", "patient_package_items", "package_redemptions", "patient_recalls"])
         void qc.invalidateQueries({ queryKey: [k] });
     },
   });

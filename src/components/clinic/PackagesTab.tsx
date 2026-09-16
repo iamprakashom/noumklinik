@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { toast } from "sonner";
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import { Archive, Pencil, Plus, RotateCcw, Trash2, TriangleAlert, X } from "lucide-react";
 import { ghostButton, primaryButton } from "@/components/clinic/AppShell";
 import { EmptyState, Field, Panel, inputClass, textareaClass } from "@/components/clinic/bits";
 import { Switch } from "@/components/ui/switch";
@@ -15,13 +15,15 @@ import { money, type Package } from "@/data/clinic";
 import {
   useInsert,
   usePackageItems,
+  usePatientPackageItems,
+  usePatientPackages,
   usePackages,
   useRemove,
   useServices,
   useUpdate,
 } from "@/lib/clinic-data";
 
-type Draft = { service_id: string; sessions: number | "" };
+type Draft = { service_id: string; sessions: number | ""; gap_days: number | "" };
 
 /** Package catalogue: what the clinic sells upfront. */
 export function PackagesTab() {
@@ -37,11 +39,13 @@ export function PackagesTab() {
   } | null>(null);
   const [editing, setEditing] = useState<Package | null>(null);
   const [refundable, setRefundable] = useState(false);
-  const [drafts, setDrafts] = useState<Draft[]>([{ service_id: "", sessions: 6 }]);
+  const [drafts, setDrafts] = useState<Draft[]>([{ service_id: "", sessions: 6, gap_days: 30 }]);
 
   const packages = usePackages();
   const items = usePackageItems();
   const services = useServices();
+  const patientPackages = usePatientPackages();
+  const patientItems = usePatientPackageItems();
   const addPackage = useInsert("packages");
   const addItems = useInsert("package_items");
   const updatePackage = useUpdate("packages");
@@ -57,7 +61,7 @@ export function PackagesTab() {
     setPrice(0);
     setValidity(180);
     setRefundable(false);
-    setDrafts([{ service_id: "", sessions: 6 }]);
+    setDrafts([{ service_id: "", sessions: 6, gap_days: 30 }]);
   };
 
   const startEdit = (p: Package) => {
@@ -70,8 +74,8 @@ export function PackagesTab() {
     setRefundable(p.refundable);
     setDrafts(
       existing.length > 0
-        ? existing.map((i) => ({ service_id: i.service_id, sessions: i.sessions }))
-        : [{ service_id: "", sessions: 1 }],
+        ? existing.map((i) => ({ service_id: i.service_id, sessions: i.sessions, gap_days: i.gap_days ?? "" }))
+        : [{ service_id: "", sessions: 1, gap_days: "" }],
     );
     setOpen(true);
   };
@@ -91,23 +95,35 @@ export function PackagesTab() {
         </button>
       }
     >
+      <div className="mb-4 grid grid-cols-2 gap-3 border-b border-border pb-4 sm:grid-cols-4">
+        <Metric label="Catalogue" value={String(packages.data?.filter((p) => p.active).length ?? 0)} />
+        <Metric label="Packages sold" value={String(patientPackages.data?.length ?? 0)} />
+        <Metric label="Active patients" value={String(patientPackages.data?.filter((p) => p.status === "Active").length ?? 0)} />
+        <Metric label="Unused liability" value={money((patientItems.data ?? []).reduce((sum, i) => sum + Math.max(0, i.sessions_total - i.sessions_used) * Number(i.unit_value), 0))} />
+      </div>
       {packages.data?.length === 0 ? (
         <EmptyState>No packages yet — add one to sell prepaid session bundles.</EmptyState>
       ) : (
         <ul className="divide-y divide-border">
           {packages.data?.map((p) => {
             const included = (items.data ?? []).filter((i) => i.package_id === p.id);
+            const listValue = included.reduce((sum, i) => sum + i.sessions * Number(services.data?.find((s) => s.id === i.service_id)?.price ?? 0), 0);
+            const savingPercent = listValue > 0 ? Math.round(((listValue - Number(p.price)) / listValue) * 100) : 0;
+            const sold = (patientPackages.data ?? []).filter((x) => x.package_id === p.id).length;
+            const hasArchivedService = included.some((i) => services.data?.find((s) => s.id === i.service_id)?.active === false);
             return (
-              <li key={p.id} className="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
+              <li key={p.id} className={`flex flex-wrap items-center gap-3 py-3 first:pt-0 last:pb-0 ${p.active ? "" : "opacity-55"}`}>
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-medium">{p.name}</p>
                   <p className="text-xs text-muted-foreground">
                     {included
-                      .map((i) => `${i.sessions} × ${serviceName(i.service_id)}`)
+                      .map((i) => `${i.sessions} × ${serviceName(i.service_id)}${i.gap_days ? ` · every ${i.gap_days} days` : ""}`)
                       .join(", ") || "No sessions defined"}{" "}
                     · valid {p.validity_days} days ·{" "}
                     {p.refundable ? "unused refundable" : "non-refundable"}
                   </p>
+                  <p className="mt-1 text-xs text-muted-foreground">{sold} sold{listValue > 0 ? ` · list value ${money(listValue)} · ${savingPercent >= 0 ? `${savingPercent}% saving` : `${Math.abs(savingPercent)}% above list`}` : ""}</p>
+                  {hasArchivedService ? <p className="mt-1 flex items-center gap-1 text-xs text-destructive"><TriangleAlert className="size-3" /> Contains an archived treatment</p> : null}
                 </div>
                 <span className="text-sm tabular-nums">{money(p.price)}</span>
                 <button
@@ -119,23 +135,10 @@ export function PackagesTab() {
                 >
                   <Pencil className="size-3.5" />
                 </button>
-                <button
-                  className={ghostButton}
-                  aria-label={`Delete ${p.name}`}
-                  onClick={() =>
-                    setConfirmDelete({
-                      title: `Delete package "${p.name}"?`,
-                      message: `This cannot be undone.`,
-                      onConfirm: () =>
-                        removePackage.mutate(p.id, {
-                          onSuccess: () => toast.success("Package deleted"),
-                          onError: (e) => toast.error(e.message),
-                        }),
-                    })
-                  }
-                >
-                  <Trash2 className="size-3.5" />
+                <button className={ghostButton} aria-label={`${p.active ? "Archive" : "Restore"} ${p.name}`} onClick={() => updatePackage.mutate({ id: p.id, values: { active: !p.active } }, { onSuccess: () => toast.success(p.active ? "Package archived" : "Package restored"), onError: (e) => toast.error(e.message) })}>
+                  {p.active ? <Archive className="size-3.5" /> : <RotateCcw className="size-3.5" />}
                 </button>
+                {sold === 0 ? <button className={ghostButton} aria-label={`Delete ${p.name}`} onClick={() => setConfirmDelete({ title: `Delete package "${p.name}"?`, message: "This package has never been sold. This cannot be undone.", onConfirm: () => removePackage.mutate(p.id, { onSuccess: () => toast.success("Package deleted"), onError: (e) => toast.error(e.message) }) })}><Trash2 className="size-3.5" /></button> : null}
               </li>
             );
           })}
@@ -160,7 +163,7 @@ export function PackagesTab() {
               e.preventDefault();
               const lines = drafts
                 .filter((d) => d.service_id && (d.sessions === "" || d.sessions > 0))
-                .map((d) => ({ ...d, sessions: d.sessions === "" ? 1 : d.sessions }));
+                .map((d) => ({ ...d, sessions: d.sessions === "" ? 1 : d.sessions, gap_days: d.gap_days === "" ? null : d.gap_days }));
               if (lines.length === 0) {
                 toast.error("Add at least one service with sessions");
                 return;
@@ -184,6 +187,7 @@ export function PackagesTab() {
                         package_id: editing.id,
                         service_id: l.service_id,
                         sessions: l.sessions,
+                          gap_days: l.gap_days,
                       })),
                       {
                         onSuccess: () => {
@@ -215,6 +219,7 @@ export function PackagesTab() {
                         package_id: created.id,
                         service_id: l.service_id,
                         sessions: l.sessions,
+                        gap_days: l.gap_days,
                       })),
                       {
                         onSuccess: () => {
@@ -252,7 +257,7 @@ export function PackagesTab() {
             <div className="grid gap-2">
               <span className="text-xs font-medium text-muted-foreground">Included sessions</span>
               {drafts.map((d, idx) => (
-                <div key={idx} className="grid grid-cols-[minmax(0,1fr)_80px] gap-2">
+                 <div key={idx} className="grid grid-cols-[minmax(0,1fr)_70px_90px_32px] gap-2">
                   <select
                     className={inputClass}
                     aria-label="Service"
@@ -264,9 +269,9 @@ export function PackagesTab() {
                     }
                   >
                     <option value="">Select service…</option>
-                    {services.data?.map((s) => (
+                    {services.data?.filter((s) => s.active || s.id === d.service_id).map((s) => (
                       <option key={s.id} value={s.id}>
-                        {s.name}
+                        {s.name}{s.active ? "" : " (archived)"}
                       </option>
                     ))}
                   </select>
@@ -290,16 +295,26 @@ export function PackagesTab() {
                       );
                     }}
                   />
+                  <input type="number" min={1} aria-label="Gap days" title="Recommended days between sessions" placeholder="Gap" className={inputClass} value={d.gap_days} onChange={(e) => { const value = e.target.value === "" ? "" : Number(e.target.value); setDrafts((prev) => prev.map((x, i) => i === idx ? { ...x, gap_days: value } : x)); }} />
+                  <button type="button" className={ghostButton} aria-label="Remove service" onClick={() => setDrafts((prev) => prev.filter((_, i) => i !== idx))}><X className="size-3.5" /></button>
                 </div>
               ))}
               <button
                 type="button"
                 className={`${ghostButton} w-fit`}
-                onClick={() => setDrafts((prev) => [...prev, { service_id: "", sessions: 1 }])}
+                onClick={() => setDrafts((prev) => [...prev, { service_id: "", sessions: 1, gap_days: "" }])}
               >
                 <Plus className="size-3.5" /> Add service
               </button>
             </div>
+
+            {(() => {
+              const listValue = drafts.reduce((sum, d) => sum + Number(d.sessions || 0) * Number(services.data?.find((s) => s.id === d.service_id)?.price ?? 0), 0);
+              const charged = Number(price || 0);
+              const saving = listValue - charged;
+              const percent = listValue > 0 ? Math.round((saving / listValue) * 100) : 0;
+              return listValue > 0 ? <div className={`grid grid-cols-3 gap-3 border-y border-border py-3 text-xs ${percent > 40 || percent < 0 ? "text-destructive" : ""}`}><Metric label="List value" value={money(listValue)} /><Metric label="Package price" value={money(charged)} /><Metric label={saving >= 0 ? "Patient saves" : "Above list"} value={`${money(Math.abs(saving))} (${Math.abs(percent)}%)`} /></div> : null;
+            })()}
 
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Package price (₹)">
@@ -375,4 +390,8 @@ export function PackagesTab() {
       </Dialog>
     </Panel>
   );
+}
+
+function Metric({ label, value }: { label: string; value: string }) {
+  return <div className="min-w-0"><p className="truncate text-xs text-muted-foreground">{label}</p><p className="mt-0.5 truncate text-sm font-medium tabular-nums">{value}</p></div>;
 }
