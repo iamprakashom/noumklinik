@@ -203,7 +203,7 @@ describe("PackagesTab — edit package", () => {
     await waitFor(() => expect(lastPackageItemsInsert).not.toBeNull());
     expect(packageItemsDeleteIds).toEqual(["item-1", "item-2"]);
     expect(lastPackageItemsInsert).toEqual([
-      { package_id: "pkg-1", service_id: "s1", sessions: 4 },
+      { package_id: "pkg-1", service_id: "s1", sessions: 4, gap_days: 30 },
       { package_id: "pkg-1", service_id: "s2", sessions: 2, gap_days: null },
     ]);
   });

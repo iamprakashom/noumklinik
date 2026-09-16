@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { toast } from "sonner";
-import { Archive, Pencil, Plus, RotateCcw, TriangleAlert, X } from "lucide-react";
+import { Archive, Pencil, Plus, RotateCcw, Trash2, TriangleAlert, X } from "lucide-react";
 import { ghostButton, primaryButton } from "@/components/clinic/AppShell";
 import { EmptyState, Field, Panel, inputClass, textareaClass } from "@/components/clinic/bits";
 import { Switch } from "@/components/ui/switch";
@@ -49,6 +49,7 @@ export function PackagesTab() {
   const addPackage = useInsert("packages");
   const addItems = useInsert("package_items");
   const updatePackage = useUpdate("packages");
+  const removePackage = useRemove("packages");
   const removeItem = useRemove("package_items");
 
   const serviceName = (id: string) => services.data?.find((s) => s.id === id)?.name ?? "Service";
@@ -137,6 +138,7 @@ export function PackagesTab() {
                 <button className={ghostButton} aria-label={`${p.active ? "Archive" : "Restore"} ${p.name}`} onClick={() => updatePackage.mutate({ id: p.id, values: { active: !p.active } }, { onSuccess: () => toast.success(p.active ? "Package archived" : "Package restored"), onError: (e) => toast.error(e.message) })}>
                   {p.active ? <Archive className="size-3.5" /> : <RotateCcw className="size-3.5" />}
                 </button>
+                {sold === 0 ? <button className={ghostButton} aria-label={`Delete ${p.name}`} onClick={() => setConfirmDelete({ title: `Delete package "${p.name}"?`, message: "This package has never been sold. This cannot be undone.", onConfirm: () => removePackage.mutate(p.id, { onSuccess: () => toast.success("Package deleted"), onError: (e) => toast.error(e.message) }) })}><Trash2 className="size-3.5" /></button> : null}
               </li>
             );
           })}

@@ -460,10 +460,23 @@ export function useSellPackage() {
         })),
       );
       if (itemErr) throw itemErr;
+      if (input.pkg.validity_days > 30) {
+        const warningDate = new Date(expires);
+        warningDate.setDate(warningDate.getDate() - 30);
+        const { error: expiryRecallError } = await supabase.from("patient_recalls").insert({
+          patient_id: input.patient_id,
+          service_id: null,
+          service_name: `Package expiry — ${input.pkg.name}`,
+          due_on: warningDate.toISOString().slice(0, 10),
+          status: "Due",
+          notes: `Package expires ${expires.toISOString().slice(0, 10)}. Contact patient to complete remaining sessions.`,
+        });
+        if (expiryRecallError) throw expiryRecallError;
+      }
       return data.id;
     },
     onSuccess: () => {
-      for (const k of ["patient_packages", "patient_package_items", "invoices", "invoice_items"])
+      for (const k of ["patient_packages", "patient_package_items", "invoices", "invoice_items", "patient_recalls"])
         void qc.invalidateQueries({ queryKey: [k] });
     },
   });
