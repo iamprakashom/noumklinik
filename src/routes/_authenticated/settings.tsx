@@ -61,6 +61,60 @@ export const Route = createFileRoute("/_authenticated/settings")({
 
 type DialogKind = "service" | "provider" | "room" | "consent" | null;
 
+const SERVICE_CATEGORIES = [
+  "Injectables",
+  "Laser & Energy",
+  "Skin & Facials",
+  "Hair Restoration",
+  "Body Contouring",
+  "Wellness & IV",
+  "Consultation",
+];
+
+/** Dropdown of common treatment categories, with an option to type a custom one. */
+function CategorySelect({ value }: { value: string | null }) {
+  const isCustom = value !== null && value !== "" && !SERVICE_CATEGORIES.includes(value);
+  const [custom, setCustom] = useState(isCustom);
+  const [selected, setSelected] = useState(isCustom ? "__custom" : (value ?? ""));
+  const [customValue, setCustomValue] = useState(isCustom ? (value ?? "") : "");
+  return (
+    <div className="grid gap-2">
+      <select
+        aria-label="Service category"
+        value={custom ? "__custom" : selected}
+        onChange={(e) => {
+          if (e.target.value === "__custom") {
+            setCustom(true);
+          } else {
+            setCustom(false);
+            setSelected(e.target.value);
+          }
+        }}
+        className={inputClass}
+      >
+        <option value="">Select a category…</option>
+        {SERVICE_CATEGORIES.map((c) => (
+          <option key={c} value={c}>
+            {c}
+          </option>
+        ))}
+        <option value="__custom">Other — type your own</option>
+      </select>
+      {custom ? (
+        <input
+          value={customValue}
+          onChange={(e) => setCustomValue(e.target.value)}
+          placeholder="e.g. Dental Aesthetics"
+          className={inputClass}
+          aria-label="Custom category"
+          required
+        />
+      ) : null}
+      <input type="hidden" name="category" value={custom ? customValue.trim() : selected} />
+    </div>
+  );
+}
+
 function SettingsPage() {
   const [dialog, setDialog] = useState<DialogKind>(null);
   const [editingService, setEditingService] = useState<Service | null>(null);
