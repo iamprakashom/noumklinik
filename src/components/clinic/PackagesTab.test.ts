@@ -29,6 +29,7 @@ mock.module("@/integrations/supabase/client", () => {
         package_id: "pkg-1",
         service_id: "s1",
         sessions: 3,
+        gap_days: 30,
         created_at: "2026-01-01T00:00:00Z",
       },
       {
@@ -37,6 +38,7 @@ mock.module("@/integrations/supabase/client", () => {
         package_id: "pkg-1",
         service_id: "s2",
         sessions: 2,
+        gap_days: null,
         created_at: "2026-01-02T00:00:00Z",
       },
     ],
@@ -202,7 +204,7 @@ describe("PackagesTab — edit package", () => {
     expect(packageItemsDeleteIds).toEqual(["item-1", "item-2"]);
     expect(lastPackageItemsInsert).toEqual([
       { package_id: "pkg-1", service_id: "s1", sessions: 4 },
-      { package_id: "pkg-1", service_id: "s2", sessions: 2 },
+      { package_id: "pkg-1", service_id: "s2", sessions: 2, gap_days: null },
     ]);
   });
 
@@ -235,7 +237,7 @@ describe("PackagesTab — edit package", () => {
     });
     await waitFor(() => expect(lastPackageItemsInsert).not.toBeNull());
     expect(lastPackageItemsInsert).toEqual([
-      { package_id: "packages-0", service_id: "s1", sessions: 6 },
+      { package_id: "packages-0", service_id: "s1", sessions: 6, gap_days: 30 },
     ]);
   });
 
