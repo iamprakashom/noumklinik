@@ -87,6 +87,7 @@ export function SellPackageDialog({
                   service_name: l.service_name,
                   sessions: l.sessions,
                   list_price: l.list_price,
+                   gap_days: (packageItems.data ?? []).find((i) => i.package_id === pkg.id && i.service_id === l.service_id)?.gap_days ?? null,
                 })),
                 price: price === "" ? 0 : price,
                 gst_rate: lines[0]?.gst_rate ?? 18,
