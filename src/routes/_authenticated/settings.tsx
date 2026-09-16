@@ -646,12 +646,7 @@ function SettingsPage() {
             {dialog === "service" ? (
               <>
                 <Field label="Category">
-                  <input
-                    name="category"
-                    defaultValue={editingService?.category ?? ""}
-                    className={inputClass}
-                    placeholder="Injectables"
-                  />
+                  <CategorySelect value={editingService?.category ?? null} />
                 </Field>
                 <Field label="Duration (min)">
                   <input
