@@ -1379,6 +1379,7 @@ export type Database = {
         Row: {
           clinic_id: string
           created_at: string
+          gap_days: number | null
           id: string
           package_id: string
           service_id: string
@@ -1387,6 +1388,7 @@ export type Database = {
         Insert: {
           clinic_id?: string
           created_at?: string
+          gap_days?: number | null
           id?: string
           package_id: string
           service_id: string
@@ -1395,6 +1397,7 @@ export type Database = {
         Update: {
           clinic_id?: string
           created_at?: string
+          gap_days?: number | null
           id?: string
           package_id?: string
           service_id?: string
@@ -1759,6 +1762,7 @@ export type Database = {
         Row: {
           clinic_id: string
           created_at: string
+          gap_days: number | null
           id: string
           patient_package_id: string
           service_id: string | null
@@ -1770,6 +1774,7 @@ export type Database = {
         Insert: {
           clinic_id?: string
           created_at?: string
+          gap_days?: number | null
           id?: string
           patient_package_id: string
           service_id?: string | null
@@ -1781,6 +1786,7 @@ export type Database = {
         Update: {
           clinic_id?: string
           created_at?: string
+          gap_days?: number | null
           id?: string
           patient_package_id?: string
           service_id?: string | null
