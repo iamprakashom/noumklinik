@@ -1,4 +1,4 @@
-import { Link, useNavigate, useRouter, useRouterState } from "@tanstack/react-router";
+import { Link, useNavigate, useRouteContext, useRouter, useRouterState } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -23,7 +23,6 @@ import { useEffect, useState, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { CommandPalette } from "@/components/clinic/CommandPalette";
-import { Route as AuthenticatedRoute } from "@/routes/_authenticated/route";
 import { can, type ClinicRole, type Permission } from "@/lib/permissions";
 
 
@@ -56,7 +55,7 @@ export function AppShell({
   const pathname = useRouterState({ select: (r) => r.location.pathname });
   const navigate = useNavigate();
   const router = useRouter();
-  const workspace = AuthenticatedRoute.useRouteContext();
+  const workspace = useRouteContext({ from: "/_authenticated" });
   const queryClient = useQueryClient();
   const [mobileNav, setMobileNav] = useState(false);
 

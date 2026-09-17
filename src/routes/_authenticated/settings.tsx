@@ -54,6 +54,8 @@ export const Route = createFileRoute("/_authenticated/settings")({
         property: "og:description",
         content: "Services, providers, rooms and consent form configuration.",
       },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: SettingsPage,

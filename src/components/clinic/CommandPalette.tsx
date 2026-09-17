@@ -45,7 +45,7 @@ export function CommandPalette({ role }: { role: ClinicRole }) {
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
   const patients = usePatients();
-  const leads = useLeads();
+  const leads = useLeads(can(role, "leads"));
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -70,13 +70,13 @@ export function CommandPalette({ role }: { role: ClinicRole }) {
         <CommandEmpty>No matches.</CommandEmpty>
 
         <CommandGroup heading="Actions">
-          <CommandItem
+          {can(role, "leads") ? <CommandItem
             value="book appointment new"
             onSelect={() => go(() => navigate({ to: "/appointments", search: { new: true } }))}
           >
             <CalendarDays className="size-4" />
             Book an appointment
-          </CommandItem>
+          </CommandItem> : null}
           <CommandItem
             value="add patient new"
             onSelect={() => go(() => navigate({ to: "/patients", search: { new: true } }))}
@@ -113,7 +113,7 @@ export function CommandPalette({ role }: { role: ClinicRole }) {
           ))}
         </CommandGroup>
 
-        <CommandGroup heading="Leads">
+        {can(role, "leads") ? <CommandGroup heading="Leads">
           {(leads.data ?? []).slice(0, 100).map((l) => (
             <CommandItem
               key={l.id}
@@ -125,7 +125,7 @@ export function CommandPalette({ role }: { role: ClinicRole }) {
               <span className="text-xs text-muted-foreground">{l.stage}</span>
             </CommandItem>
           ))}
-        </CommandGroup>
+        </CommandGroup> : null}
 
         <CommandSeparator />
 

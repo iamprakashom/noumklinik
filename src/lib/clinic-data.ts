@@ -40,8 +40,8 @@ async function list<T>(table: string, orderBy: string, ascending = true): Promis
   return (data ?? []) as T[];
 }
 
-function useList<T>(key: string, table: string, orderBy: string, ascending = true) {
-  return useQuery({ queryKey: [key], queryFn: () => list<T>(table, orderBy, ascending) });
+function useList<T>(key: string, table: string, orderBy: string, ascending = true, enabled = true) {
+  return useQuery({ queryKey: [key], queryFn: () => list<T>(table, orderBy, ascending), enabled });
 }
 
 export const usePatients = () => useList<Patient>("patients", "patients", "created_at", false);
@@ -50,7 +50,7 @@ export const useRooms = () => useList<Room>("rooms", "rooms", "name");
 export const useServices = () => useList<Service>("services", "services", "name");
 export const useAppointments = () =>
   useList<Appointment>("appointments", "appointments", "starts_at");
-export const useLeads = () => useList<Lead>("leads", "leads", "created_at", false);
+export const useLeads = (enabled = true) => useList<Lead>("leads", "leads", "created_at", false, enabled);
 export const useTreatmentRecords = () =>
   useList<TreatmentRecord>("treatment_records", "treatment_records", "created_at", false);
 export const useConsentTemplates = () =>
