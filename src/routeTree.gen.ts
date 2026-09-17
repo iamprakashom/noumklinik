@@ -15,6 +15,8 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as BookRouteImport } from './routes/book'
 import { Route as JoinRouteImport } from './routes/join'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
+import { Route as AuthenticatedAccessDeniedRouteImport } from './routes/_authenticated/access-denied'
+import { Route as AuthenticatedActivityRouteImport } from './routes/_authenticated/activity'
 import { Route as AuthenticatedAppointmentsRouteImport } from './routes/_authenticated/appointments'
 import { Route as AuthenticatedAutomationsRouteImport } from './routes/_authenticated/automations'
 import { Route as AuthenticatedBillingRouteImport } from './routes/_authenticated/billing'
@@ -63,6 +65,17 @@ const OnboardingRoute = OnboardingRouteImport.update({
   id: '/onboarding',
   path: '/onboarding',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedAccessDeniedRoute =
+  AuthenticatedAccessDeniedRouteImport.update({
+    id: '/access-denied',
+    path: '/access-denied',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedActivityRoute = AuthenticatedActivityRouteImport.update({
+  id: '/activity',
+  path: '/activity',
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedAppointmentsRoute =
   AuthenticatedAppointmentsRouteImport.update({
@@ -173,6 +186,8 @@ export interface FileRoutesByFullPath {
   '/book': typeof BookRoute
   '/join': typeof JoinRoute
   '/onboarding': typeof OnboardingRoute
+  '/access-denied': typeof AuthenticatedAccessDeniedRoute
+  '/activity': typeof AuthenticatedActivityRoute
   '/appointments': typeof AuthenticatedAppointmentsRoute
   '/automations': typeof AuthenticatedAutomationsRoute
   '/billing': typeof AuthenticatedBillingRoute
@@ -199,6 +214,8 @@ export interface FileRoutesByTo {
   '/book': typeof BookRoute
   '/join': typeof JoinRoute
   '/onboarding': typeof OnboardingRoute
+  '/access-denied': typeof AuthenticatedAccessDeniedRoute
+  '/activity': typeof AuthenticatedActivityRoute
   '/appointments': typeof AuthenticatedAppointmentsRoute
   '/automations': typeof AuthenticatedAutomationsRoute
   '/billing': typeof AuthenticatedBillingRoute
@@ -227,6 +244,8 @@ export interface FileRoutesById {
   '/book': typeof BookRoute
   '/join': typeof JoinRoute
   '/onboarding': typeof OnboardingRoute
+  '/_authenticated/access-denied': typeof AuthenticatedAccessDeniedRoute
+  '/_authenticated/activity': typeof AuthenticatedActivityRoute
   '/_authenticated/appointments': typeof AuthenticatedAppointmentsRoute
   '/_authenticated/automations': typeof AuthenticatedAutomationsRoute
   '/_authenticated/billing': typeof AuthenticatedBillingRoute
@@ -255,6 +274,8 @@ export interface FileRouteTypes {
     | '/book'
     | '/join'
     | '/onboarding'
+    | '/access-denied'
+    | '/activity'
     | '/appointments'
     | '/automations'
     | '/billing'
@@ -281,6 +302,8 @@ export interface FileRouteTypes {
     | '/book'
     | '/join'
     | '/onboarding'
+    | '/access-denied'
+    | '/activity'
     | '/appointments'
     | '/automations'
     | '/billing'
@@ -308,6 +331,8 @@ export interface FileRouteTypes {
     | '/book'
     | '/join'
     | '/onboarding'
+    | '/_authenticated/access-denied'
+    | '/_authenticated/activity'
     | '/_authenticated/appointments'
     | '/_authenticated/automations'
     | '/_authenticated/billing'
@@ -389,6 +414,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/onboarding'
       preLoaderRoute: typeof OnboardingRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/access-denied': {
+      id: '/_authenticated/access-denied'
+      path: '/access-denied'
+      fullPath: '/access-denied'
+      preLoaderRoute: typeof AuthenticatedAccessDeniedRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/activity': {
+      id: '/_authenticated/activity'
+      path: '/activity'
+      fullPath: '/activity'
+      preLoaderRoute: typeof AuthenticatedActivityRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/appointments': {
       id: '/_authenticated/appointments'
@@ -527,6 +566,8 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedAccessDeniedRoute: typeof AuthenticatedAccessDeniedRoute
+  AuthenticatedActivityRoute: typeof AuthenticatedActivityRoute
   AuthenticatedAppointmentsRoute: typeof AuthenticatedAppointmentsRoute
   AuthenticatedAutomationsRoute: typeof AuthenticatedAutomationsRoute
   AuthenticatedBillingRoute: typeof AuthenticatedBillingRoute
@@ -541,6 +582,8 @@ interface AuthenticatedRouteRouteChildren {
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedAccessDeniedRoute: AuthenticatedAccessDeniedRoute,
+  AuthenticatedActivityRoute: AuthenticatedActivityRoute,
   AuthenticatedAppointmentsRoute: AuthenticatedAppointmentsRoute,
   AuthenticatedAutomationsRoute: AuthenticatedAutomationsRoute,
   AuthenticatedBillingRoute: AuthenticatedBillingRoute,

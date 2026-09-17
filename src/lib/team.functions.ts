@@ -107,13 +107,13 @@ export const getTeam = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     const { data: members, error } = await context.supabase
       .from("clinic_members")
-      .select("id, user_id, email, full_name, role, status, created_at")
+      .select("id, user_id, email, full_name, role, status, provider_id, last_seen_at, created_at")
       .order("created_at");
     if (error) throw new Error(error.message);
 
     const { data: invites } = await context.supabase
       .from("clinic_invites")
-      .select("id, email, role, status, expires_at, created_at")
+      .select("id, email, role, status, provider_id, expires_at, created_at")
       .eq("status", "pending")
       .order("created_at", { ascending: false });
 
@@ -131,6 +131,7 @@ export const inviteTeamMember = createServerFn({ method: "POST" })
       .object({
         email: z.string().trim().email().max(200),
         role: roleSchema,
+        providerId: z.string().uuid().nullable().optional(),
         origin: z.string().url().max(300),
       })
       .parse(input),
@@ -149,6 +150,7 @@ export const inviteTeamMember = createServerFn({ method: "POST" })
       role: data.role,
       token_hash: tokenHash,
       invited_by: context.userId,
+      provider_id: data.role === "provider" ? (data.providerId ?? null) : null,
     });
     if (error) {
       throw new Error(
@@ -158,7 +160,15 @@ export const inviteTeamMember = createServerFn({ method: "POST" })
       );
     }
 
-    return { link: `${data.origin.replace(/\/$/, "")}/join?token=${token}` };
+    const link = `${data.origin.replace(/\/$/, "")}/join?token=${token}`;
+    await context.supabase.from("activity_log").insert({ clinic_id: clinicId, actor_id: context.userId, action: "invite_created", entity_type: "team_member", summary: `Invited ${data.email.toLowerCase()} as ${data.role.replace("_", " ")}` });
+    const { deliver } = await import("@/lib/messaging.server");
+    const email = await deliver({ clinicId, channel: "Email", recipient: data.email, subject: "You are invited to Noum Klinik", body: `You have been invited to join a clinic workspace as ${data.role.replace("_", " ")}.
+
+Accept your invite: ${link}
+
+This link is intended only for ${data.email}.` });
+    return { link, emailSent: email.ok };
   });
 
 export const revokeInvite = createServerFn({ method: "POST" })
@@ -189,6 +199,7 @@ export const updateTeamMember = createServerFn({ method: "POST" })
         id: z.string().uuid(),
         role: roleSchema.optional(),
         status: z.enum(["active", "suspended"]).optional(),
+        providerId: z.string().uuid().nullable().optional(),
       })
       .parse(input),
   )
@@ -211,9 +222,11 @@ export const updateTeamMember = createServerFn({ method: "POST" })
       if ((count ?? 0) <= 1) throw new Error("A clinic needs at least one admin");
     }
 
-    const values: { role?: "admin" | "provider" | "front_desk"; status?: string } = {};
+    const values: { role?: "admin" | "provider" | "front_desk"; status?: string; provider_id?: string | null } = {};
     if (data.role) values.role = data.role;
     if (data.status) values.status = data.status;
+    if (data.providerId !== undefined) values.provider_id = data.providerId;
+    if (data.role && data.role !== "provider") values.provider_id = null;
 
     const { data: updated, error } = await context.supabase
       .from("clinic_members")
@@ -228,6 +241,7 @@ export const updateTeamMember = createServerFn({ method: "POST" })
           : error?.message ?? "Only clinic admins can change team access",
       );
     }
+    await context.supabase.from("activity_log").insert({ clinic_id: target.clinic_id, actor_id: context.userId, action: "team_access_changed", entity_type: "team_member", entity_id: target.id, summary: `Changed access for team member` });
     return { ok: true };
   });
 
@@ -256,6 +270,7 @@ export const removeTeamMember = createServerFn({ method: "POST" })
           : error?.message ?? "Only clinic admins can remove colleagues",
       );
     }
+    await context.supabase.from("activity_log").insert({ clinic_id: target.clinic_id, actor_id: context.userId, action: "team_member_removed", entity_type: "team_member", summary: "Removed a team member" });
     return { ok: true };
   });
 
@@ -271,7 +286,7 @@ export const acceptInvite = createServerFn({ method: "POST" })
 
     let query = supabaseAdmin
       .from("clinic_invites")
-      .select("id, clinic_id, role, email, status, expires_at")
+      .select("id, clinic_id, role, email, status, provider_id, expires_at")
       .eq("status", "pending");
     if (data.token) query = query.eq("token_hash", await sha256Hex(data.token));
     else if (data.inviteId) query = query.eq("id", data.inviteId);
@@ -292,6 +307,7 @@ export const acceptInvite = createServerFn({ method: "POST" })
           user_id: context.userId,
           email,
           role: invite.role,
+          provider_id: invite.provider_id,
           status: "active",
         },
         { onConflict: "clinic_id,user_id" },

@@ -1,4 +1,4 @@
-import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
+import { Link, useNavigate, useRouteContext, useRouter, useRouterState } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -6,6 +6,7 @@ import {
   MessageSquare,
   CreditCard,
   BarChart3,
+  ClipboardList,
   LayoutDashboard,
   LogOut,
   Menu,
@@ -22,20 +23,22 @@ import { useEffect, useState, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { CommandPalette } from "@/components/clinic/CommandPalette";
+import { can, type ClinicRole, type Permission } from "@/lib/permissions";
 
 
 const NAV = [
-  { to: "/dashboard", label: "Today", icon: LayoutDashboard },
-  { to: "/appointments", label: "Appointments", icon: CalendarDays },
-  { to: "/recalls", label: "Recalls", icon: RotateCcw },
+  { to: "/dashboard", label: "Today", icon: LayoutDashboard, permission: "appointments" },
+  { to: "/appointments", label: "Appointments", icon: CalendarDays, permission: "appointments" },
+  { to: "/recalls", label: "Recalls", icon: RotateCcw, permission: "appointments" },
 
-  { to: "/patients", label: "Patients", icon: Users },
-  { to: "/leads", label: "Leads", icon: UserPlus },
-  { to: "/inbox", label: "Inbox", icon: MessageSquare },
-  { to: "/billing", label: "Billing", icon: CreditCard },
-  { to: "/reports", label: "Reports", icon: BarChart3 },
-  { to: "/automations", label: "Follow-ups", icon: Sparkles },
-  { to: "/settings", label: "Settings", icon: Settings },
+  { to: "/patients", label: "Patients", icon: Users, permission: "patients" },
+  { to: "/leads", label: "Leads", icon: UserPlus, permission: "leads" },
+  { to: "/inbox", label: "Inbox", icon: MessageSquare, permission: "inbox" },
+  { to: "/billing", label: "Billing", icon: CreditCard, permission: "billing" },
+  { to: "/reports", label: "Reports", icon: BarChart3, permission: "reports" },
+  { to: "/automations", label: "Follow-ups", icon: Sparkles, permission: "settings" },
+  { to: "/settings", label: "Settings", icon: Settings, permission: "settings" },
+  { to: "/activity", label: "Activity", icon: ClipboardList, permission: "settings" },
 ] as const;
 
 export function AppShell({
@@ -51,6 +54,8 @@ export function AppShell({
 }) {
   const pathname = useRouterState({ select: (r) => r.location.pathname });
   const navigate = useNavigate();
+  const router = useRouter();
+  const workspace = useRouteContext({ from: "/_authenticated" });
   const queryClient = useQueryClient();
   const [mobileNav, setMobileNav] = useState(false);
 
@@ -67,7 +72,7 @@ export function AppShell({
 
   const navList = (
     <nav className="flex flex-col gap-0.5 px-2">
-      {NAV.map((item) => {
+      {NAV.filter((item) => can(workspace.role as ClinicRole, item.permission as Permission)).map((item) => {
         const active = pathname.startsWith(item.to);
         return (
           <Link
@@ -93,7 +98,7 @@ export function AppShell({
       <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
         <Stethoscope className="size-4" />
       </span>
-      <span className="truncate text-sm font-semibold tracking-tight">Noum Klinik</span>
+      <span className="min-w-0 flex-1 truncate text-sm font-semibold tracking-tight">Noum Klinik</span>
     </div>
   );
 
@@ -144,6 +149,21 @@ export function AppShell({
             ) : null}
           </div>
           <div className="flex w-full flex-wrap items-center gap-2 lg:w-auto lg:shrink-0 lg:justify-end">
+            {workspace.memberships.length > 1 ? (
+              <select
+                aria-label="Current clinic"
+                value={workspace.clinicId}
+                className="h-9 max-w-48 rounded-md border border-border bg-card px-2 text-xs"
+                onChange={async (event) => {
+                  await supabase.from("user_clinic_preferences").upsert({ user_id: workspace.user.id, clinic_id: event.target.value, updated_at: new Date().toISOString() });
+                  queryClient.clear();
+                  await router.invalidate();
+                  navigate({ to: "/dashboard", replace: true });
+                }}
+              >
+                {workspace.memberships.map((clinic) => <option key={clinic.clinicId} value={clinic.clinicId}>{clinic.clinicName}</option>)}
+              </select>
+            ) : null}
             <button
               type="button"
               onClick={() =>
@@ -161,7 +181,7 @@ export function AppShell({
         <main className="min-w-0 flex-1 p-4 sm:p-6 lg:p-8">{children}</main>
       </div>
 
-      <CommandPalette />
+      <CommandPalette role={workspace.role as ClinicRole} />
     </div>
   );
 }

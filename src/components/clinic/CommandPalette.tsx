@@ -24,27 +24,28 @@ import {
 } from "@/components/ui/command";
 import { patientName } from "@/data/clinic";
 import { useLeads, usePatients } from "@/lib/clinic-data";
+import { can, type ClinicRole, type Permission } from "@/lib/permissions";
 
 const PAGES = [
-  { to: "/dashboard", label: "Today", icon: LayoutDashboard },
-  { to: "/appointments", label: "Appointments", icon: CalendarDays },
-  { to: "/recalls", label: "Recalls", icon: RotateCcw },
+  { to: "/dashboard", label: "Today", icon: LayoutDashboard, permission: "appointments" },
+  { to: "/appointments", label: "Appointments", icon: CalendarDays, permission: "appointments" },
+  { to: "/recalls", label: "Recalls", icon: RotateCcw, permission: "appointments" },
 
-  { to: "/patients", label: "Patients", icon: Users },
-  { to: "/leads", label: "Leads", icon: UserPlus },
-  { to: "/inbox", label: "Inbox", icon: MessageSquare },
-  { to: "/billing", label: "Billing", icon: CreditCard },
-  { to: "/reports", label: "Reports", icon: BarChart3 },
-  { to: "/automations", label: "Follow-ups", icon: Sparkles },
-  { to: "/settings", label: "Settings", icon: Settings },
+  { to: "/patients", label: "Patients", icon: Users, permission: "patients" },
+  { to: "/leads", label: "Leads", icon: UserPlus, permission: "leads" },
+  { to: "/inbox", label: "Inbox", icon: MessageSquare, permission: "inbox" },
+  { to: "/billing", label: "Billing", icon: CreditCard, permission: "billing" },
+  { to: "/reports", label: "Reports", icon: BarChart3, permission: "reports" },
+  { to: "/automations", label: "Follow-ups", icon: Sparkles, permission: "settings" },
+  { to: "/settings", label: "Settings", icon: Settings, permission: "settings" },
 ] as const;
 
 /** Keyboard-first jump bar: Cmd/Ctrl+K from anywhere in the clinic app. */
-export function CommandPalette() {
+export function CommandPalette({ role }: { role: ClinicRole }) {
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
   const patients = usePatients();
-  const leads = useLeads();
+  const leads = useLeads(can(role, "leads"));
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -69,13 +70,13 @@ export function CommandPalette() {
         <CommandEmpty>No matches.</CommandEmpty>
 
         <CommandGroup heading="Actions">
-          <CommandItem
+          {can(role, "leads") ? <CommandItem
             value="book appointment new"
             onSelect={() => go(() => navigate({ to: "/appointments", search: { new: true } }))}
           >
             <CalendarDays className="size-4" />
             Book an appointment
-          </CommandItem>
+          </CommandItem> : null}
           <CommandItem
             value="add patient new"
             onSelect={() => go(() => navigate({ to: "/patients", search: { new: true } }))}
@@ -112,7 +113,7 @@ export function CommandPalette() {
           ))}
         </CommandGroup>
 
-        <CommandGroup heading="Leads">
+        {can(role, "leads") ? <CommandGroup heading="Leads">
           {(leads.data ?? []).slice(0, 100).map((l) => (
             <CommandItem
               key={l.id}
@@ -124,12 +125,12 @@ export function CommandPalette() {
               <span className="text-xs text-muted-foreground">{l.stage}</span>
             </CommandItem>
           ))}
-        </CommandGroup>
+        </CommandGroup> : null}
 
         <CommandSeparator />
 
         <CommandGroup heading="Go to">
-          {PAGES.map((p) => (
+          {PAGES.filter((p) => can(role, p.permission as Permission)).map((p) => (
             <CommandItem key={p.to} value={p.label} onSelect={() => go(() => navigate({ to: p.to }))}>
               <p.icon className="size-4" />
               {p.label}

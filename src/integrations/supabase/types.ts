@@ -14,6 +14,50 @@ export type Database = {
   }
   public: {
     Tables: {
+      activity_log: {
+        Row: {
+          action: string
+          actor_id: string
+          clinic_id: string
+          created_at: string
+          entity_id: string | null
+          entity_type: string
+          id: string
+          metadata: Json
+          summary: string
+        }
+        Insert: {
+          action: string
+          actor_id: string
+          clinic_id: string
+          created_at?: string
+          entity_id?: string | null
+          entity_type: string
+          id?: string
+          metadata?: Json
+          summary: string
+        }
+        Update: {
+          action?: string
+          actor_id?: string
+          clinic_id?: string
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string
+          id?: string
+          metadata?: Json
+          summary?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "activity_log_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       addon_discount_rules: {
         Row: {
           active: boolean
@@ -345,6 +389,7 @@ export type Database = {
           expires_at: string
           id: string
           invited_by: string | null
+          provider_id: string | null
           role: Database["public"]["Enums"]["app_role"]
           status: string
           token_hash: string
@@ -359,6 +404,7 @@ export type Database = {
           expires_at?: string
           id?: string
           invited_by?: string | null
+          provider_id?: string | null
           role?: Database["public"]["Enums"]["app_role"]
           status?: string
           token_hash: string
@@ -373,6 +419,7 @@ export type Database = {
           expires_at?: string
           id?: string
           invited_by?: string | null
+          provider_id?: string | null
           role?: Database["public"]["Enums"]["app_role"]
           status?: string
           token_hash?: string
@@ -386,6 +433,13 @@ export type Database = {
             referencedRelation: "clinics"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "clinic_invites_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "providers"
+            referencedColumns: ["id"]
+          },
         ]
       }
       clinic_members: {
@@ -395,6 +449,8 @@ export type Database = {
           email: string | null
           full_name: string | null
           id: string
+          last_seen_at: string | null
+          provider_id: string | null
           role: Database["public"]["Enums"]["app_role"]
           status: string
           updated_at: string
@@ -406,6 +462,8 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id?: string
+          last_seen_at?: string | null
+          provider_id?: string | null
           role?: Database["public"]["Enums"]["app_role"]
           status?: string
           updated_at?: string
@@ -417,6 +475,8 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id?: string
+          last_seen_at?: string | null
+          provider_id?: string | null
           role?: Database["public"]["Enums"]["app_role"]
           status?: string
           updated_at?: string
@@ -428,6 +488,13 @@ export type Database = {
             columns: ["clinic_id"]
             isOneToOne: false
             referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clinic_members_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "providers"
             referencedColumns: ["id"]
           },
         ]
@@ -2552,6 +2619,32 @@ export type Database = {
             columns: ["provider_id"]
             isOneToOne: false
             referencedRelation: "providers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_clinic_preferences: {
+        Row: {
+          clinic_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          clinic_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          clinic_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_clinic_preferences_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
             referencedColumns: ["id"]
           },
         ]

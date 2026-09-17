@@ -19,6 +19,7 @@ import {
   revokeInvite,
   updateTeamMember,
 } from "@/lib/team.functions";
+import { useProviders } from "@/lib/clinic-data";
 
 const ROLES = [
   { value: "admin", label: "Admin" },
@@ -30,6 +31,7 @@ export function TeamTab() {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const [link, setLink] = useState<string | null>(null);
+  const providers = useProviders();
 
   const loadTeam = useServerFn(getTeam);
   const team = useQuery({ queryKey: ["team"], queryFn: () => loadTeam() });
@@ -43,21 +45,21 @@ export function TeamTab() {
   const fail = (e: Error) => toast.error(e.message);
 
   const invite = useMutation({
-    mutationFn: (values: { email: string; role: string }) =>
+    mutationFn: (values: { email: string; role: string; providerId: string | null }) =>
       inviteFn({
-        data: { email: values.email, role: values.role as "admin", origin: window.location.origin },
+        data: { email: values.email, role: values.role as "admin", providerId: values.providerId, origin: window.location.origin },
       }),
     onSuccess: (res) => {
       setLink(res.link);
       setOpen(false);
       refresh();
-      toast.success("Invite created — share the link with your colleague");
+      toast.success(res.emailSent ? "Invite emailed to your colleague" : "Invite created — share the link with your colleague");
     },
     onError: fail,
   });
 
   const update = useMutation({
-    mutationFn: (values: { id: string; role?: string; status?: string }) =>
+    mutationFn: (values: { id: string; role?: string; status?: string; providerId?: string | null }) =>
       updateFn({ data: values as { id: string } }),
     onSuccess: () => {
       refresh();
@@ -113,6 +115,7 @@ export function TeamTab() {
                     {m.user_id === team.data?.me ? <span className="text-muted-foreground"> · you</span> : null}
                   </p>
                   <p className="text-xs text-muted-foreground">{m.email ?? "—"}</p>
+                  {m.last_seen_at ? <p className="text-xs text-muted-foreground">Last active {new Date(m.last_seen_at).toLocaleString("en-IN")}</p> : null}
                 </div>
                 {m.status !== "active" ? <Chip tone="overdue">Suspended</Chip> : null}
                 {isAdmin ? (
@@ -129,6 +132,17 @@ export function TeamTab() {
                         </option>
                       ))}
                     </select>
+                    {m.role === "provider" ? (
+                      <select
+                        className={`${inputClass} w-40`}
+                        value={m.provider_id ?? ""}
+                        aria-label={`Doctor record for ${m.email ?? "colleague"}`}
+                        onChange={(e) => update.mutate({ id: m.id, providerId: e.target.value || null })}
+                      >
+                        <option value="">Link doctor…</option>
+                        {(providers.data ?? []).filter((provider) => provider.active).map((provider) => <option key={provider.id} value={provider.id}>{provider.name}</option>)}
+                      </select>
+                    ) : null}
                     <button
                       className={ghostButton}
                       onClick={() =>
@@ -214,7 +228,7 @@ export function TeamTab() {
             onSubmit={(e) => {
               e.preventDefault();
               const fd = new FormData(e.currentTarget);
-              invite.mutate({ email: String(fd.get("email")), role: String(fd.get("role")) });
+               invite.mutate({ email: String(fd.get("email")), role: String(fd.get("role")), providerId: String(fd.get("providerId") || "") || null });
             }}
           >
             <Field label="Work email">
@@ -227,6 +241,12 @@ export function TeamTab() {
                     {r.label}
                   </option>
                 ))}
+              </select>
+            </Field>
+            <Field label="Doctor record (for provider role)">
+              <select name="providerId" className={inputClass}>
+                <option value="">Link later</option>
+                {(providers.data ?? []).filter((provider) => provider.active).map((provider) => <option key={provider.id} value={provider.id}>{provider.name}</option>)}
               </select>
             </Field>
           </form>
