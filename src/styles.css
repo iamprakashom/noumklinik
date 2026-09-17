@@ -151,6 +151,36 @@
   color: var(--foreground);
 }
 
+/* Scoped Ocean Deep identity for the public authentication experience. */
+.auth-scope {
+  --background: oklch(0.975 0.008 220);
+  --foreground: oklch(0.275 0.06 230);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.275 0.06 230);
+  --primary: oklch(0.405 0.096 235);
+  --primary-foreground: oklch(0.99 0.002 220);
+  --secondary: oklch(0.95 0.025 205);
+  --secondary-foreground: oklch(0.31 0.075 230);
+  --muted: oklch(0.955 0.012 220);
+  --muted-foreground: oklch(0.53 0.035 225);
+  --accent: oklch(0.82 0.09 185);
+  --accent-foreground: oklch(0.27 0.065 230);
+  --border: oklch(0.895 0.018 220);
+  --input: oklch(0.875 0.02 220);
+  --ring: oklch(0.66 0.12 190);
+  --auth-panel: oklch(0.275 0.075 235);
+  --auth-panel-strong: oklch(0.225 0.065 235);
+  --auth-panel-foreground: oklch(0.985 0.004 210);
+  --auth-panel-muted: oklch(0.84 0.045 205);
+  --auth-highlight: oklch(0.76 0.105 185);
+  --auth-shadow: 0 28px 70px oklch(0.26 0.065 230 / 0.16);
+  font-family: "DM Sans", ui-sans-serif, system-ui, sans-serif;
+}
+
+.auth-heading {
+  font-family: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+}
+
 @keyframes trend-aurora {
   0% { transform: translate3d(-6%, -4%, 0) scale(1); }
   50% { transform: translate3d(6%, 4%, 0) scale(1.12); }
