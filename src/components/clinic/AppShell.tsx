@@ -150,19 +150,22 @@ export function AppShell({
           </div>
           <div className="flex w-full flex-wrap items-center gap-2 lg:w-auto lg:shrink-0 lg:justify-end">
             {workspace.memberships.length > 1 ? (
-              <select
-                aria-label="Current clinic"
-                value={workspace.clinicId}
-                className="h-9 max-w-48 rounded-md border border-border bg-card px-2 text-xs"
-                onChange={async (event) => {
-                  await supabase.from("user_clinic_preferences").upsert({ user_id: workspace.user.id, clinic_id: event.target.value, updated_at: new Date().toISOString() });
-                  queryClient.clear();
-                  await router.invalidate();
-                  navigate({ to: "/dashboard", replace: true });
-                }}
-              >
-                {workspace.memberships.map((clinic) => <option key={clinic.clinicId} value={clinic.clinicId}>{clinic.clinicName}</option>)}
-              </select>
+              <label className="flex min-w-0 items-center gap-2">
+                <span className="hidden max-w-36 truncate text-xs text-muted-foreground xl:inline">{workspace.organizationName}</span>
+                <select
+                  aria-label="Current branch"
+                  value={workspace.clinicId}
+                  className="h-9 max-w-48 rounded-md border border-border bg-card px-2 text-xs"
+                  onChange={async (event) => {
+                    await supabase.from("user_clinic_preferences").upsert({ user_id: workspace.user.id, clinic_id: event.target.value, updated_at: new Date().toISOString() });
+                    queryClient.clear();
+                    await router.invalidate();
+                    navigate({ to: "/dashboard", replace: true });
+                  }}
+                >
+                  {workspace.memberships.map((clinic) => <option key={clinic.clinicId} value={clinic.clinicId}>{clinic.clinicName}</option>)}
+                </select>
+              </label>
             ) : null}
             <button
               type="button"
