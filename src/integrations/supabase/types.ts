@@ -584,27 +584,44 @@ export type Database = {
       }
       clinics: {
         Row: {
+          active: boolean
+          branch_code: string | null
           created_at: string
           created_by: string | null
           id: string
           name: string
+          organization_id: string
           updated_at: string
         }
         Insert: {
+          active?: boolean
+          branch_code?: string | null
           created_at?: string
           created_by?: string | null
           id?: string
           name: string
+          organization_id: string
           updated_at?: string
         }
         Update: {
+          active?: boolean
+          branch_code?: string | null
           created_at?: string
           created_by?: string | null
           id?: string
           name?: string
+          organization_id?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "clinics_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       consent_templates: {
         Row: {
@@ -1442,6 +1459,77 @@ export type Database = {
           },
         ]
       }
+      organization_members: {
+        Row: {
+          created_at: string
+          email: string | null
+          full_name: string | null
+          id: string
+          organization_id: string
+          role: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          organization_id: string
+          role?: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          organization_id?: string
+          role?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_members_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organizations: {
+        Row: {
+          active: boolean
+          created_at: string
+          created_by: string | null
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       package_items: {
         Row: {
           clinic_id: string
@@ -2110,9 +2198,11 @@ export type Database = {
           email: string | null
           first_name: string
           gender: string | null
+          home_clinic_id: string | null
           id: string
           last_name: string
           notes: string | null
+          organization_id: string
           phone: string | null
           preferred_channel: string
           source: string
@@ -2130,9 +2220,11 @@ export type Database = {
           email?: string | null
           first_name: string
           gender?: string | null
+          home_clinic_id?: string | null
           id?: string
           last_name: string
           notes?: string | null
+          organization_id: string
           phone?: string | null
           preferred_channel?: string
           source?: string
@@ -2150,9 +2242,11 @@ export type Database = {
           email?: string | null
           first_name?: string
           gender?: string | null
+          home_clinic_id?: string | null
           id?: string
           last_name?: string
           notes?: string | null
+          organization_id?: string
           phone?: string | null
           preferred_channel?: string
           source?: string
@@ -2166,6 +2260,20 @@ export type Database = {
             columns: ["clinic_id"]
             isOneToOne: false
             referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "patients_home_clinic_id_fkey"
+            columns: ["home_clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "patients_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
@@ -2805,6 +2913,14 @@ export type Database = {
       }
       is_clinic_admin: { Args: { _clinic_id: string }; Returns: boolean }
       is_clinic_member: { Args: { _clinic_id: string }; Returns: boolean }
+      is_organization_member: {
+        Args: { _organization_id: string }
+        Returns: boolean
+      }
+      is_organization_owner: {
+        Args: { _organization_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       app_role: "admin" | "provider" | "front_desk"
