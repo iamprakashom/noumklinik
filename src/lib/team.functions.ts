@@ -73,9 +73,18 @@ export const createClinic = createServerFn({ method: "POST" })
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
+    const organizationId = globalThis.crypto.randomUUID();
+    const clinicId = globalThis.crypto.randomUUID();
+    const { error: organizationError } = await supabaseAdmin.from("organizations").insert({
+      id: organizationId,
+      name: data.name,
+      created_by: context.userId,
+    });
+    if (organizationError) throw new Error(organizationError.message);
+
     const { data: clinic, error: clinicError } = await supabaseAdmin
       .from("clinics")
-      .insert({ name: data.name, created_by: context.userId })
+      .insert({ id: clinicId, name: data.name, organization_id: organizationId, created_by: context.userId })
       .select("id")
       .single();
     if (clinicError || !clinic) throw new Error(clinicError?.message ?? "Could not create the clinic");
@@ -88,6 +97,15 @@ export const createClinic = createServerFn({ method: "POST" })
       status: "active",
     });
     if (memberError) throw new Error(memberError.message);
+
+    const { error: organizationMemberError } = await supabaseAdmin.from("organization_members").insert({
+      organization_id: organizationId,
+      user_id: context.userId,
+      email: (context.claims['email'] as string | undefined) ?? null,
+      role: "owner",
+      status: "active",
+    });
+    if (organizationMemberError) throw new Error(organizationMemberError.message);
 
     await supabaseAdmin.from("clinic_profile").insert({
       clinic_id: clinic.id,

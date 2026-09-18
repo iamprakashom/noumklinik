@@ -11,6 +11,7 @@ import { WhatsAppTab } from "@/components/clinic/WhatsAppTab";
 import { MessagingTab } from "@/components/clinic/MessagingTab";
 import { LeadCaptureTab } from "@/components/clinic/LeadCaptureTab";
 import { TeamTab } from "@/components/clinic/TeamTab";
+import { BranchesTab } from "@/components/clinic/BranchesTab";
 import {
   Chip,
   EmptyState,
@@ -171,6 +172,7 @@ function SettingsPage() {
       <Tabs defaultValue="services">
         <TabsList className="no-scrollbar max-w-full justify-start overflow-x-auto">
           <TabsTrigger value="clinic">Clinic</TabsTrigger>
+          <TabsTrigger value="branches">Branches</TabsTrigger>
           <TabsTrigger value="services">Services</TabsTrigger>
           <TabsTrigger value="providers">Providers</TabsTrigger>
           <TabsTrigger value="rooms">Rooms</TabsTrigger>
@@ -186,6 +188,9 @@ function SettingsPage() {
 
         <TabsContent value="clinic" className="mt-4">
           <ClinicProfileTab />
+        </TabsContent>
+        <TabsContent value="branches" className="mt-4">
+          <BranchesTab />
         </TabsContent>
         <TabsContent value="packages" className="mt-4">
           <PackagesTab />
