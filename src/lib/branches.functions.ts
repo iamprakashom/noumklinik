@@ -55,7 +55,8 @@ export const createBranch = createServerFn({ method: "POST" })
     });
     if (!owner) throw new Error("Only an organization owner can add a branch");
 
-    const { data: branch, error } = await context.supabase
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: branch, error } = await supabaseAdmin
       .from("clinics")
       .insert({
         name: data.name,
@@ -68,7 +69,7 @@ export const createBranch = createServerFn({ method: "POST" })
     if (error || !branch) throw new Error(error?.message ?? "Could not create branch");
 
     const email = (context.claims['email'] as string | undefined) ?? null;
-    const { error: memberError } = await context.supabase.from("clinic_members").insert({
+    const { error: memberError } = await supabaseAdmin.from("clinic_members").insert({
       clinic_id: branch.id,
       user_id: context.userId,
       email,
@@ -91,7 +92,7 @@ export const createBranch = createServerFn({ method: "POST" })
       open_time: "09:00",
       close_time: "18:00",
     };
-    const { error: profileError } = await context.supabase.from("clinic_profile").insert({
+    const { error: profileError } = await supabaseAdmin.from("clinic_profile").insert({
       ...profile,
       clinic_id: branch.id,
       singleton: true,
@@ -100,7 +101,7 @@ export const createBranch = createServerFn({ method: "POST" })
     });
     if (profileError) throw new Error(profileError.message);
 
-    await context.supabase.from("activity_log").insert({
+    await supabaseAdmin.from("activity_log").insert({
       clinic_id: clinicId,
       actor_id: context.userId,
       action: "branch_created",
