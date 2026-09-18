@@ -2224,7 +2224,7 @@ export type Database = {
           id?: string
           last_name: string
           notes?: string | null
-          organization_id: string
+          organization_id?: string
           phone?: string | null
           preferred_channel?: string
           source?: string
@@ -2904,6 +2904,7 @@ export type Database = {
     }
     Functions: {
       current_clinic_id: { Args: never; Returns: string }
+      current_organization_id: { Args: never; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
