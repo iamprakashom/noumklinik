@@ -1,66 +1,108 @@
-# Clinic owner review — what's missing in Noum Klinik
+# Noum Klinik multi-branch plan
 
-I went through the whole app as if I were running a dermatology/aesthetic practice on it. The core loop — leads, appointments, charts, packages, GST billing, payments, reminders, inbox, roles — is genuinely solid. Below is what a clinic owner would still hit in daily running, in priority order.
+## Current status
 
-## 2. No waitlist, no deposits, no no-show consequence
+Noum Klinik has a strong starting point, but it currently supports **multiple independent clinic workspaces**, not branches under one clinic group.
 
-- A cancelled Friday laser slot goes empty because nobody tracks who wanted it. A simple waitlist per treatment, with a one-tap "offer this slot" message, recovers real revenue.
-- High-value bookings (laser packages, injectables) have no booking deposit. There is no way to take a token amount at booking and adjust it in the final bill.
-- No-show is only a status. There is no per-patient no-show count visible at booking time and no rule such as "3rd no-show requires prepayment".
+Already working:
+- Every operational record is isolated by clinic, including patients, appointments, clinical notes, invoices, payments, packages, leads, messaging, and settings.
+- A user can belong to multiple clinics with a different role in each.
+- The header clinic switcher changes the active clinic, clears cached data, and reloads the correct workspace.
+- Invitations, doctor linking, role-based menus, and database access rules are clinic-specific.
+- GST profile, invoice numbering, payment settings, WhatsApp, Meta connections, providers, rooms, services, and packages are currently configured separately for each clinic.
 
-## 3. No consumables / stock tracking at all
+Missing for a real branch network:
+- No parent organization connects branches.
+- No organization owner or central operations role exists.
+- Patients, doctors, services, and packages cannot currently be shared across branches.
+- There is no consolidated branch report or comparison view.
+- Staff and invitations must be managed one clinic at a time.
+- Public booking links open one clinic directly; patients cannot choose a location.
+- Doctor conflicts are checked only inside one clinic, so a doctor could be double-booked across branches.
 
-For a skin clinic this is the biggest commercial blind spot after schedules:
+## Agreed operating model
 
-- botulinum and filler vials: no batch number, expiry, or opening date
-- no record of how many units came out of which vial, so vial wastage is invisible
-- peels, needles, PRP kits, consumables: no stock, no reorder alert
-- no batch/lot traceability, which is an actual safety and audit requirement for injectables
+- **Patients:** one shared patient profile and clinical history across the organization; each appointment, treatment, payment, package use, and invoice retains the branch where it occurred.
+- **Services and packages:** head office maintains the master catalog; branches can override availability, price, duration, tax treatment, and package availability.
+- **Access:** organization owners see and manage all branches; other staff only access assigned branches with a role per branch.
+- **Billing:** preserve branch-specific invoice identity and numbering by default. Organization-wide reporting consolidates figures without changing historical invoices. The data model will support a shared legal entity while allowing branch-specific GST details where required.
 
-**Proposal (phase 1, deliberately small):** an item list with stock on hand, batch and expiry; deduct on treatment record (units already captured); low-stock and near-expiry alerts; a simple usage-vs-billed variance report.
+## Phase 1 — Organization and branch foundation
 
-## 4. Money controls that an owner asks for and cannot get
+1. Add an organization above the existing clinic records; existing clinics become branches without renaming or breaking their current records.
+2. Backfill every existing clinic into its own organization so current users see no behavior change.
+3. Add organization membership for owner and central operations access.
+4. Keep branch assignments for admin, doctor, and front-desk roles.
+5. Add an active-organization preference alongside the existing active-clinic preference.
+6. Replace the current clinic selector with a branch selector showing organization and branch names.
+7. Add a Branches section for owners to create, edit, archive, and switch branches.
 
-- **Expenses are not recorded anywhere.** Day close shows only money in. There is no rent, salary, consumable purchase, or petty cash, so there is no real daily or monthly profit figure.
-- **Discounts have no approval.** Any user with billing access can discount any amount; nothing flags or routes it. A discount reason plus a threshold above which an admin must approve would close this.
-- **Advances exist only as prepaid packages.** A plain "patient paid ₹X in advance" is not representable.
+## Phase 2 — Shared patients and cross-branch history
 
-## 5. Audit trail exists but only covers the team screen
+1. Promote patients to organization scope with an optional home branch.
+2. Prevent duplicate patients across branches using normalized phone and email checks within the organization.
+3. Keep appointments, treatment records, photos, consents, invoices, payments, recalls, packages, and redemptions tagged with the servicing branch.
+4. Show a unified patient timeline with clear branch labels on every visit and financial record.
+5. Allow authorized doctors and organization owners to see the complete clinical history; front desk sees only the demographic and operational information allowed by its role.
+6. Add branch-aware patient search and a safe merge path for duplicates created before rollout.
 
-`activity_log` is in place and the Activity screen reads it, but only three events are ever written: invite created, role changed, member removed. Nothing is logged for cancelled appointments, voided invoices, credit notes, refunds, price changes, clinical note edits, or patient photo access — which are exactly the ones a clinic owner disputes with staff. The table and screen are already there; this is mostly wiring the existing mutation paths.
+## Phase 3 — Central treatments, packages, and doctors
 
-## 6. Clinical depth for a dermatology practice
+1. Create organization-level master treatments and packages.
+2. Add branch overrides for availability, price, duration, GST/SAC details, and local package price.
+3. Make rooms branch-specific because they are physical resources.
+4. Make doctor identity organization-wide, then assign each doctor to one or more branches.
+5. Keep each doctor’s branch role and availability separate.
+6. Check appointment conflicts across every assigned branch to prevent double-booking.
+7. Provide a branch setup action that copies central defaults without creating disconnected duplicates.
 
-- **No treatment protocol templates.** Every laser or peel course is typed fresh. A protocol (6 sessions, 21-day gap, standard settings, standard aftercare) that pre-fills the note and the recall would save the doctor real time. Packages already carry session gaps — protocols are the clinical twin of that.
-- **No prescription output.** Doctors write it on paper or a separate app. A simple prescription on clinic letterhead, printable and WhatsApp-able, is standard expectation.
-- **Aftercare exists only as a reminder message**, not as instructions attached to the treatment and given to the patient.
-- **Medical history is a single free-text allergy box.** No current medications, no skin type (Fitzpatrick), no pregnancy/breastfeeding flag, no keloid/isotretinoin history — all of which change whether a laser or peel is safe. These should be structured and visible as a red banner at the top of the chart.
-- **Photo consent is not separate from general consent.** Before/after photos are stored, but there is no explicit "may we use this for marketing" permission — a real legal exposure the day you post results.
+## Phase 4 — Central team administration
 
-## 7. Duplicate patients are detected but cannot be merged
+1. Add an organization Team view with each person’s branch assignments, roles, doctor link, status, and last activity.
+2. Invite once, then choose one or several branches and a role for each.
+3. Add organization roles for Owner and Central Operations; keep Admin, Provider, and Front Desk as branch roles.
+4. Allow owners to add or remove branch access without recreating a user.
+5. Apply access checks in navigation, pages, server functions, and database policies.
+6. Record branch creation, assignment changes, role changes, and cross-branch access in the activity trail.
 
-The app warns "potential duplicate patient" but offers no merge. Over time the same patient exists two or three times with history split across records, which quietly corrupts recalls, packages and revenue per patient.
+## Phase 5 — Branch-aware settings and integrations
 
-## 8. Exports and owner-level numbers
+1. Split settings into **Organization defaults** and **Branch overrides**.
+2. Keep branch address, hours, rooms, contact details, and local invoice identity at branch level.
+3. Allow consent templates, message templates, automations, treatment catalog, and package catalog to inherit organization defaults.
+4. Allow payment, WhatsApp, Facebook, and Instagram connections to be organization-wide or branch-specific without exposing credentials to branch staff.
+5. Add a public booking flow that first selects a branch, then shows only that branch’s available doctors, rooms, services, and times.
 
-- Only the GST tab can export. Patients, appointments, invoices, payments and leads have no CSV, so the owner cannot hand anything to an accountant or a marketing agency without screenshots.
-- Reports cover day close, dues, doctor/service revenue, feedback, cancellations and GST — all operational. Missing the owner view: revenue trend month-on-month, new vs repeat patients, patient retention and lifetime value, lead source to revenue (marketing spend vs return), average bill value, chair/room utilisation.
+## Phase 6 — Consolidated owner reporting
 
-## Suggested order
+1. Add All branches / single branch controls to owner reports.
+2. Provide branch comparison for collections, invoiced value, outstanding balance, appointments, cancellations, no-shows, new patients, package liability, leads, and conversion.
+3. Keep GST exports grouped by the invoice-issuing branch and GST registration; do not combine incompatible GST registrations.
+4. Add doctor performance across branches without double-counting shared patients or package revenue.
+5. Add CSV exports with organization, branch, and legal-entity columns.
+6. Preserve branch-level day close; add an organization summary above it rather than mixing tills.
 
-1. Doctor schedules and leave, plus waitlist — fixes the everyday front-desk mess.
-2. Consumables with batch and expiry — safety, wastage and money at once.
-3. Expenses, discount reason and approval, booking deposits — the owner's P&L.
-4. Complete the audit trail on the existing table.
-5. Structured medical history with a safety banner, photo consent, protocols, prescriptions.
-6. Patient merge, CSV exports, owner dashboard metrics.
+## Technical approach
 
-## Technical notes
+- Add `organizations`, `organization_members`, and branch-assignment tables with explicit grants and row-level policies.
+- Add `organization_id` to the existing `clinics` table; keep `clinics.id` as the branch key already referenced by operational tables.
+- Introduce new organization/branch access helpers alongside the existing clinic helpers, then migrate policies table by table instead of replacing the current security boundary at once.
+- Add organization identity to patients and doctors while retaining branch IDs on branch events and financial documents.
+- Use dedicated branch-override tables for treatments and packages rather than copying master rows.
+- Preserve all historical invoice numbers, sequences, GST snapshots, payments, and clinical records unchanged.
+- Scope query-cache keys by organization and branch so switching cannot show stale data from another location.
+- Add security tests proving branch staff cannot read another branch, while organization owners can access authorized consolidated views.
 
-- Doctor schedules: new `provider_schedules` (weekday, start, end) and `provider_time_off` tables, clinic-scoped; slot generation folds them into the existing `src/lib/clinic-hours.ts` validation and conflict check so overrides keep working.
-- Inventory: `inventory_items`, `inventory_batches`, `inventory_movements`; deduction hooks into treatment-record save where `units` is already captured.
-- Audit: no schema change needed; write `activity_log` rows from the existing mutations in `src/lib/clinic-data.ts` and the server functions, ideally through one `logActivity` helper.
-- Exports: a shared CSV helper reusing the pattern already in `GstFilingTab.tsx`.
-- Every new table follows the project's existing CREATE → GRANT → RLS → POLICY order and clinic scoping.
+## Rollout and verification
 
-Nothing here is a bug fix — the current behaviour works. Tell me which blocks you want and I'll turn them into an implementation plan.
+1. Ship the organization layer in a backward-compatible one-organization/one-branch state.
+2. Verify current clinic switching, roles, invites, billing, reports, booking, and messaging remain unchanged.
+3. Enable branch creation only after organization access rules pass isolation tests.
+4. Migrate shared patients first, with duplicate detection and record-count reconciliation.
+5. Enable shared catalog and doctor assignments next.
+6. Enable consolidated reports last, after branch totals reconcile exactly with existing reports.
+7. Validate desktop and mobile branch switching, invite acceptance, patient history, booking, billing, GST export, and access-denied states.
+
+## Recommended delivery order
+
+Start with Phases 1 and 2 as the first release. They establish safe branch ownership and the shared patient record—the main operational reason clinics need multi-branch software. Add central catalog/doctors and team administration next, then integrations and consolidated reporting after branch-level figures reconcile.
