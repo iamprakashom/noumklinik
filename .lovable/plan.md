@@ -2,18 +2,6 @@
 
 I went through the whole app as if I were running a dermatology/aesthetic practice on it. The core loop — leads, appointments, charts, packages, GST billing, payments, reminders, inbox, roles — is genuinely solid. Below is what a clinic owner would still hit in daily running, in priority order.
 
-## 1. Doctor schedules are clinic-wide only (highest daily pain)
-
-Today the app knows the clinic's opening days and hours, and it stops double-booking a doctor or a room. But it does not know:
-
-- each doctor's own days and timings (Dr. A only Tue/Thu evenings)
-- leave, half-days, conference days, or a blocked hour for a personal break
-- which doctor is simply not available for a given treatment
-
-So the front desk books into gaps that don't exist and fixes it by phone later.
-
-**Proposal:** per-doctor weekly timings plus a "block time / leave" entry. The booking screen then only offers slots the doctor is actually available for, and the day view greys out blocked time.
-
 ## 2. No waitlist, no deposits, no no-show consequence
 
 - A cancelled Friday laser slot goes empty because nobody tracks who wanted it. A simple waitlist per treatment, with a one-tap "offer this slot" message, recovers real revenue.
