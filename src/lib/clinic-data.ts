@@ -160,6 +160,16 @@ export type ServiceBranchPrice = {
 export const useServiceBranchPrices = () =>
   useList<ServiceBranchPrice>("service_branch_prices", "service_branch_prices", "created_at");
 
+export type ProviderBranchAssignment = {
+  id: string;
+  provider_id: string;
+  clinic_id: string;
+  active: boolean;
+};
+
+export const useProviderBranchAssignments = () =>
+  useList<ProviderBranchAssignment>("provider_branch_assignments", "provider_branch_assignments", "created_at");
+
 /** Resolves what a treatment costs at the branch the user is working in. */
 export function useServicePrice() {
   const overrides = useServiceBranchPrices();

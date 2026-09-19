@@ -8,29 +8,57 @@ export const getBookingOptions = createServerFn({ method: "GET" })
   .handler(async ({ data }) => {
     const clinicId = data.clinicId;
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const [servicesRes, providersRes, clinicRes] = await Promise.all([
+    const { data: branch } = await supabaseAdmin
+      .from("clinics")
+      .select("organization_id")
+      .eq("id", clinicId)
+      .eq("active", true)
+      .maybeSingle();
+    if (!branch) throw new Error("This branch is not available for booking");
+
+    const [servicesRes, assignmentsRes, clinicRes, branchesRes, pricesRes] = await Promise.all([
       supabaseAdmin
         .from("services")
         .select("id, name, category, duration_min, price")
-        .eq("clinic_id", clinicId)
+        .or(`organization_id.eq.${branch.organization_id},clinic_id.eq.${clinicId}`)
         .eq("active", true)
         .order("name"),
       supabaseAdmin
-        .from("providers")
-        .select("id, name, title")
+        .from("provider_branch_assignments")
+        .select("provider_id, providers(id, name, title, active)")
         .eq("clinic_id", clinicId)
-        .eq("active", true)
-        .order("name"),
+        .eq("active", true),
       supabaseAdmin
         .from("clinic_profile")
         .select("trade_name, legal_name, phone, city, working_days, open_time, close_time")
         .eq("clinic_id", clinicId)
         .maybeSingle(),
+      supabaseAdmin
+        .from("clinics")
+        .select("id, name, branch_code")
+        .eq("organization_id", branch.organization_id)
+        .eq("active", true)
+        .order("name"),
+      supabaseAdmin
+        .from("service_branch_prices")
+        .select("service_id, price")
+        .eq("clinic_id", clinicId),
     ]);
 
+    const prices = new Map((pricesRes.data ?? []).map((row) => [row.service_id, Number(row.price)]));
+    const services = (servicesRes.data ?? []).map((service) => ({
+      ...service,
+      price: prices.get(service.id) ?? Number(service.price),
+    }));
+    const providers = (assignmentsRes.data ?? [])
+      .map((row) => row.providers as { id: string; name: string; title: string; active: boolean } | null)
+      .filter((provider): provider is { id: string; name: string; title: string; active: boolean } => Boolean(provider?.active))
+      .map(({ id, name, title }) => ({ id, name, title }));
+
     return {
-      services: servicesRes.data ?? [],
-      providers: providersRes.data ?? [],
+      services,
+      providers,
+      branches: branchesRes.data ?? [],
       clinic: {
         name: clinicRes.data?.trade_name ?? clinicRes.data?.legal_name ?? "Our clinic",
         phone: clinicRes.data?.phone ?? null,
@@ -76,6 +104,13 @@ export const requestBooking = createServerFn({ method: "POST" })
     }
 
     // Fetch clinic hours to validate the booking falls within working hours/days
+    const { data: clinic } = await supabaseAdmin
+      .from("clinics")
+      .select("organization_id, active")
+      .eq("id", data.clinicId)
+      .maybeSingle();
+    if (!clinic?.active) throw new Error("This branch is not available for booking.");
+
     const { data: clinicProfile } = await supabaseAdmin
       .from("clinic_profile")
       .select("working_days, open_time, close_time")
@@ -107,7 +142,7 @@ export const requestBooking = createServerFn({ method: "POST" })
       const { data: existing } = await supabaseAdmin
         .from("patients")
         .select("id, phone")
-        .eq("clinic_id", data.clinicId)
+        .eq("organization_id", clinic.organization_id)
         .ilike("phone", `%${digits}%`)
         .limit(1);
       patientId = existing?.[0]?.id ?? null;

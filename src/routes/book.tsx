@@ -54,6 +54,7 @@ function Shell({ children }: { children: React.ReactNode }) {
 
 function BookingPage() {
   const { c: clinicId } = Route.useSearch();
+  const navigate = Route.useNavigate();
   const fetchOptions = useServerFn(getBookingOptions);
   const send = useServerFn(requestBooking);
   const [done, setDone] = useState(false);
@@ -158,6 +159,20 @@ function BookingPage() {
           submit.mutate(vals);
         }}
       >
+        {(options.data?.branches.length ?? 0) > 1 ? (
+          <Field label="Branch">
+            <select
+              aria-label="Branch"
+              value={clinicId}
+              className={inputClass}
+              onChange={(event) => navigate({ search: { c: event.target.value } })}
+            >
+              {options.data?.branches.map((branch) => (
+                <option key={branch.id} value={branch.id}>{branch.name}</option>
+              ))}
+            </select>
+          </Field>
+        ) : null}
         <Field label="Your name">
           <input name="full_name" required minLength={2} className={inputClass} />
         </Field>
