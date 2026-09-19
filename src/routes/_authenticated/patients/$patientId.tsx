@@ -337,6 +337,9 @@ function PatientDetail() {
                     <span className="flex-1 text-sm font-medium">
                       {services.data?.find((s) => s.id === v.service_id)?.name ?? "Service"}
                     </span>
+                    {branchLabel(v) ? (
+                      <Chip className="text-[10px]">{branchLabel(v)}</Chip>
+                    ) : null}
                     <span className="text-xs text-muted-foreground">
                       {providers.data?.find((p) => p.id === v.provider_id)?.name ?? "—"}
                     </span>
@@ -369,6 +372,7 @@ function PatientDetail() {
               <article key={r.id} className="rounded-xl border border-border bg-card p-5">
                 <header className="flex flex-wrap items-center gap-2">
                   <h3 className="text-sm font-semibold">{r.service_name}</h3>
+                  {branchLabel(r) ? <Chip className="text-[10px]">{branchLabel(r)}</Chip> : null}
                   <span className="text-xs text-muted-foreground">{formatDate(r.created_at)}</span>
                   {r.signed_at ? (
                     <Chip tone="completed">
@@ -540,6 +544,7 @@ function PatientDetail() {
                       {formatDate(i.issued_at)}
                     </span>
                     <span className="text-sm font-medium tabular-nums">{money(i.total)}</span>
+                    {branchLabel(i) ? <Chip className="text-[10px]">{branchLabel(i)}</Chip> : null}
                     <Chip tone={invoiceTone(i.status)}>{i.status}</Chip>
                   </li>
                 ))}
