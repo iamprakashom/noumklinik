@@ -2449,6 +2449,48 @@ export type Database = {
           },
         ]
       }
+      provider_branch_assignments: {
+        Row: {
+          active: boolean
+          clinic_id: string
+          created_at: string
+          id: string
+          provider_id: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          clinic_id: string
+          created_at?: string
+          id?: string
+          provider_id: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          clinic_id?: string
+          created_at?: string
+          id?: string
+          provider_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "provider_branch_assignments_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "provider_branch_assignments_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "providers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       providers: {
         Row: {
           active: boolean
@@ -2982,6 +3024,15 @@ export type Database = {
       }
       is_organization_owner: {
         Args: { _organization_id: string }
+        Returns: boolean
+      }
+      provider_has_group_conflict: {
+        Args: {
+          _duration_min: number
+          _exclude_appointment_id?: string
+          _provider_id: string
+          _starts_at: string
+        }
         Returns: boolean
       }
     }
