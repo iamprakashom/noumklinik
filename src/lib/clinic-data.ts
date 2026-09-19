@@ -132,6 +132,36 @@ export type PatientRecall = {
 export const usePatientRecalls = () =>
   useList<PatientRecall>("patient_recalls", "patient_recalls", "due_on");
 
+/** Branches the signed-in user can see — used to label records by the branch they happened at. */
+export type BranchSummary = { id: string; name: string; branch_code: string | null };
+
+export function useBranchDirectory() {
+  return useQuery({
+    queryKey: ["branch_directory"],
+    queryFn: async (): Promise<BranchSummary[]> => {
+      const { data, error } = await supabase
+        .from("clinics")
+        .select("id, name, branch_code")
+        .order("name");
+      if (error) throw error;
+      return (data ?? []) as BranchSummary[];
+    },
+  });
+}
+
+/** Returns a lookup that names the branch a record belongs to, or null when there's only one branch. */
+export function useBranchLabel() {
+  const branches = useBranchDirectory();
+  const many = (branches.data?.length ?? 0) > 1;
+  return (row: unknown): string | null => {
+    if (!many) return null;
+    const clinicId = (row as { clinic_id?: string | null } | null)?.clinic_id;
+    if (!clinicId) return null;
+    const branch = branches.data?.find((b) => b.id === clinicId);
+    return branch ? (branch.branch_code ?? branch.name) : null;
+  };
+}
+
 
 
 
