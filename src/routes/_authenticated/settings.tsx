@@ -38,6 +38,7 @@ import {
   useConsentTemplates,
   useInsert,
   useProviders,
+  useProviderBranchAssignments,
   useRooms,
   useServiceBranchPrices,
   useServices,
@@ -144,6 +145,9 @@ function SettingsPage() {
   const branchPriceOf = (serviceId: string) =>
     branchPrices.data?.find((p) => p.service_id === serviceId)?.price ?? null;
   const providers = useProviders();
+  const providerAssignments = useProviderBranchAssignments();
+  const updateProviderAssignment = useUpdate("provider_branch_assignments");
+  const addProviderAssignment = useInsert("provider_branch_assignments");
   const rooms = useRooms();
   const consents = useConsentTemplates();
 
@@ -355,6 +359,31 @@ function SettingsPage() {
                         {p.email ? ` · ${p.email}` : ""}
                         {p.phone ? ` · ${p.phone}` : ""}
                       </p>
+                      {multiBranch ? (
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          {branches.data?.map((branch) => {
+                            const assignment = providerAssignments.data?.find(
+                              (item) => item.provider_id === p.id && item.clinic_id === branch.id,
+                            );
+                            return (
+                              <label key={branch.id} className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                                <input
+                                  type="checkbox"
+                                  checked={assignment?.active ?? false}
+                                  onChange={(event) => {
+                                    if (assignment) {
+                                      updateProviderAssignment.mutate({ id: assignment.id, values: { active: event.target.checked } });
+                                    } else if (event.target.checked) {
+                                      addProviderAssignment.mutate({ provider_id: p.id, clinic_id: branch.id, active: true });
+                                    }
+                                  }}
+                                />
+                                {branch.branch_code ?? branch.name}
+                              </label>
+                            );
+                          })}
+                        </div>
+                      ) : null}
                     </div>
                     <button
                       type="button"
