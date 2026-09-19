@@ -43,6 +43,7 @@ import {
 } from "@/data/clinic";
 import {
   useAppointments,
+  useBranchLabel,
   useConsentTemplates,
   useInsert,
   useInvoices,
@@ -87,6 +88,7 @@ function PatientDetail() {
   const providers = useProviders();
   const rooms = useRooms();
   const services = useServices();
+  const branchLabel = useBranchLabel();
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
 
   const addRecord = useInsert("treatment_records");
