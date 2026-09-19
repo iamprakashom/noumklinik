@@ -33,11 +33,15 @@ import { PhoneInput } from "@/components/clinic/PhoneInput";
 import { money, phoneDigits, phoneError } from "@/data/clinic";
 import type { ConsentTemplate, Provider, Room, Service } from "@/data/clinic";
 import {
+  useBranchDirectory,
+  useClinicProfile,
   useConsentTemplates,
   useInsert,
   useProviders,
   useRooms,
+  useServiceBranchPrices,
   useServices,
+  useSetBranchPrice,
   useUpdate,
 } from "@/lib/clinic-data";
 
@@ -131,6 +135,14 @@ function SettingsPage() {
   } | null>(null);
 
   const services = useServices();
+  const branches = useBranchDirectory();
+  const clinicProfile = useClinicProfile();
+  const branchPrices = useServiceBranchPrices();
+  const setBranchPrice = useSetBranchPrice();
+  const multiBranch = (branches.data?.length ?? 0) > 1;
+  const currentClinicId = clinicProfile.data?.clinic_id ?? null;
+  const branchPriceOf = (serviceId: string) =>
+    branchPrices.data?.find((p) => p.service_id === serviceId)?.price ?? null;
   const providers = useProviders();
   const rooms = useRooms();
   const consents = useConsentTemplates();
