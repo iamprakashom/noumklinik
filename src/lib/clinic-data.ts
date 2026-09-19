@@ -149,6 +149,61 @@ export function useBranchDirectory() {
   });
 }
 
+/** Price overrides so one shared treatment menu can cost different amounts per branch. */
+export type ServiceBranchPrice = {
+  id: string;
+  service_id: string;
+  clinic_id: string;
+  price: number;
+};
+
+export const useServiceBranchPrices = () =>
+  useList<ServiceBranchPrice>("service_branch_prices", "service_branch_prices", "created_at");
+
+/** Resolves what a treatment costs at the branch the user is working in. */
+export function useServicePrice() {
+  const overrides = useServiceBranchPrices();
+  return (service: { id: string; price: number | string } | null | undefined): number => {
+    if (!service) return 0;
+    const override = overrides.data?.find((o) => o.service_id === service.id);
+    return Number(override?.price ?? service.price);
+  };
+}
+
+/** Saves or clears this branch's own price for a shared treatment. */
+export function useSetBranchPrice() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      serviceId,
+      clinicId,
+      price,
+    }: {
+      serviceId: string;
+      clinicId: string;
+      price: number | null;
+    }) => {
+      if (price === null) {
+        const { error } = await supabase
+          .from("service_branch_prices")
+          .delete()
+          .eq("service_id", serviceId)
+          .eq("clinic_id", clinicId);
+        if (error) throw friendlyError(error);
+        return;
+      }
+      const { error } = await supabase
+        .from("service_branch_prices")
+        .upsert({ service_id: serviceId, clinic_id: clinicId, price }, { onConflict: "service_id,clinic_id" });
+      if (error) throw friendlyError(error);
+    },
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ["service_branch_prices"] });
+      void qc.invalidateQueries({ queryKey: ["services"] });
+    },
+  });
+}
+
 /** Returns a lookup that names the branch a record belongs to, or null when there's only one branch. */
 export function useBranchLabel() {
   const branches = useBranchDirectory();
