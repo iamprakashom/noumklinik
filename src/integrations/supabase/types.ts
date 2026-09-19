@@ -1675,6 +1675,7 @@ export type Database = {
           description: string | null
           id: string
           name: string
+          organization_id: string | null
           price: number
           refundable: boolean
           updated_at: string
@@ -1687,6 +1688,7 @@ export type Database = {
           description?: string | null
           id?: string
           name: string
+          organization_id?: string | null
           price?: number
           refundable?: boolean
           updated_at?: string
@@ -1699,6 +1701,7 @@ export type Database = {
           description?: string | null
           id?: string
           name?: string
+          organization_id?: string | null
           price?: number
           refundable?: boolean
           updated_at?: string
@@ -1710,6 +1713,13 @@ export type Database = {
             columns: ["clinic_id"]
             isOneToOne: false
             referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "packages_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
@@ -2564,6 +2574,48 @@ export type Database = {
           },
         ]
       }
+      service_branch_prices: {
+        Row: {
+          clinic_id: string
+          created_at: string
+          id: string
+          price: number
+          service_id: string
+          updated_at: string
+        }
+        Insert: {
+          clinic_id: string
+          created_at?: string
+          id?: string
+          price: number
+          service_id: string
+          updated_at?: string
+        }
+        Update: {
+          clinic_id?: string
+          created_at?: string
+          id?: string
+          price?: number
+          service_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_branch_prices_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_branch_prices_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       services: {
         Row: {
           active: boolean
@@ -2579,6 +2631,7 @@ export type Database = {
           gst_rate: number
           id: string
           name: string
+          organization_id: string | null
           price: number
           sac_code: string
         }
@@ -2596,6 +2649,7 @@ export type Database = {
           gst_rate?: number
           id?: string
           name: string
+          organization_id?: string | null
           price?: number
           sac_code?: string
         }
@@ -2613,6 +2667,7 @@ export type Database = {
           gst_rate?: number
           id?: string
           name?: string
+          organization_id?: string | null
           price?: number
           sac_code?: string
         }
@@ -2629,6 +2684,13 @@ export type Database = {
             columns: ["consent_template_id"]
             isOneToOne: false
             referencedRelation: "consent_templates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "services_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
