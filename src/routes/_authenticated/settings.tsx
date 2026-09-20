@@ -696,7 +696,7 @@ function SettingsPage() {
                 const phoneNum = phoneDigits(rawPhone);
                 const values = {
                   name,
-                  title: String(fd.get("title")) || null,
+                  title: String(fd.get("title") || "").trim() || "Provider",
                   email: String(fd.get("email")) || null,
                   phone: phoneNum ? `+${String(fd.get("phone_country") || "91")}${phoneNum}` : null,
                 };
@@ -708,7 +708,20 @@ function SettingsPage() {
                 } else {
                   addProvider.mutate(
                     { ...values, active: true },
-                    { onSuccess: () => ok("Provider added"), onError: fail },
+                    {
+                      onSuccess: (rows) => {
+                        const created = (rows as Array<{ id?: string; clinic_id?: string }>)[0];
+                        if (created?.id && created?.clinic_id) {
+                          addProviderAssignment.mutate({
+                            provider_id: created.id,
+                            clinic_id: created.clinic_id,
+                            active: true,
+                          });
+                        }
+                        ok("Provider added");
+                      },
+                      onError: fail,
+                    },
                   );
                 }
               } else if (dialog === "room") {

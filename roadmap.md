@@ -10,4 +10,4 @@
 - [x] Add branch-aware settings, booking, and integrations
 - [x] Add consolidated owner reporting (branch comparison)
 - [x] Run tests and type checks
-- [ ] Signed-in browser verification (needs a preview sign-in)
+- [x] Signed-in browser verification of multi-branch (branches, switcher, shared menu + branch price, booking branch picker, all-branches report)
