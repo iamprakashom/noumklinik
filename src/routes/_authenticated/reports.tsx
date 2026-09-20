@@ -322,12 +322,19 @@ function ReportsPage() {
           <TabsTrigger value="incentives">Doctor & service revenue</TabsTrigger>
           <TabsTrigger value="feedback">Feedback & reviews</TabsTrigger>
           <TabsTrigger value="cancellations">Cancellations</TabsTrigger>
+          {groupAccess ? <TabsTrigger value="group">All branches</TabsTrigger> : null}
           <TabsTrigger value="gst">GST filing</TabsTrigger>
         </TabsList>
 
         <TabsContent value="gst">
           <GstFilingTab />
         </TabsContent>
+
+        {groupAccess ? (
+          <TabsContent value="group" className="mt-4">
+            <GroupReportTab />
+          </TabsContent>
+        ) : null}
 
 
         {/* --------------------------- Day close --------------------------- */}
