@@ -265,7 +265,38 @@ function SettingsPage() {
                         {s.followup_days ? `${s.followup_days}d follow-up` : "no follow-up"}
                       </p>
                     </div>
-                    <span className="text-sm tabular-nums">{money(s.price)}</span>
+                    {multiBranch ? (
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-muted-foreground">Group {money(s.price)}</span>
+                        <label className="flex items-center gap-1 text-xs">
+                          <span className="sr-only">{`Price for this branch — ${s.name}`}</span>
+                          <input
+                            type="number"
+                            step="0.01"
+                            placeholder="Same"
+                            defaultValue={branchPriceOf(s.id) ?? ""}
+                            className="h-8 w-24 rounded-md border border-border bg-card px-2 text-right text-sm tabular-nums"
+                            onBlur={(event) => {
+                              if (!currentClinicId) return;
+                              const raw = event.target.value.trim();
+                              const next = raw === "" ? null : Number(raw);
+                              if (next !== null && !Number.isFinite(next)) return;
+                              if ((branchPriceOf(s.id) ?? null) === next) return;
+                              setBranchPrice.mutate(
+                                { serviceId: s.id, clinicId: currentClinicId, price: next },
+                                {
+                                  onSuccess: () =>
+                                    toast.success(next === null ? "Using group price" : "Branch price saved"),
+                                  onError: fail,
+                                },
+                              );
+                            }}
+                          />
+                        </label>
+                      </div>
+                    ) : (
+                      <span className="text-sm tabular-nums">{money(s.price)}</span>
+                    )}
                     <button
                       type="button"
                       className={ghostButton}
