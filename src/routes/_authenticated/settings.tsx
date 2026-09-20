@@ -696,7 +696,7 @@ function SettingsPage() {
                 const phoneNum = phoneDigits(rawPhone);
                 const values = {
                   name,
-                  title: String(fd.get("title")) || null,
+                  title: String(fd.get("title") || "").trim() || "Provider",
                   email: String(fd.get("email")) || null,
                   phone: phoneNum ? `+${String(fd.get("phone_country") || "91")}${phoneNum}` : null,
                 };
