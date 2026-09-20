@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import { AppShell } from "@/components/clinic/AppShell";
 import { Chip, EmptyState, Field, Panel, StatCard, inputClass } from "@/components/clinic/bits";
 import { GstFilingTab } from "@/components/clinic/GstFilingTab";
+import { GroupReportTab, useGroupAccess } from "@/components/clinic/GroupReportTab";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatDate, formatDateTime, money, patientName } from "@/data/clinic";
@@ -81,6 +82,7 @@ function Row({
 
 function ReportsPage() {
   const [day, setDay] = useState(today);
+  const groupAccess = useGroupAccess();
   const [from, setFrom] = useState(() => {
     const d = new Date();
     d.setDate(1);
