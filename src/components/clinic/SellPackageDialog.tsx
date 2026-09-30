@@ -77,7 +77,7 @@ export function SellPackageDialog({
           onSubmit={(e) => {
             e.preventDefault();
             const target = fixedPatient ?? patientId;
-            if (!pkg || !target) return;
+            if (!pkg || !target || sell.isPending) return;
             sell.mutate(
               {
                 patient_id: target,
