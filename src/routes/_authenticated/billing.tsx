@@ -276,7 +276,8 @@ function BillingPage() {
         r.discount_type === "percent"
           ? (totals.subtotal * Number(r.discount_value)) / 100
           : Number(r.discount_value);
-      if (!best || value > best.value) best = { name: r.name, value: Math.round(value) };
+      const capped = Math.min(value, totals.subtotal);
+      if (!best || capped > best.value) best = { name: r.name, value: Math.round(capped) };
     }
     return best;
   }, [rules.data, addonCount, mainService?.id, totals.subtotal]);
