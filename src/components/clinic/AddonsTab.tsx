@@ -39,7 +39,7 @@ export function AddonsTab() {
           <Field label="Main treatment">
             <select value={main} onChange={(e) => setMain(e.target.value)} className={`${inputClass} w-52`}>
               <option value="">Select…</option>
-              {services.data?.map((s) => (
+              {services.data?.filter((s) => s.active).map((s) => (
                 <option key={s.id} value={s.id}>
                   {s.name}
                 </option>
@@ -50,7 +50,7 @@ export function AddonsTab() {
             <select value={addon} onChange={(e) => setAddon(e.target.value)} className={`${inputClass} w-52`}>
               <option value="">Select…</option>
               {services.data
-                ?.filter((s) => s.id !== main)
+                ?.filter((s) => s.active && s.id !== main)
                 .map((s) => (
                   <option key={s.id} value={s.id}>
                     {s.name}
@@ -140,7 +140,7 @@ export function AddonsTab() {
           <Field label="Applies to">
             <select name="main_service_id" className={`${inputClass} w-44`}>
               <option value="">Any treatment</option>
-              {services.data?.map((s) => (
+              {services.data?.filter((s) => s.active).map((s) => (
                 <option key={s.id} value={s.id}>
                   {s.name}
                 </option>

@@ -222,15 +222,22 @@ function BillingPage() {
   const interState = Boolean(placeOfSupply && clinicState && placeOfSupply !== clinicState);
 
   const mainService = services.data?.find((s) => s.name === lines[0]?.description);
-  const suggestedAddons = useMemo(() => {
-    if (!mainService) return [];
-    const ids = (addons.data ?? [])
-      .filter((a) => a.main_service_id === mainService.id)
-      .map((a) => a.addon_service_id);
-    return (services.data ?? []).filter(
-      (s) => ids.includes(s.id) && !lines.some((l) => l.description === s.name),
-    );
-  }, [mainService, addons.data, services.data, lines]);
+  const linkedAddonIds = useMemo(
+    () =>
+      mainService
+        ? (addons.data ?? [])
+            .filter((a) => a.main_service_id === mainService.id)
+            .map((a) => a.addon_service_id)
+        : [],
+    [mainService, addons.data],
+  );
+  const suggestedAddons = useMemo(
+    () =>
+      (services.data ?? []).filter(
+        (s) => s.active && linkedAddonIds.includes(s.id) && !lines.some((l) => l.description === s.name),
+      ),
+    [linkedAddonIds, services.data, lines],
+  );
 
   const sanitizedLines = useMemo(
     () =>
@@ -247,7 +254,13 @@ function BillingPage() {
     () => computeGstTotals(sanitizedLines, discount === "" ? 0 : discount, interState),
     [sanitizedLines, discount, interState],
   );
-  const addonCount = Math.max(0, lines.filter((l) => l.description).length - 1);
+  // Only treatments configured as add-ons of the main treatment count toward bundle rules.
+  const addonCount = lines
+    .slice(1)
+    .filter((l) => {
+      const s = services.data?.find((x) => x.name === l.description);
+      return s ? linkedAddonIds.includes(s.id) : false;
+    }).length;
 
   /** Best matching bundle discount for the current line-up. */
   const bundleRule = useMemo(() => {
@@ -263,7 +276,8 @@ function BillingPage() {
         r.discount_type === "percent"
           ? (totals.subtotal * Number(r.discount_value)) / 100
           : Number(r.discount_value);
-      if (!best || value > best.value) best = { name: r.name, value: Math.round(value) };
+      const capped = Math.min(value, totals.subtotal);
+      if (!best || capped > best.value) best = { name: r.name, value: Math.round(capped) };
     }
     return best;
   }, [rules.data, addonCount, mainService?.id, totals.subtotal]);
