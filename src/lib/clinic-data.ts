@@ -524,6 +524,8 @@ export function useSellPackage() {
         notes: `Prepaid package sale · valid ${input.pkg.validity_days} days`,
       });
 
+      let packageRowId: string | null = null;
+      try {
       const expires = new Date();
       expires.setDate(expires.getDate() + input.pkg.validity_days);
 
@@ -541,6 +543,7 @@ export function useSellPackage() {
         .select("id")
         .single();
       if (error) throw error;
+      packageRowId = data.id;
 
       const listTotal = input.lines.reduce((s, l) => s + l.list_price * l.sessions, 0) || 1;
       const { error: itemErr } = await supabase.from("patient_package_items").insert(
@@ -569,6 +572,16 @@ export function useSellPackage() {
         if (expiryRecallError) throw expiryRecallError;
       }
       return data.id;
+      } catch (err) {
+        // Roll back so a retry doesn't leave a duplicate orphan invoice.
+        if (packageRowId) {
+          await supabase.from("patient_package_items").delete().eq("patient_package_id", packageRowId);
+          await supabase.from("patient_packages").delete().eq("id", packageRowId);
+        }
+        await supabase.from("invoice_items").delete().eq("invoice_id", invoiceId);
+        await supabase.from("invoices").delete().eq("id", invoiceId);
+        throw err;
+      }
     },
     onSuccess: () => {
       for (const k of ["patient_packages", "patient_package_items", "invoices", "invoice_items", "patient_recalls"])
