@@ -3035,6 +3035,28 @@ export type Database = {
         }
         Returns: boolean
       }
+      record_invoice_payment: {
+        Args: {
+          _amount: number
+          _invoice_id: string
+          _method: string
+          _paid_at: string
+          _reference?: string
+        }
+        Returns: {
+          invoice_status: string
+          payment_id: string
+          remaining_balance: number
+        }[]
+      }
+      settle_payment_link: {
+        Args: { _amount: number; _method: string; _provider_ref: string }
+        Returns: {
+          invoice_status: string
+          processed: boolean
+          remaining_balance: number
+        }[]
+      }
     }
     Enums: {
       app_role: "admin" | "provider" | "front_desk"
