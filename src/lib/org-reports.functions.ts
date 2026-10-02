@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { countsTowardTurnover, creditedInvoiceIds, paymentEffect, refundAmount } from "@/lib/billing-math";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 export type BranchPerformance = {
@@ -47,16 +48,16 @@ export const getGroupPerformance = createServerFn({ method: "GET" })
     if (!ids.length) return { branches: [] as BranchPerformance[] };
 
     const toEnd = `${data.to}T23:59:59.999Z`;
-    const [paymentsRes, invoicesRes, appointmentsRes] = await Promise.all([
+    const [paymentsRes, invoicesRes, appointmentsRes, creditNotesRes] = await Promise.all([
       context.supabase
         .from("payments")
-        .select("clinic_id, amount, method, paid_at")
+        .select("clinic_id, invoice_id, amount, method, status, paid_at")
         .in("clinic_id", ids)
         .gte("paid_at", `${data.from}T00:00:00.000Z`)
         .lte("paid_at", toEnd),
       context.supabase
         .from("invoices")
-        .select("clinic_id, total, status, doc_type, issued_at")
+        .select("id, clinic_id, total, status, doc_type, original_invoice_id, issued_at")
         .in("clinic_id", ids)
         .gte("issued_at", data.from)
         .lte("issued_at", data.to),
@@ -66,23 +67,26 @@ export const getGroupPerformance = createServerFn({ method: "GET" })
         .in("clinic_id", ids)
         .gte("starts_at", `${data.from}T00:00:00.000Z`)
         .lte("starts_at", toEnd),
+      context.supabase
+        .from("invoices")
+        .select("doc_type, original_invoice_id")
+        .in("clinic_id", ids)
+        .eq("doc_type", "credit_note"),
     ]);
+    const credited = creditedInvoiceIds(creditNotesRes.data ?? []);
 
     const rows: BranchPerformance[] = (branches ?? []).map((branch) => {
       const payments = (paymentsRes.data ?? []).filter((p) => p.clinic_id === branch.id);
-      const collected = payments
-        .filter((p) => Number(p.amount) > 0)
-        .reduce((sum, p) => sum + Number(p.amount), 0);
-      const refunded = payments
-        .filter((p) => Number(p.amount) < 0)
-        .reduce((sum, p) => sum + Math.abs(Number(p.amount)), 0);
-      const invoices = (invoicesRes.data ?? []).filter(
-        (i) => i.clinic_id === branch.id && i.status !== "Void",
-      );
-      const invoiced = invoices.reduce(
-        (sum, i) => sum + (i.doc_type === "credit_note" ? -Number(i.total) : Number(i.total)),
+      const collected = payments.reduce(
+        (sum, p) => (refundAmount(p) ? sum : sum + paymentEffect(p)),
         0,
       );
+      const refunded = payments.reduce((sum, p) => sum + refundAmount(p), 0);
+      const invoices = (invoicesRes.data ?? []).filter(
+        (i) => i.clinic_id === branch.id && countsTowardTurnover(i, credited),
+      );
+      // Credit notes are stored with negative totals, so a plain sum nets them off.
+      const invoiced = invoices.reduce((sum, i) => sum + Number(i.total), 0);
       return {
         clinicId: branch.id,
         name: branch.name,

@@ -386,60 +386,19 @@ export function useCreateCreditNote() {
   return useMutation({
     mutationFn: async ({
       invoice,
-      items,
       reason,
     }: {
       invoice: Invoice;
-      items: InvoiceItem[];
+      items?: InvoiceItem[];
       reason: string;
     }) => {
-      const { data, error } = await supabase
-        .from("invoices")
-        .insert({
-          patient_id: invoice.patient_id,
-          appointment_id: invoice.appointment_id,
-          number: "AUTO",
-          status: "Paid",
-          doc_type: "credit_note",
-          original_invoice_id: invoice.id,
-          subtotal: -Number(invoice.subtotal),
-          discount: -Number(invoice.discount),
-          taxable_value: -Number(invoice.taxable_value),
-          cgst: -Number(invoice.cgst),
-          sgst: -Number(invoice.sgst),
-          igst: -Number(invoice.igst),
-          tax: -Number(invoice.tax),
-          round_off: -Number(invoice.round_off),
-          total: -Number(invoice.total),
-          supplier_gstin: invoice.supplier_gstin,
-          place_of_supply: invoice.place_of_supply,
-          place_of_supply_code: invoice.place_of_supply_code,
-          notes: reason,
-        })
-        .select("id")
-        .single();
+      // One database transaction: credit note, its lines and voiding the original.
+      const { data, error } = await supabase.rpc("create_credit_note", {
+        _invoice_id: invoice.id,
+        _reason: reason,
+      });
       if (error) throw error;
-
-      if (items.length) {
-        const { error: itemErr } = await supabase.from("invoice_items").insert(
-          items.map((i) => ({
-            invoice_id: data.id,
-            description: i.description,
-            quantity: i.quantity,
-            unit_price: i.unit_price,
-            amount: -Number(i.amount),
-            sac_code: i.sac_code,
-            gst_rate: i.gst_rate,
-            taxable_amount: -Number(i.taxable_amount),
-            cgst: -Number(i.cgst),
-            sgst: -Number(i.sgst),
-            igst: -Number(i.igst),
-          })),
-        );
-        if (itemErr) throw itemErr;
-      }
-      await supabase.from("invoices").update({ status: "Void" }).eq("id", invoice.id);
-      return data.id;
+      return data;
     },
     onSuccess: () => invalidate("invoices"),
   });
