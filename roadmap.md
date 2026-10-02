@@ -6,7 +6,7 @@
 - [x] Create payment links for the outstanding balance only
 - [x] Derive Paid/Open status from the amount actually collected
 - [x] Make gateway notifications safe to process more than once
-- [ ] Correct the confirmed ₹3,599 excess payment and verify totals
+- [x] Correct the confirmed ₹3,599 excess payment and verify totals
 
 - [x] Add organization and branch schema with backward-compatible data migration
 - [x] Add organization/branch access functions and secure policies
