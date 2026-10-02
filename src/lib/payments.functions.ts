@@ -104,7 +104,7 @@ export const createInvoicePaymentLink = createServerFn({ method: "POST" })
     if (paymentsError) throw new Error("Could not calculate the invoice balance");
     const settled = (invoicePayments ?? []).reduce(
       (sum, payment) =>
-        sum + paymentEffect(payment),
+        sum + paymentEffect({ ...payment, invoice_id: invoice.id }),
       0,
     );
     const balance = Math.round((Number(invoice.total) - settled) * 100) / 100;
