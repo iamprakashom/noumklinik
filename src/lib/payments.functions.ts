@@ -92,7 +92,22 @@ export const createInvoicePaymentLink = createServerFn({ method: "POST" })
       .eq("id", data.invoiceId)
       .maybeSingle();
     if (error || !invoice) throw new Error("Invoice not found");
-    if (invoice.status === "Paid") throw new Error("This invoice is already paid");
+    if (invoice.status === "Paid" || invoice.status === "Void") {
+      throw new Error("This invoice has no payable balance");
+    }
+
+    const { data: invoicePayments, error: paymentsError } = await context.supabase
+      .from("payments")
+      .select("amount, status")
+      .eq("invoice_id", invoice.id);
+    if (paymentsError) throw new Error("Could not calculate the invoice balance");
+    const settled = (invoicePayments ?? []).reduce(
+      (sum, payment) =>
+        payment.status === "Refunded" ? sum : sum + Number(payment.amount),
+      0,
+    );
+    const balance = Math.round((Number(invoice.total) - settled) * 100) / 100;
+    if (balance <= 0) throw new Error("This invoice is already paid");
 
     const { data: patient } = await context.supabase
       .from("patients")
@@ -110,7 +125,7 @@ export const createInvoicePaymentLink = createServerFn({ method: "POST" })
     }
 
     const input = {
-      amount: Number(invoice.total),
+      amount: balance,
       reference: `${invoice.number}-${Date.now().toString().slice(-5)}`,
       purpose: `Treatment invoice ${invoice.number}`,
       customer: {
@@ -132,9 +147,43 @@ export const createInvoicePaymentLink = createServerFn({ method: "POST" })
       provider: gateway.provider,
       provider_ref: link.ref,
       short_url: link.url,
-      amount: Number(invoice.total),
+      amount: balance,
       status: "created",
     });
 
     return { url: link.url, provider: gateway.provider };
+  });
+
+const manualPaymentSchema = z.object({
+  invoiceId: z.string().uuid(),
+  amount: z.number().positive(),
+  method: z.enum(["Cash", "UPI", "Card", "Bank transfer", "Cheque"]),
+  paidAt: z.string().datetime(),
+  reference: z.string().trim().max(200).optional().nullable(),
+});
+
+/** Records a payment through the database's locked balance check. */
+export const recordManualPayment = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => manualPaymentSchema.parse(input))
+  .handler(async ({ data, context }) => {
+    const { data: result, error } = await context.supabase.rpc("record_invoice_payment", {
+      _invoice_id: data.invoiceId,
+      _amount: Math.round(data.amount * 100) / 100,
+      _method: data.method,
+      _paid_at: data.paidAt,
+      _reference: data.reference || null,
+    });
+    if (error) {
+      if (/remaining invoice balance/i.test(error.message)) {
+        throw new Error("Payment exceeds the remaining invoice balance");
+      }
+      throw new Error(error.message);
+    }
+    const payment = result?.[0];
+    if (!payment) throw new Error("Payment could not be recorded");
+    return {
+      remainingBalance: Number(payment.remaining_balance),
+      invoiceStatus: payment.invoice_status,
+    };
   });

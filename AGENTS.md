@@ -8,3 +8,5 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+
+- Route every invoice payment through database payment functions so balance caps, invoice status, and gateway idempotency are enforced atomically.
