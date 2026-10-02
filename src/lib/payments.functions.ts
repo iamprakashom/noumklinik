@@ -172,7 +172,7 @@ export const recordManualPayment = createServerFn({ method: "POST" })
       _amount: Math.round(data.amount * 100) / 100,
       _method: data.method,
       _paid_at: data.paidAt,
-      _reference: data.reference || null,
+      _reference: data.reference || undefined,
     });
     if (error) {
       if (/remaining invoice balance/i.test(error.message)) {
