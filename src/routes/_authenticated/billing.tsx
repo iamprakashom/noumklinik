@@ -647,7 +647,7 @@ function BillingPage() {
                 {
                   patient_id: patientId,
                     items: invoiceLines,
-                  discount: discount === "" ? 0 : discount,
+                  discount: discountAmount,
                   clinic: clinic.data ?? null,
                   placeOfSupply: placeOfSupply || null,
                 },
@@ -656,6 +656,7 @@ function BillingPage() {
                     toast.success("Invoice created");
                     setLines([{ ...emptyLine }]);
                     setDiscount(0 as number | "");
+                    setDiscountType("flat");
                     setOpen(false);
                   },
                   onError: (err) => toast.error(err.message),
