@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { paymentEffect } from "@/lib/billing-math";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { requireClinicId } from "@/lib/clinic.server";
 
@@ -103,7 +104,7 @@ export const createInvoicePaymentLink = createServerFn({ method: "POST" })
     if (paymentsError) throw new Error("Could not calculate the invoice balance");
     const settled = (invoicePayments ?? []).reduce(
       (sum, payment) =>
-        payment.status === "Refunded" ? sum : sum + Number(payment.amount),
+        sum + paymentEffect({ ...payment, invoice_id: invoice.id }),
       0,
     );
     const balance = Math.round((Number(invoice.total) - settled) * 100) / 100;

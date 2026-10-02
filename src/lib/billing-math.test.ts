@@ -1,4 +1,5 @@
 import { describe, expect, it } from "bun:test";
+import * as billingMath from "./billing-math";
 import {
   creditByOriginalInvoice,
   invoiceBalance,
@@ -37,5 +38,29 @@ describe("billing settlement rules", () => {
 
   it("never reports a void invoice as due", () => {
     expect(invoiceBalance({ id: "i1", total: 1000, status: "Void", doc_type: "invoice" }, new Map(), new Map())).toBe(0);
+  });
+});
+describe("payment status and credit-note turnover", () => {
+  it("ignores pending and failed payments", () => {
+    const { paymentEffect: effect, refundAmount: refund } = billingMath;
+    expect(effect({ invoice_id: "i1", amount: 500, status: "Pending" })).toBe(0);
+    expect(effect({ invoice_id: "i1", amount: 500, status: "Failed" })).toBe(0);
+    expect(effect({ invoice_id: "i1", amount: -200, status: "Failed" })).toBe(0);
+    expect(refund({ invoice_id: "i1", amount: -200, status: "Failed" })).toBe(0);
+    expect(effect({ invoice_id: "i1", amount: 500, status: "Paid" })).toBe(500);
+  });
+
+  it("nets a credited invoice and its negative credit note to zero", () => {
+    const docs = [
+      { id: "i1", total: 1000, status: "Void", doc_type: "invoice" },
+      { id: "c1", total: -1000, status: "Paid", doc_type: "credit_note", original_invoice_id: "i1" },
+      { id: "i2", total: 300, status: "Void", doc_type: "invoice" },
+      { id: "i3", total: 500, status: "Open", doc_type: "invoice" },
+    ];
+    const credited = billingMath.creditedInvoiceIds(docs);
+    const turnover = docs
+      .filter((d) => billingMath.countsTowardTurnover(d, credited))
+      .reduce((s, d) => s + d.total, 0);
+    expect(turnover).toBe(500);
   });
 });

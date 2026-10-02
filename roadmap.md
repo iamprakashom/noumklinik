@@ -7,6 +7,9 @@
 - [x] Derive Paid/Open status from the amount actually collected
 - [x] Make gateway notifications safe to process more than once
 - [x] Correct the confirmed ₹3,599 excess payment and verify totals
+- [x] Stop credit notes being sign-reversed in GST and group reports
+- [x] Create credit notes in one atomic step
+- [x] Count only Paid payments as collected
 
 - [x] Add organization and branch schema with backward-compatible data migration
 - [x] Add organization/branch access functions and secure policies
