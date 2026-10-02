@@ -3007,6 +3007,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_credit_note: {
+        Args: { _invoice_id: string; _reason: string }
+        Returns: string
+      }
       current_clinic_id: { Args: never; Returns: string }
       current_organization_id: { Args: never; Returns: string }
       has_role: {
@@ -3025,6 +3029,10 @@ export type Database = {
       is_organization_owner: {
         Args: { _organization_id: string }
         Returns: boolean
+      }
+      payment_effect: {
+        Args: { _amount: number; _status: string }
+        Returns: number
       }
       provider_has_group_conflict: {
         Args: {
