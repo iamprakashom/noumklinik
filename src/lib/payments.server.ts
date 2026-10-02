@@ -113,27 +113,14 @@ export async function createCashfreeLink(
   return { url: json.link_url, ref: json.link_id ?? input.reference };
 }
 
-/** Marks an invoice paid and records the payment for a settled gateway link. */
+/** Atomically settles a gateway link once and derives invoice status from its real balance. */
 export async function settleLink(providerRef: string, amount: number, method: string) {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const { data: link } = await supabaseAdmin
-    .from("payment_links")
-    .select("id, invoice_id, status, clinic_id")
-    .eq("provider_ref", providerRef)
-    .maybeSingle();
-  if (!link || link.status === "paid") return false;
-
-  await supabaseAdmin
-    .from("payment_links")
-    .update({ status: "paid", paid_at: new Date().toISOString() })
-    .eq("id", link.id);
-  await supabaseAdmin.from("payments").insert({
-    clinic_id: link.clinic_id,
-    invoice_id: link.invoice_id,
-    amount,
-    method,
-    status: "Paid",
+  const { data, error } = await supabaseAdmin.rpc("settle_payment_link", {
+    _provider_ref: providerRef,
+    _amount: Math.round(amount * 100) / 100,
+    _method: method,
   });
-  await supabaseAdmin.from("invoices").update({ status: "Paid" }).eq("id", link.invoice_id);
-  return true;
+  if (error) throw new Error(error.message);
+  return Boolean(data?.[0]?.processed);
 }

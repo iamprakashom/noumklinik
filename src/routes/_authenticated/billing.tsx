@@ -33,16 +33,14 @@ import {
   useClinicProfile,
   useCreateCreditNote,
   useCreateInvoice,
-  useInsert,
   useInvoiceItems,
   useInvoices,
   usePatients,
   usePayments,
   useServiceAddons,
   useServices,
-  useUpdate,
 } from "@/lib/clinic-data";
-import { createInvoicePaymentLink } from "@/lib/payments.functions";
+import { createInvoicePaymentLink, recordManualPayment } from "@/lib/payments.functions";
 import {
   creditByOriginalInvoice,
   invoiceBalance,
@@ -121,9 +119,9 @@ function BillingPage() {
   const packageItems = usePatientPackageItems();
   const createInvoice = useCreateInvoice();
   const creditNote = useCreateCreditNote();
-  const addPayment = useInsert("payments");
-  const updateInvoice = useUpdate("invoices");
   const makeLink = useServerFn(createInvoicePaymentLink);
+  const savePayment = useServerFn(recordManualPayment);
+  const [paymentPending, setPaymentPending] = useState(false);
 
   const all = invoices.data ?? [];
   const settled = useMemo(() => settledByInvoice(payments.data ?? []), [payments.data]);
@@ -173,43 +171,42 @@ function BillingPage() {
   };
 
   const submitPayment = () => {
-    if (!payFor) return;
+    if (!payFor || paymentPending) return;
     const amount = payAmount === "" ? 0 : Number(payAmount);
     if (amount <= 0) {
       toast.error("Enter an amount greater than zero");
       return;
     }
     const invoice = payFor;
-    addPayment.mutate(
-      {
-        invoice_id: invoice.id,
+    const currentBalance = balanceOf(invoice);
+    if (amount > currentBalance + 0.001) {
+      toast.error(`Amount cannot exceed the remaining balance of ${money(currentBalance)}`);
+      return;
+    }
+    setPaymentPending(true);
+    void savePayment({
+      data: {
+        invoiceId: invoice.id,
         amount,
         method: payMethod,
-        status: "Paid",
         reference: payReference.trim() || null,
-        paid_at: new Date(`${payDate}T${new Date().toTimeString().slice(0, 8)}`).toISOString(),
+        paidAt: new Date(`${payDate}T${new Date().toTimeString().slice(0, 8)}`).toISOString(),
       },
-      {
-        onSuccess: () => {
-          const settled = paidOn(invoice.id) + amount;
-          const fullySettled = settled >= Number(invoice.total) - 0.5;
-          setPayFor(null);
-          if (fullySettled) {
-            updateInvoice.mutate(
-              { id: invoice.id, values: { status: "Paid" } },
-              { onSuccess: () => toast.success(`${payMethod} payment recorded — invoice settled`) },
-            );
-          } else {
-            toast.success(
-              `${payMethod} payment of ${money(amount)} recorded — ${money(
-                Number(invoice.total) - settled,
-              )} still due`,
-            );
-          }
-        },
-        onError: (e) => toast.error(e.message),
-      },
-    );
+    })
+      .then((result) => {
+        setPayFor(null);
+        void payments.refetch();
+        void invoices.refetch();
+        if (result.invoiceStatus === "Paid") {
+          toast.success(`${payMethod} payment recorded — invoice settled`);
+        } else {
+          toast.success(
+            `${payMethod} payment of ${money(amount)} recorded — ${money(result.remainingBalance)} still due`,
+          );
+        }
+      })
+      .catch((error: Error) => toast.error(error.message))
+      .finally(() => setPaymentPending(false));
   };
 
   const patientOf = (id: string) => {
@@ -512,6 +509,7 @@ function BillingPage() {
                     required
                     type="number"
                     min={1}
+                    max={Number(balanceOf(payFor).toFixed(2))}
                     step="0.01"
                     className={inputClass}
                     value={payAmount}
@@ -554,7 +552,7 @@ function BillingPage() {
                 <button type="button" className={ghostButton} onClick={() => setPayFor(null)}>
                   Cancel
                 </button>
-                <button type="submit" className={primaryButton} disabled={addPayment.isPending}>
+                <button type="submit" className={primaryButton} disabled={paymentPending}>
                   Save payment
                 </button>
               </DialogFooter>
