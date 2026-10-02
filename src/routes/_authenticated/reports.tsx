@@ -118,6 +118,7 @@ function ReportsPage() {
       const amount = Number(p.amount);
       const refund = refundAmount(p);
       const received = paymentEffect(p);
+      if (!refund && !received) continue;
       if (refund) refunded += refund;
       else collected += received;
       const cur = byMode.get(p.method) ?? { count: 0, amount: 0 };

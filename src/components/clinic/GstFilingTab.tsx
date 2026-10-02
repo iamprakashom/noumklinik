@@ -4,6 +4,7 @@ import { ghostButton } from "@/components/clinic/AppShell";
 import { EmptyState, Field, Panel, StatCard, inputClass } from "@/components/clinic/bits";
 import { formatDate, money } from "@/data/clinic";
 import { stateCode } from "@/lib/gst";
+import { countsTowardTurnover, creditedInvoiceIds } from "@/lib/billing-math";
 import { useClinicProfile, useInvoiceItems, useInvoices } from "@/lib/clinic-data";
 
 const monthNow = () => new Date().toISOString().slice(0, 7);
@@ -52,8 +53,9 @@ export function GstFilingTab() {
     const monthItems = (items.data ?? []).filter((i) => ids.has(i.invoice_id));
     const byInvoice = new Map(inMonth.map((i) => [i.id, i]));
 
-    // Credit notes reduce the liability, so they are signed negative here.
-    const sign = (invoiceId: string) =>
+    // Credit-note values are already stored negative; only quantity needs a sign.
+    const credited = creditedInvoiceIds(invoices.data ?? []);
+    const qtySign = (invoiceId: string) =>
       byInvoice.get(invoiceId)?.doc_type === "credit_note" ? -1 : 1;
 
     const b2c = new Map<
@@ -67,28 +69,27 @@ export function GstFilingTab() {
 
     for (const it of monthItems) {
       const inv = byInvoice.get(it.invoice_id);
-      if (!inv || inv.status === "Void") continue;
-      const s = sign(it.invoice_id);
+      if (!inv || !countsTowardTurnover(inv, credited)) continue;
       const rate = Number(it.gst_rate);
       const pos = inv.place_of_supply || clinic.data?.state || "—";
       const code = inv.place_of_supply_code || stateCode(pos) || "";
 
       const bKey = `${pos}|${rate}`;
       const b = b2c.get(bKey) ?? { pos, code, rate, taxable: 0, cgst: 0, sgst: 0, igst: 0 };
-      b.taxable += s * Number(it.taxable_amount);
-      b.cgst += s * Number(it.cgst);
-      b.sgst += s * Number(it.sgst);
-      b.igst += s * Number(it.igst);
+      b.taxable += Number(it.taxable_amount);
+      b.cgst += Number(it.cgst);
+      b.sgst += Number(it.sgst);
+      b.igst += Number(it.igst);
       b2c.set(bKey, b);
 
       const sac = it.sac_code || "999722";
       const hKey = `${sac}|${rate}`;
       const h = hsn.get(hKey) ?? { sac, rate, qty: 0, taxable: 0, cgst: 0, sgst: 0, igst: 0 };
-      h.qty += s * Number(it.quantity);
-      h.taxable += s * Number(it.taxable_amount);
-      h.cgst += s * Number(it.cgst);
-      h.sgst += s * Number(it.sgst);
-      h.igst += s * Number(it.igst);
+      h.qty += qtySign(it.invoice_id) * Number(it.quantity);
+      h.taxable += Number(it.taxable_amount);
+      h.cgst += Number(it.cgst);
+      h.sgst += Number(it.sgst);
+      h.igst += Number(it.igst);
       hsn.set(hKey, h);
     }
 
