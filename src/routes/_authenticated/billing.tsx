@@ -96,6 +96,7 @@ function BillingPage() {
   const [open, setOpen] = useState(false);
   const [lines, setLines] = useState<Line[]>([{ ...emptyLine }]);
   const [discount, setDiscount] = useState<number | "">(0);
+  const [discountType, setDiscountType] = useState<"flat" | "percent">("flat");
   const [patientId, setPatientId] = useState("");
   const [pos, setPos] = useState("");
   const [preview, setPreview] = useState<Invoice | null>(null);
@@ -250,9 +251,19 @@ function BillingPage() {
     [lines],
   );
 
+  /** Discount entered as a flat amount or a percentage of the subtotal. */
+  const discountAmount = useMemo(() => {
+    if (discount === "" || discount <= 0) return 0;
+    if (discountType === "percent") {
+      const subtotal = sanitizedLines.reduce((s, l) => s + l.quantity * l.unit_price, 0);
+      return Math.min(Math.round((subtotal * Math.min(discount, 100)) / 100), subtotal);
+    }
+    return discount;
+  }, [discount, discountType, sanitizedLines]);
+
   const totals = useMemo(
-    () => computeGstTotals(sanitizedLines, discount === "" ? 0 : discount, interState),
-    [sanitizedLines, discount, interState],
+    () => computeGstTotals(sanitizedLines, discountAmount, interState),
+    [sanitizedLines, discountAmount, interState],
   );
   // Only treatments configured as add-ons of the main treatment count toward bundle rules.
   const addonCount = lines
@@ -838,27 +849,43 @@ function BillingPage() {
               <button
                 type="button"
                 className={`${ghostButton} w-fit`}
-                onClick={() => setDiscount(bundleRule.value)}
+                onClick={() => {
+                  setDiscountType("flat");
+                  setDiscount(bundleRule.value);
+                }}
               >
                 Apply “{bundleRule.name}” — {money(bundleRule.value)} off
               </button>
             ) : null}
 
-            <Field label="Discount" className="max-w-40">
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                value={discount}
-                onChange={(e) => {
-                  const value = e.target.value === "" ? "" : Math.max(0, Number(e.target.value));
-                  setDiscount(value);
-                }}
-                onBlur={() => {
-                  if (discount === "") setDiscount(0);
-                }}
-                className={inputClass}
-              />
+            <Field label="Discount" className="max-w-64">
+              <div className="flex gap-2">
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  max={discountType === "percent" ? 100 : undefined}
+                  value={discount}
+                  onChange={(e) => {
+                    const value = e.target.value === "" ? "" : Math.max(0, Number(e.target.value));
+                    setDiscount(value);
+                  }}
+                  onBlur={() => {
+                    if (discount === "") setDiscount(0);
+                  }}
+                  className={inputClass}
+                  aria-label="Discount value"
+                />
+                <select
+                  className={inputClass}
+                  value={discountType}
+                  onChange={(e) => setDiscountType(e.target.value as "flat" | "percent")}
+                  aria-label="Discount type"
+                >
+                  <option value="flat">₹ flat</option>
+                  <option value="percent">% percent</option>
+                </select>
+              </div>
             </Field>
 
             <dl className="grid gap-1 rounded-lg border border-border bg-secondary/40 p-3 text-xs">
