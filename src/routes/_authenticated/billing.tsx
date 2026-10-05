@@ -380,7 +380,14 @@ function BillingPage() {
           value={money(collected)}
           hint={`${filteredPayments.length} payments`}
         />
-        <StatCard label="Invoices" value={filteredInvoices.length} />
+        <StatCard
+          label="Invoices"
+          value={
+            statusFilter === "All statuses"
+              ? filteredInvoices.filter(isReceivableInvoice).length
+              : filteredInvoices.length
+          }
+        />
         <StatCard
           label="Prepaid liability"
           value={money(liability.total)}
