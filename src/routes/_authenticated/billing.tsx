@@ -324,7 +324,10 @@ function BillingPage() {
   /** Unused prepaid balance per live package, grouped by expiry month. */
   const liability = useMemo(() => {
     const live = (patientPackages.data ?? []).filter(
-      (p) => p.status !== "Refunded" && p.invoice_id && filteredInvoiceIds.has(p.invoice_id),
+      (p) =>
+        p.status !== "Refunded" &&
+        (statusFilter === "All statuses" ||
+          (p.invoice_id !== null && filteredInvoiceIds.has(p.invoice_id))),
     );
     const rows = live
       .map((p) => {
@@ -342,7 +345,7 @@ function BillingPage() {
       count: rows.length,
       months: [...byMonth.entries()].sort((a, b) => a[0].localeCompare(b[0])),
     };
-  }, [filteredInvoiceIds, patientPackages.data, packageItems.data]);
+  }, [filteredInvoiceIds, packageItems.data, patientPackages.data, statusFilter]);
 
   return (
     <AppShell
