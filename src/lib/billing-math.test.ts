@@ -3,6 +3,7 @@ import * as billingMath from "./billing-math";
 import {
   creditByOriginalInvoice,
   invoiceBalance,
+  invoiceDisplayStatus,
   paymentEffect,
   refundAmount,
   settledByInvoice,
@@ -62,5 +63,23 @@ describe("payment status and credit-note turnover", () => {
       .filter((d) => billingMath.countsTowardTurnover(d, credited))
       .reduce((s, d) => s + d.total, 0);
     expect(turnover).toBe(500);
+  });
+
+  it("derives invoice filters from the real payment balance", () => {
+    const open = { id: "open", total: 1000, status: "Open", doc_type: "invoice" };
+    const partial = { id: "partial", total: 1000, status: "Open", doc_type: "invoice" };
+    const paid = { id: "paid", total: 1000, status: "Open", doc_type: "invoice" };
+    const credit = { id: "credit", total: -1000, status: "Paid", doc_type: "credit_note" };
+    const voided = { id: "void", total: 1000, status: "Void", doc_type: "invoice" };
+    const settled = settledByInvoice([
+      { invoice_id: "partial", amount: 250, status: "Paid" },
+      { invoice_id: "paid", amount: 1000, status: "Paid" },
+    ]);
+
+    expect(invoiceDisplayStatus(open, settled, new Map())).toBe("Open");
+    expect(invoiceDisplayStatus(partial, settled, new Map())).toBe("Part-paid");
+    expect(invoiceDisplayStatus(paid, settled, new Map())).toBe("Paid");
+    expect(invoiceDisplayStatus(credit, settled, new Map())).toBe("Credit note");
+    expect(invoiceDisplayStatus(voided, settled, new Map())).toBe("Void");
   });
 });
