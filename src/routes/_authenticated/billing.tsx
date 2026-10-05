@@ -44,6 +44,8 @@ import { createInvoicePaymentLink, recordManualPayment } from "@/lib/payments.fu
 import {
   creditByOriginalInvoice,
   invoiceBalance,
+  invoiceDisplayStatus,
+  type InvoiceDisplayStatus,
   isReceivableInvoice,
   paymentEffect,
   settledByInvoice,
@@ -87,6 +89,15 @@ const emptyLine: Line = {
 
 /** Modes a clinic actually collects money in — the day-close report groups on these. */
 export const PAYMENT_METHODS = ["Cash", "UPI", "Card", "Bank transfer", "Cheque"] as const;
+const INVOICE_STATUS_FILTERS = [
+  "All statuses",
+  "Open",
+  "Part-paid",
+  "Paid",
+  "Credit note",
+  "Void",
+] as const;
+type InvoiceStatusFilter = (typeof INVOICE_STATUS_FILTERS)[number];
 
 const todayISO = () => new Date().toISOString().slice(0, 10);
 
@@ -106,6 +117,7 @@ function BillingPage() {
   const [payDate, setPayDate] = useState(todayISO());
   const [creditFor, setCreditFor] = useState<Invoice | null>(null);
   const [creditReason, setCreditReason] = useState("");
+  const [statusFilter, setStatusFilter] = useState<InvoiceStatusFilter>("All statuses");
 
   const invoices = useInvoices();
   const items = useInvoiceItems();
@@ -126,14 +138,31 @@ function BillingPage() {
   const all = invoices.data ?? [];
   const settled = useMemo(() => settledByInvoice(payments.data ?? []), [payments.data]);
   const credits = useMemo(() => creditByOriginalInvoice(all), [all]);
-  const outstandingRows = all.filter(
+  const filteredInvoices = useMemo(
+    () =>
+      statusFilter === "All statuses"
+        ? all
+        : all.filter(
+            (invoice) => invoiceDisplayStatus(invoice, settled, credits) === statusFilter,
+          ),
+    [all, credits, settled, statusFilter],
+  );
+  const filteredInvoiceIds = useMemo(
+    () => new Set(filteredInvoices.map((invoice) => invoice.id)),
+    [filteredInvoices],
+  );
+  const filteredPayments = useMemo(
+    () => (payments.data ?? []).filter((payment) => filteredInvoiceIds.has(payment.invoice_id)),
+    [filteredInvoiceIds, payments.data],
+  );
+  const outstandingRows = filteredInvoices.filter(
     (i) => isReceivableInvoice(i) && invoiceBalance(i, settled, credits) > 0.5,
   );
   const outstanding = outstandingRows.reduce(
     (sum, invoice) => sum + invoiceBalance(invoice, settled, credits),
     0,
   );
-  const collected = (payments.data ?? []).reduce((s, p) => s + paymentEffect(p), 0);
+  const collected = filteredPayments.reduce((s, p) => s + paymentEffect(p), 0);
 
   /** Amount already settled against an invoice, so we can offer part payments. */
   const paidOn = (invoiceId: string) =>
@@ -294,7 +323,12 @@ function BillingPage() {
 
   /** Unused prepaid balance per live package, grouped by expiry month. */
   const liability = useMemo(() => {
-    const live = (patientPackages.data ?? []).filter((p) => p.status !== "Refunded");
+    const live = (patientPackages.data ?? []).filter(
+      (p) =>
+        p.status !== "Refunded" &&
+        (statusFilter === "All statuses" ||
+          (p.invoice_id !== null && filteredInvoiceIds.has(p.invoice_id))),
+    );
     const rows = live
       .map((p) => {
         const items = (packageItems.data ?? []).filter((i) => i.patient_package_id === p.id);
@@ -311,7 +345,7 @@ function BillingPage() {
       count: rows.length,
       months: [...byMonth.entries()].sort((a, b) => a[0].localeCompare(b[0])),
     };
-  }, [patientPackages.data, packageItems.data]);
+  }, [filteredInvoiceIds, packageItems.data, patientPackages.data, statusFilter]);
 
   return (
     <AppShell
@@ -344,9 +378,9 @@ function BillingPage() {
         <StatCard
           label="Collected"
           value={money(collected)}
-          hint={`${payments.data?.length ?? 0} payments`}
+          hint={`${filteredPayments.length} payments`}
         />
-        <StatCard label="Invoices" value={all.filter(isReceivableInvoice).length} />
+        <StatCard label="Invoices" value={filteredInvoices.length} />
         <StatCard
           label="Prepaid liability"
           value={money(liability.total)}
@@ -396,13 +430,43 @@ function BillingPage() {
                 <th className="px-5 py-3 font-medium">Issued</th>
                 <th className="px-5 py-3 text-right font-medium">Tax</th>
                 <th className="px-5 py-3 text-right font-medium">Total</th>
-                <th className="px-5 py-3 font-medium">Status</th>
+                <th className="px-5 py-2 font-medium">
+                  <label className="sr-only" htmlFor="invoice-status-filter">
+                    Filter invoices by status
+                  </label>
+                  <select
+                    id="invoice-status-filter"
+                    className="h-8 min-w-32 rounded-md border border-border bg-background px-2 text-xs font-medium text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+                    value={statusFilter}
+                    onChange={(event) =>
+                      setStatusFilter(event.target.value as InvoiceStatusFilter)
+                    }
+                  >
+                    {INVOICE_STATUS_FILTERS.map((status) => (
+                      <option key={status} value={status}>
+                        {status}
+                      </option>
+                    ))}
+                  </select>
+                </th>
                 <th className="px-5 py-3" />
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {all.map((inv) => {
+              {filteredInvoices.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="px-5 py-10 text-center text-sm text-muted-foreground">
+                    No invoices match this status.
+                  </td>
+                </tr>
+              ) : null}
+              {filteredInvoices.map((inv) => {
                 const lineItems = (items.data ?? []).filter((i) => i.invoice_id === inv.id);
+                const displayStatus: InvoiceDisplayStatus = invoiceDisplayStatus(
+                  inv,
+                  settled,
+                  credits,
+                );
                 return (
                   <tr key={inv.id} className="transition-colors hover:bg-secondary/60">
                     <td className="px-5 py-3 tabular-nums">
@@ -423,7 +487,15 @@ function BillingPage() {
                     </td>
                     <td className="px-5 py-3 text-right tabular-nums">{money(inv.total)}</td>
                     <td className="px-5 py-3">
-                      <Chip tone={invoiceTone(inv.status)}>{inv.status}</Chip>
+                      <Chip
+                        tone={
+                          displayStatus === "Part-paid"
+                            ? "progress"
+                            : invoiceTone(displayStatus === "Credit note" ? "Draft" : displayStatus)
+                        }
+                      >
+                        {displayStatus}
+                      </Chip>
                     </td>
                     <td className="px-5 py-3 text-right">
                       <div className="flex justify-end gap-1">

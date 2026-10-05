@@ -10,6 +10,7 @@
 - [x] Stop credit notes being sign-reversed in GST and group reports
 - [x] Create credit notes in one atomic step
 - [x] Count only Paid payments as collected
+- [x] Add invoice status filtering with all Billing summary cards following the filter
 
 - [x] Add organization and branch schema with backward-compatible data migration
 - [x] Add organization/branch access functions and secure policies

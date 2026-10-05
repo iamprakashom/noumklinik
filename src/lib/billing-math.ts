@@ -12,6 +12,8 @@ export type BillingPayment = {
   status: string;
 };
 
+export type InvoiceDisplayStatus = "Open" | "Part-paid" | "Paid" | "Credit note" | "Void";
+
 const roundMoney = (value: number) => Math.round(value * 100) / 100;
 
 export function paymentEffect(payment: BillingPayment) {
@@ -64,6 +66,23 @@ export function invoiceBalance(
         (credits.get(invoice.id) ?? 0),
     ),
   );
+}
+
+/** User-facing status derived from the document type and its actual settled balance. */
+export function invoiceDisplayStatus(
+  invoice: BillingInvoice,
+  settled: ReadonlyMap<string, number>,
+  credits: ReadonlyMap<string, number>,
+): InvoiceDisplayStatus {
+  if (invoice.doc_type === "credit_note") return "Credit note";
+  if (invoice.status === "Void") return "Void";
+
+  const total = Number(invoice.total);
+  const paid = settled.get(invoice.id) ?? 0;
+  const balance = invoiceBalance(invoice, settled, credits);
+  if (total > 0 && balance <= 0.5) return "Paid";
+  if (paid > 0 && balance > 0.5) return "Part-paid";
+  return "Open";
 }
 
 export function refundAmount(payment: BillingPayment) {
