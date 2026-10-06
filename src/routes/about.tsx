@@ -85,7 +85,7 @@ const beliefs = [
 function AboutContent() {
   const { openDemo } = useDemoModal();
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="luma-scope min-h-screen bg-background text-foreground">
       <Nav />
       <main>
         {/* Hero */}

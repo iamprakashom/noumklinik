@@ -1,5 +1,6 @@
-import { Fragment, useState } from "react";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { Fragment, useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import {
   ArrowRight,
   BellRing,
@@ -27,13 +28,13 @@ import {
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "KLINIK By Nouhm — CRM for Cosmetic Clinics & Medspas" },
+      { title: "Noum Klinik — CRM for Cosmetic Clinics & Medspas" },
       {
         name: "description",
         content:
-          "KLINIK By Nouhm is a WhatsApp-first CRM for aesthetic clinics: capture enquiries, book consults, propose treatment plans, sell packages and automate follow-ups.",
+          "Noum Klinik is a WhatsApp-first CRM for aesthetic clinics: capture enquiries, book consults, propose treatment plans, sell packages and automate follow-ups.",
       },
-      { property: "og:title", content: "KLINIK By Nouhm — Turn every enquiry into a patient journey" },
+      { property: "og:title", content: "Noum Klinik — Turn every enquiry into a patient journey" },
       {
         property: "og:description",
         content:
@@ -97,13 +98,27 @@ function SectionHeading({
 }
 
 function Landing() {
+  const navigate = useNavigate();
+  // OAuth returns land on "/" — send signed-in visitors returning with a
+  // token hash (or a pending invite) straight into the app.
+  useEffect(() => {
+    const hash = window.location.hash;
+    const pending = sessionStorage.getItem("pending_invite_token");
+    if (!hash.includes("access_token") && !pending) return;
+    void supabase.auth.getSession().then(({ data }) => {
+      if (!data.session) return;
+      window.history.replaceState(null, "", window.location.pathname + window.location.search);
+      if (pending) navigate({ to: "/app/join", search: { token: pending }, replace: true });
+      else navigate({ to: "/app", replace: true });
+    });
+  }, [navigate]);
   return <LandingContent />;
 }
 
 function LandingContent() {
   const { openDemo } = useDemoModal();
   return (
-    <div id="top" className="min-h-screen bg-background">
+    <div id="top" className="luma-scope min-h-screen bg-background">
       <Nav />
 
       <main>
@@ -675,7 +690,7 @@ function LandingContent() {
               <div className="flex items-center gap-2.5">
                 <img
                   src={logoAsset.url}
-                  alt="KLINIK By Nouhm logo"
+                  alt="Noum Klinik logo"
                   className="size-9 rounded-full"
                 />
                 <span className="text-[15px] font-extrabold">KLINIK <span className="font-semibold text-muted-foreground">By Nouhm</span></span>
