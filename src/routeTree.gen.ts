@@ -10,6 +10,8 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as SplatRouteImport } from './routes/$'
+import { Route as AppIndexRouteImport } from './routes/app/index'
 import { Route as AppAuthenticatedRouteRouteImport } from './routes/app/_authenticated/route'
 import { Route as AppAuthRouteImport } from './routes/app/auth'
 import { Route as AppBookRouteImport } from './routes/app/book'
@@ -40,6 +42,16 @@ import { Route as AppAuthenticatedPatientsPatientIdRouteImport } from './routes/
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SplatRoute = SplatRouteImport.update({
+  id: '/$',
+  path: '/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AppIndexRoute = AppIndexRouteImport.update({
+  id: '/app/',
+  path: '/app/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AppAuthenticatedRouteRoute = AppAuthenticatedRouteRouteImport.update({
@@ -186,11 +198,13 @@ const AppAuthenticatedPatientsPatientIdRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/$': typeof SplatRoute
   '/app': typeof AppAuthenticatedRouteRouteWithChildren
   '/app/auth': typeof AppAuthRoute
   '/app/book': typeof AppBookRoute
   '/app/join': typeof AppJoinRoute
   '/app/onboarding': typeof AppOnboardingRoute
+  '/app/': typeof AppIndexRoute
   '/app/access-denied': typeof AppAuthenticatedAccessDeniedRoute
   '/app/activity': typeof AppAuthenticatedActivityRoute
   '/app/appointments': typeof AppAuthenticatedAppointmentsRoute
@@ -215,7 +229,8 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/app': typeof AppAuthenticatedRouteRouteWithChildren
+  '/$': typeof SplatRoute
+  '/app': typeof AppIndexRoute
   '/app/auth': typeof AppAuthRoute
   '/app/book': typeof AppBookRoute
   '/app/join': typeof AppJoinRoute
@@ -245,11 +260,13 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/$': typeof SplatRoute
   '/app/_authenticated': typeof AppAuthenticatedRouteRouteWithChildren
   '/app/auth': typeof AppAuthRoute
   '/app/book': typeof AppBookRoute
   '/app/join': typeof AppJoinRoute
   '/app/onboarding': typeof AppOnboardingRoute
+  '/app/': typeof AppIndexRoute
   '/app/_authenticated/access-denied': typeof AppAuthenticatedAccessDeniedRoute
   '/app/_authenticated/activity': typeof AppAuthenticatedActivityRoute
   '/app/_authenticated/appointments': typeof AppAuthenticatedAppointmentsRoute
@@ -276,11 +293,13 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/$'
     | '/app'
     | '/app/auth'
     | '/app/book'
     | '/app/join'
     | '/app/onboarding'
+    | '/app/'
     | '/app/access-denied'
     | '/app/activity'
     | '/app/appointments'
@@ -305,6 +324,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/$'
     | '/app'
     | '/app/auth'
     | '/app/book'
@@ -334,11 +354,13 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/$'
     | '/app/_authenticated'
     | '/app/auth'
     | '/app/book'
     | '/app/join'
     | '/app/onboarding'
+    | '/app/'
     | '/app/_authenticated/access-denied'
     | '/app/_authenticated/activity'
     | '/app/_authenticated/appointments'
@@ -364,11 +386,13 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  SplatRoute: typeof SplatRoute
   AppAuthenticatedRouteRoute: typeof AppAuthenticatedRouteRouteWithChildren
   AppAuthRoute: typeof AppAuthRoute
   AppBookRoute: typeof AppBookRoute
   AppJoinRoute: typeof AppJoinRoute
   AppOnboardingRoute: typeof AppOnboardingRoute
+  AppIndexRoute: typeof AppIndexRoute
   AppPTokenRoute: typeof AppPTokenRoute
   ApiPublicHooksCashfreeRoute: typeof ApiPublicHooksCashfreeRoute
   ApiPublicHooksMetaLeadsRoute: typeof ApiPublicHooksMetaLeadsRoute
@@ -386,6 +410,20 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/$': {
+      id: '/$'
+      path: '/$'
+      fullPath: '/$'
+      preLoaderRoute: typeof SplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/app/': {
+      id: '/app/'
+      path: '/app'
+      fullPath: '/app/'
+      preLoaderRoute: typeof AppIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/app/_authenticated': {
@@ -613,11 +651,13 @@ const AppAuthenticatedRouteRouteWithChildren =
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  SplatRoute: SplatRoute,
   AppAuthenticatedRouteRoute: AppAuthenticatedRouteRouteWithChildren,
   AppAuthRoute: AppAuthRoute,
   AppBookRoute: AppBookRoute,
   AppJoinRoute: AppJoinRoute,
   AppOnboardingRoute: AppOnboardingRoute,
+  AppIndexRoute: AppIndexRoute,
   AppPTokenRoute: AppPTokenRoute,
   ApiPublicHooksCashfreeRoute: ApiPublicHooksCashfreeRoute,
   ApiPublicHooksMetaLeadsRoute: ApiPublicHooksMetaLeadsRoute,
