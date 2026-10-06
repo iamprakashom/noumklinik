@@ -21,7 +21,7 @@ import {
   useServices,
 } from "@/lib/clinic-data";
 
-export const Route = createFileRoute("/_authenticated/dashboard")({
+export const Route = createFileRoute("/app/_authenticated/dashboard")({
   head: () => ({
     meta: [
       { title: "Today — Noum Klinik" },
@@ -98,7 +98,7 @@ function Dashboard() {
         <Panel
           title="Today's schedule"
           action={
-            <Link to="/appointments" className="text-xs text-primary hover:underline">
+            <Link to="/app/appointments" className="text-xs text-primary hover:underline">
               Open schedule
             </Link>
           }
@@ -135,7 +135,7 @@ function Dashboard() {
           <Panel
             title="New leads"
             action={
-              <Link to="/leads" className="text-xs text-primary hover:underline">
+              <Link to="/app/leads" className="text-xs text-primary hover:underline">
                 Pipeline
               </Link>
             }
@@ -163,7 +163,7 @@ function Dashboard() {
           <Panel
             title="Upcoming follow-ups"
             action={
-              <Link to="/automations" className="text-xs text-primary hover:underline">
+              <Link to="/app/automations" className="text-xs text-primary hover:underline">
                 Automations
               </Link>
             }

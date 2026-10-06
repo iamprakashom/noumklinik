@@ -178,7 +178,7 @@ export const inviteTeamMember = createServerFn({ method: "POST" })
       );
     }
 
-    const link = `${data.origin.replace(/\/$/, "")}/join?token=${token}`;
+    const link = `${data.origin.replace(/\/$/, "")}/app/join?token=${token}`;
     await context.supabase.from("activity_log").insert({ clinic_id: clinicId, actor_id: context.userId, action: "invite_created", entity_type: "team_member", summary: `Invited ${data.email.toLowerCase()} as ${data.role.replace("_", " ")}` });
     const { deliver } = await import("@/lib/messaging.server");
     const email = await deliver({ clinicId, channel: "Email", recipient: data.email, subject: "You are invited to Noum Klinik", body: `You have been invited to join a clinic workspace as ${data.role.replace("_", " ")}.

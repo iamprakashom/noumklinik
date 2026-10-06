@@ -8,7 +8,7 @@ import { AppShell, primaryButton } from "@/components/clinic/AppShell";
 import { Chip, EmptyState, Panel, inputClass } from "@/components/clinic/bits";
 import { listConversations, listThread, sendWhatsAppReply } from "@/lib/whatsapp.functions";
 
-export const Route = createFileRoute("/_authenticated/inbox")({
+export const Route = createFileRoute("/app/_authenticated/inbox")({
   head: () => ({
     meta: [
       { title: "WhatsApp inbox — Noum Klinik" },

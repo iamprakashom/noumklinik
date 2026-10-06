@@ -79,7 +79,7 @@ async function run() {
           appointment_id: appt.id,
           kind,
         });
-        return linkError ? "" : `${baseUrl}/p/${token}`;
+        return linkError ? "" : `${baseUrl}/app/p/${token}`;
       };
 
       const text = `${template.body} ${template.subject ?? ""}`;

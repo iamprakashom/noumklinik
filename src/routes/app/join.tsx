@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { acceptInvite } from "@/lib/team.functions";
 
-export const Route = createFileRoute("/join")({
+export const Route = createFileRoute("/app/join")({
   ssr: false,
   validateSearch: z.object({ token: z.string().optional() }),
   head: () => ({
@@ -47,13 +47,13 @@ function JoinPage() {
       const { data } = await supabase.auth.getSession();
       if (!data.session) {
         sessionStorage.setItem("pending_invite_token", token);
-        navigate({ to: "/auth", replace: true });
+        navigate({ to: "/app/auth", replace: true });
         return;
       }
       try {
         await accept({ data: { token } });
         sessionStorage.removeItem("pending_invite_token");
-        navigate({ to: "/dashboard", replace: true });
+        navigate({ to: "/app/dashboard", replace: true });
       } catch (err) {
         setState("error");
         setMessage(err instanceof Error ? err.message : "Could not accept this invitation.");
@@ -70,7 +70,7 @@ function JoinPage() {
         <h1 className="text-base font-semibold tracking-tight">Join your clinic</h1>
         <p className="mt-2 text-sm text-muted-foreground">{message}</p>
         {state === "error" ? (
-          <Button className="mt-4" onClick={() => navigate({ to: "/auth" })}>
+          <Button className="mt-4" onClick={() => navigate({ to: "/app/auth" })}>
             Go to sign in
           </Button>
         ) : null}

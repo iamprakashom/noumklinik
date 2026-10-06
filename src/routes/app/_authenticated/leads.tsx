@@ -66,7 +66,7 @@ const leadsSearchDefaults = {
   page: 1,
 };
 
-export const Route = createFileRoute("/_authenticated/leads")({
+export const Route = createFileRoute("/app/_authenticated/leads")({
   validateSearch: zodValidator(leadsSearchSchema),
   search: { middlewares: [stripSearchParams(leadsSearchDefaults)] },
   head: () => ({

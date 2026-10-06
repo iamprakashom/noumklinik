@@ -21,15 +21,15 @@ export function can(role: ClinicRole, permission: Permission) {
 }
 
 export const PATH_PERMISSION: Record<string, Permission> = {
-  "/dashboard": "appointments",
-  "/appointments": "appointments",
-  "/recalls": "appointments",
-  "/patients": "patients",
-  "/leads": "leads",
-  "/inbox": "inbox",
-  "/billing": "billing",
-  "/reports": "reports",
-  "/automations": "settings",
-  "/settings": "settings",
-  "/activity": "settings",
+  "/app/dashboard": "appointments",
+  "/app/appointments": "appointments",
+  "/app/recalls": "appointments",
+  "/app/patients": "patients",
+  "/app/leads": "leads",
+  "/app/inbox": "inbox",
+  "/app/billing": "billing",
+  "/app/reports": "reports",
+  "/app/automations": "settings",
+  "/app/settings": "settings",
+  "/app/activity": "settings",
 };

@@ -19,7 +19,7 @@ import {
 import { toLocalInputValue } from "@/data/clinic";
 import { TimePickerSelector } from "@/components/clinic/TimePickerSelector";
 
-export const Route = createFileRoute("/p/$token")({
+export const Route = createFileRoute("/app/p/$token")({
   head: () => ({
     meta: [
       { title: "Complete your form — Noum Klinik" },
@@ -60,7 +60,7 @@ function Shell({ children }: { children: React.ReactNode }) {
 }
 
 function PatientLinkPage() {
-  const { token } = useParams({ from: "/p/$token" });
+  const { token } = useParams({ from: "/app/p/$token" });
   const fetchLink = useServerFn(getPatientLink);
   const intake = useServerFn(submitIntake);
   const consent = useServerFn(submitConsent);

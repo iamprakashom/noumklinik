@@ -48,7 +48,7 @@ import { checkAppointmentConflict, validateAppointmentTime } from "@/lib/clinic-
 import { TimePickerSelector } from "@/components/clinic/TimePickerSelector";
 import { sendAppointmentReminder } from "@/lib/messaging.functions";
 
-export const Route = createFileRoute("/_authenticated/appointments")({
+export const Route = createFileRoute("/app/_authenticated/appointments")({
   head: () => ({
     meta: [
       { title: "Appointments — Noum Klinik" },
@@ -529,7 +529,7 @@ function AppointmentsPage() {
                     <td className="px-5 py-3">
                       {patient ? (
                         <Link
-                          to="/patients/$patientId"
+                          to="/app/patients/$patientId"
                           params={{ patientId: patient.id }}
                           className="font-medium hover:underline"
                         >

@@ -4,9 +4,9 @@ import { AppShell } from "@/components/clinic/AppShell";
 import { EmptyState, Panel } from "@/components/clinic/bits";
 import { supabase } from "@/integrations/supabase/client";
 
-export const Route = createFileRoute("/_authenticated/activity")({
+export const Route = createFileRoute("/app/_authenticated/activity")({
   beforeLoad: ({ context }) => {
-    if (context.role !== "admin") throw redirect({ to: "/dashboard" });
+    if (context.role !== "admin") throw redirect({ to: "/app/dashboard" });
   },
   head: () => ({ meta: [
     { title: "Activity history — Noum Klinik" },

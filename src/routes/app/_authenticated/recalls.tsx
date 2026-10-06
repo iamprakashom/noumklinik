@@ -22,7 +22,7 @@ import {
   type PatientRecall,
 } from "@/lib/clinic-data";
 
-export const Route = createFileRoute("/_authenticated/recalls")({
+export const Route = createFileRoute("/app/_authenticated/recalls")({
   head: () => ({
     meta: [
       { title: "Recalls — Noum Klinik" },

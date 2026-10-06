@@ -44,7 +44,7 @@ import {
 import type { Patient } from "@/data/clinic";
 import { useAppointments, useInsert, usePatients } from "@/lib/clinic-data";
 
-export const Route = createFileRoute("/_authenticated/patients/")({
+export const Route = createFileRoute("/app/_authenticated/patients/")({
   head: () => ({
     meta: [
       { title: "Patients — Noum Klinik" },
@@ -214,7 +214,7 @@ function PatientsPage() {
                 <tr key={p.id} className="transition-colors hover:bg-secondary/60">
                   <td className="px-5 py-3">
                     <Link
-                      to="/patients/$patientId"
+                      to="/app/patients/$patientId"
                       params={{ patientId: p.id }}
                       className="flex items-center gap-3"
                     >
@@ -353,7 +353,7 @@ function PatientsPage() {
             <AlertDialogCancel onClick={() => setDupeMatch(null)}>Cancel</AlertDialogCancel>
             {dupeMatch ? (
               <Link
-                to="/patients/$patientId"
+                to="/app/patients/$patientId"
                 params={{ patientId: dupeMatch.patient.id }}
                 className={ghostButton}
                 target="_blank"

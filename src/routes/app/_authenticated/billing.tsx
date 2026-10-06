@@ -51,7 +51,7 @@ import {
   settledByInvoice,
 } from "@/lib/billing-math";
 
-export const Route = createFileRoute("/_authenticated/billing")({
+export const Route = createFileRoute("/app/_authenticated/billing")({
   head: () => ({
     meta: [
       { title: "Billing — Noum Klinik" },

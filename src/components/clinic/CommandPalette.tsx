@@ -27,17 +27,17 @@ import { useLeads, usePatients } from "@/lib/clinic-data";
 import { can, type ClinicRole, type Permission } from "@/lib/permissions";
 
 const PAGES = [
-  { to: "/dashboard", label: "Today", icon: LayoutDashboard, permission: "appointments" },
-  { to: "/appointments", label: "Appointments", icon: CalendarDays, permission: "appointments" },
-  { to: "/recalls", label: "Recalls", icon: RotateCcw, permission: "appointments" },
+  { to: "/app/dashboard", label: "Today", icon: LayoutDashboard, permission: "appointments" },
+  { to: "/app/appointments", label: "Appointments", icon: CalendarDays, permission: "appointments" },
+  { to: "/app/recalls", label: "Recalls", icon: RotateCcw, permission: "appointments" },
 
-  { to: "/patients", label: "Patients", icon: Users, permission: "patients" },
-  { to: "/leads", label: "Leads", icon: UserPlus, permission: "leads" },
-  { to: "/inbox", label: "Inbox", icon: MessageSquare, permission: "inbox" },
-  { to: "/billing", label: "Billing", icon: CreditCard, permission: "billing" },
-  { to: "/reports", label: "Reports", icon: BarChart3, permission: "reports" },
-  { to: "/automations", label: "Follow-ups", icon: Sparkles, permission: "settings" },
-  { to: "/settings", label: "Settings", icon: Settings, permission: "settings" },
+  { to: "/app/patients", label: "Patients", icon: Users, permission: "patients" },
+  { to: "/app/leads", label: "Leads", icon: UserPlus, permission: "leads" },
+  { to: "/app/inbox", label: "Inbox", icon: MessageSquare, permission: "inbox" },
+  { to: "/app/billing", label: "Billing", icon: CreditCard, permission: "billing" },
+  { to: "/app/reports", label: "Reports", icon: BarChart3, permission: "reports" },
+  { to: "/app/automations", label: "Follow-ups", icon: Sparkles, permission: "settings" },
+  { to: "/app/settings", label: "Settings", icon: Settings, permission: "settings" },
 ] as const;
 
 /** Keyboard-first jump bar: Cmd/Ctrl+K from anywhere in the clinic app. */
@@ -72,21 +72,21 @@ export function CommandPalette({ role }: { role: ClinicRole }) {
         <CommandGroup heading="Actions">
           {can(role, "leads") ? <CommandItem
             value="book appointment new"
-            onSelect={() => go(() => navigate({ to: "/appointments", search: { new: true } }))}
+            onSelect={() => go(() => navigate({ to: "/app/appointments", search: { new: true } }))}
           >
             <CalendarDays className="size-4" />
             Book an appointment
           </CommandItem> : null}
           <CommandItem
             value="add patient new"
-            onSelect={() => go(() => navigate({ to: "/patients", search: { new: true } }))}
+            onSelect={() => go(() => navigate({ to: "/app/patients", search: { new: true } }))}
           >
             <Users className="size-4" />
             Add a patient
           </CommandItem>
           <CommandItem
             value="add lead new enquiry"
-            onSelect={() => go(() => navigate({ to: "/leads" }))}
+            onSelect={() => go(() => navigate({ to: "/app/leads" }))}
           >
             <UserPlus className="size-4" />
             Add a lead
@@ -102,7 +102,7 @@ export function CommandPalette({ role }: { role: ClinicRole }) {
               value={`${patientName(p)} ${p.phone ?? ""} ${p.email ?? ""}`}
               onSelect={() =>
                 go(() =>
-                  navigate({ to: "/patients/$patientId", params: { patientId: p.id } }),
+                  navigate({ to: "/app/patients/$patientId", params: { patientId: p.id } }),
                 )
               }
             >
@@ -118,7 +118,7 @@ export function CommandPalette({ role }: { role: ClinicRole }) {
             <CommandItem
               key={l.id}
               value={`${l.full_name} ${l.phone ?? ""} lead`}
-              onSelect={() => go(() => navigate({ to: "/leads" }))}
+              onSelect={() => go(() => navigate({ to: "/app/leads" }))}
             >
               <UserPlus className="size-4" />
               <span className="flex-1 truncate">{l.full_name}</span>

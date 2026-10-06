@@ -128,7 +128,7 @@ export function AppointmentDetailDialog({
               <span className="text-xs font-medium text-muted-foreground">Patient</span>
               {patient ? (
                 <Link
-                  to="/patients/$patientId"
+                  to="/app/patients/$patientId"
                   params={{ patientId: patient.id }}
                   className="text-xs text-primary hover:underline font-medium"
                 >

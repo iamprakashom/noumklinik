@@ -25,7 +25,7 @@ import {
   useUpdate,
 } from "@/lib/clinic-data";
 
-export const Route = createFileRoute("/_authenticated/automations")({
+export const Route = createFileRoute("/app/_authenticated/automations")({
   head: () => ({
     meta: [
       { title: "Follow-ups — Noum Klinik" },
