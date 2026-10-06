@@ -82,12 +82,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Noum Klinik — Aesthetic Clinic CRM" },
+      { title: "Klinik by NouhmAI" },
       {
         name: "description",
         content: "Clinic CRM for aesthetic and dermatology clinics.",
       },
-      { property: "og:title", content: "Noum Klinik — Aesthetic Clinic CRM" },
+      { property: "og:title", content: "Klinik by NouhmAI" },
       {
         property: "og:description",
         content: "Clinic CRM for aesthetic and dermatology clinics.",

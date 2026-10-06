@@ -33,17 +33,17 @@ function SectionHeading({
 export const Route = createFileRoute("/about")({
   head: () => ({
     meta: [
-      { title: "About KLINIK — Built for Aesthetic Clinics" },
+      { title: "About — Klinik by NouhmAI" },
       {
         name: "description",
         content:
-          "KLINIK is a WhatsApp-first CRM built specifically for aesthetic clinics. Learn why we exist and what we believe about running a modern clinic.",
+          "Klinik by NouhmAI is a WhatsApp-first CRM built specifically for aesthetic clinics. Learn why we exist and what we believe about running a modern clinic.",
       },
-      { property: "og:title", content: "About KLINIK — Built for Aesthetic Clinics" },
+      { property: "og:title", content: "About — Klinik by NouhmAI" },
       {
         property: "og:description",
         content:
-          "KLINIK is a WhatsApp-first CRM built specifically for aesthetic clinics. Learn why we exist and what we believe.",
+          "Klinik by NouhmAI is a WhatsApp-first CRM built specifically for aesthetic clinics. Learn why we exist and what we believe.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
