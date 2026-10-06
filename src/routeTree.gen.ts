@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SplatRouteImport } from './routes/$'
+import { Route as AboutRouteImport } from './routes/about'
 import { Route as AppIndexRouteImport } from './routes/app/index'
 import { Route as AppAuthenticatedRouteRouteImport } from './routes/app/_authenticated/route'
 import { Route as AppAuthRouteImport } from './routes/app/auth'
@@ -47,6 +48,11 @@ const IndexRoute = IndexRouteImport.update({
 const SplatRoute = SplatRouteImport.update({
   id: '/$',
   path: '/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AboutRoute = AboutRouteImport.update({
+  id: '/about',
+  path: '/about',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AppIndexRoute = AppIndexRouteImport.update({
@@ -199,6 +205,7 @@ const AppAuthenticatedPatientsPatientIdRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/$': typeof SplatRoute
+  '/about': typeof AboutRoute
   '/app': typeof AppAuthenticatedRouteRouteWithChildren
   '/app/auth': typeof AppAuthRoute
   '/app/book': typeof AppBookRoute
@@ -230,6 +237,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/$': typeof SplatRoute
+  '/about': typeof AboutRoute
   '/app': typeof AppIndexRoute
   '/app/auth': typeof AppAuthRoute
   '/app/book': typeof AppBookRoute
@@ -261,6 +269,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/$': typeof SplatRoute
+  '/about': typeof AboutRoute
   '/app/_authenticated': typeof AppAuthenticatedRouteRouteWithChildren
   '/app/auth': typeof AppAuthRoute
   '/app/book': typeof AppBookRoute
@@ -294,6 +303,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/$'
+    | '/about'
     | '/app'
     | '/app/auth'
     | '/app/book'
@@ -325,6 +335,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/$'
+    | '/about'
     | '/app'
     | '/app/auth'
     | '/app/book'
@@ -355,6 +366,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/$'
+    | '/about'
     | '/app/_authenticated'
     | '/app/auth'
     | '/app/book'
@@ -387,6 +399,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   SplatRoute: typeof SplatRoute
+  AboutRoute: typeof AboutRoute
   AppAuthenticatedRouteRoute: typeof AppAuthenticatedRouteRouteWithChildren
   AppAuthRoute: typeof AppAuthRoute
   AppBookRoute: typeof AppBookRoute
@@ -417,6 +430,13 @@ declare module '@tanstack/react-router' {
       path: '/$'
       fullPath: '/$'
       preLoaderRoute: typeof SplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/about': {
+      id: '/about'
+      path: '/about'
+      fullPath: '/about'
+      preLoaderRoute: typeof AboutRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/app/': {
@@ -652,6 +672,7 @@ const AppAuthenticatedRouteRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   SplatRoute: SplatRoute,
+  AboutRoute: AboutRoute,
   AppAuthenticatedRouteRoute: AppAuthenticatedRouteRouteWithChildren,
   AppAuthRoute: AppAuthRoute,
   AppBookRoute: AppBookRoute,

@@ -11,3 +11,5 @@
 
 - Route every invoice payment through database payment functions so balance caps, invoice status, and gateway idempotency are enforced atomically.
 - All application pages live under `/app` (src/routes/app); `/` is the public landing page, and a root splat route redirects legacy paths so old links keep working.
+
+- The public marketing landing page (/ and /about) lives in src/components/luma, with its palette scoped under `.luma-scope` so it never restyles the clinic app.
