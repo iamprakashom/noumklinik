@@ -28,13 +28,13 @@ import {
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Noum Klinik — CRM for Cosmetic Clinics & Medspas" },
+      { title: "Klinik by NouhmAI" },
       {
         name: "description",
         content:
-          "Noum Klinik is a WhatsApp-first CRM for aesthetic clinics: capture enquiries, book consults, propose treatment plans, sell packages and automate follow-ups.",
+          "Klinik by NouhmAI is a WhatsApp-first CRM for aesthetic clinics: capture enquiries, book consults, propose treatment plans, sell packages and automate follow-ups.",
       },
-      { property: "og:title", content: "Noum Klinik — Turn every enquiry into a patient journey" },
+      { property: "og:title", content: "Klinik by NouhmAI — Turn every enquiry into a patient journey" },
       {
         property: "og:description",
         content:
