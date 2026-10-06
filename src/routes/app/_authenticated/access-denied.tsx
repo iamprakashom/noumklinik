@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { ShieldAlert } from "lucide-react";
 import { AppShell, primaryButton } from "@/components/clinic/AppShell";
 
-export const Route = createFileRoute("/_authenticated/access-denied")({
+export const Route = createFileRoute("/app/_authenticated/access-denied")({
   head: () => ({ meta: [
     { title: "Access restricted — Noum Klinik" },
     { name: "description", content: "This clinic area is restricted for your role." },
@@ -20,7 +20,7 @@ function AccessDenied() {
       <ShieldAlert className="size-10 text-muted-foreground" />
       <h2 className="mt-4 text-lg font-semibold">This area is not available for your role</h2>
       <p className="mt-2 text-sm text-muted-foreground">Ask a clinic admin if your responsibilities have changed.</p>
-      <Link to="/dashboard" className={`${primaryButton} mt-6`}>Return to today</Link>
+      <Link to="/app/dashboard" className={`${primaryButton} mt-6`}>Return to today</Link>
     </div>
   </AppShell>;
 }

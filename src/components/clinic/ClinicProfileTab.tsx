@@ -66,7 +66,7 @@ export function ClinicProfileTab() {
   const clinicId = profile.data?.clinic_id;
   const bookingUrl =
     clinicId && typeof window !== "undefined"
-      ? `${window.location.origin}/book?c=${clinicId}`
+      ? `${window.location.origin}/app/book?c=${clinicId}`
       : null;
 
   return (

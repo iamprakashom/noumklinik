@@ -10,25 +10,25 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
-import { Route as AuthRouteImport } from './routes/auth'
-import { Route as BookRouteImport } from './routes/book'
-import { Route as JoinRouteImport } from './routes/join'
-import { Route as OnboardingRouteImport } from './routes/onboarding'
-import { Route as AuthenticatedAccessDeniedRouteImport } from './routes/_authenticated/access-denied'
-import { Route as AuthenticatedActivityRouteImport } from './routes/_authenticated/activity'
-import { Route as AuthenticatedAppointmentsRouteImport } from './routes/_authenticated/appointments'
-import { Route as AuthenticatedAutomationsRouteImport } from './routes/_authenticated/automations'
-import { Route as AuthenticatedBillingRouteImport } from './routes/_authenticated/billing'
-import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
-import { Route as AuthenticatedInboxRouteImport } from './routes/_authenticated/inbox'
-import { Route as AuthenticatedLeadsRouteImport } from './routes/_authenticated/leads'
-import { Route as AuthenticatedRecallsRouteImport } from './routes/_authenticated/recalls'
-import { Route as AuthenticatedReportsRouteImport } from './routes/_authenticated/reports'
-import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
-import { Route as PTokenRouteImport } from './routes/p/$token'
-import { Route as AuthenticatedPatientsIndexRouteImport } from './routes/_authenticated/patients/index'
-import { Route as AuthenticatedPatientsPatientIdRouteImport } from './routes/_authenticated/patients/$patientId'
+import { Route as SplatRouteImport } from './routes/$'
+import { Route as AppIndexRouteImport } from './routes/app/index'
+import { Route as AppAuthenticatedRouteRouteImport } from './routes/app/_authenticated/route'
+import { Route as AppAuthRouteImport } from './routes/app/auth'
+import { Route as AppBookRouteImport } from './routes/app/book'
+import { Route as AppJoinRouteImport } from './routes/app/join'
+import { Route as AppOnboardingRouteImport } from './routes/app/onboarding'
+import { Route as AppAuthenticatedAccessDeniedRouteImport } from './routes/app/_authenticated/access-denied'
+import { Route as AppAuthenticatedActivityRouteImport } from './routes/app/_authenticated/activity'
+import { Route as AppAuthenticatedAppointmentsRouteImport } from './routes/app/_authenticated/appointments'
+import { Route as AppAuthenticatedAutomationsRouteImport } from './routes/app/_authenticated/automations'
+import { Route as AppAuthenticatedBillingRouteImport } from './routes/app/_authenticated/billing'
+import { Route as AppAuthenticatedDashboardRouteImport } from './routes/app/_authenticated/dashboard'
+import { Route as AppAuthenticatedInboxRouteImport } from './routes/app/_authenticated/inbox'
+import { Route as AppAuthenticatedLeadsRouteImport } from './routes/app/_authenticated/leads'
+import { Route as AppAuthenticatedRecallsRouteImport } from './routes/app/_authenticated/recalls'
+import { Route as AppAuthenticatedReportsRouteImport } from './routes/app/_authenticated/reports'
+import { Route as AppAuthenticatedSettingsRouteImport } from './routes/app/_authenticated/settings'
+import { Route as AppPTokenRouteImport } from './routes/app/p/$token'
 import { Route as ApiPublicHooksCashfreeRouteImport } from './routes/api/public/hooks/cashfree'
 import { Route as ApiPublicHooksMetaLeadsRouteImport } from './routes/api/public/hooks/meta-leads'
 import { Route as ApiPublicHooksMetaMessagesRouteImport } from './routes/api/public/hooks/meta-messages'
@@ -36,111 +36,115 @@ import { Route as ApiPublicHooksMetaOauthCallbackRouteImport } from './routes/ap
 import { Route as ApiPublicHooksRazorpayRouteImport } from './routes/api/public/hooks/razorpay'
 import { Route as ApiPublicHooksRunRemindersRouteImport } from './routes/api/public/hooks/run-reminders'
 import { Route as ApiPublicHooksWhatsappRouteImport } from './routes/api/public/hooks/whatsapp'
+import { Route as AppAuthenticatedPatientsIndexRouteImport } from './routes/app/_authenticated/patients/index'
+import { Route as AppAuthenticatedPatientsPatientIdRouteImport } from './routes/app/_authenticated/patients/$patientId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
-  id: '/_authenticated',
+const SplatRoute = SplatRouteImport.update({
+  id: '/$',
+  path: '/$',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthRoute = AuthRouteImport.update({
-  id: '/auth',
-  path: '/auth',
+const AppIndexRoute = AppIndexRouteImport.update({
+  id: '/app/',
+  path: '/app/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const BookRoute = BookRouteImport.update({
-  id: '/book',
-  path: '/book',
+const AppAuthenticatedRouteRoute = AppAuthenticatedRouteRouteImport.update({
+  id: '/app/_authenticated',
+  path: '/app',
   getParentRoute: () => rootRouteImport,
 } as any)
-const JoinRoute = JoinRouteImport.update({
-  id: '/join',
-  path: '/join',
+const AppAuthRoute = AppAuthRouteImport.update({
+  id: '/app/auth',
+  path: '/app/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
-const OnboardingRoute = OnboardingRouteImport.update({
-  id: '/onboarding',
-  path: '/onboarding',
+const AppBookRoute = AppBookRouteImport.update({
+  id: '/app/book',
+  path: '/app/book',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthenticatedAccessDeniedRoute =
-  AuthenticatedAccessDeniedRouteImport.update({
+const AppJoinRoute = AppJoinRouteImport.update({
+  id: '/app/join',
+  path: '/app/join',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AppOnboardingRoute = AppOnboardingRouteImport.update({
+  id: '/app/onboarding',
+  path: '/app/onboarding',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AppAuthenticatedAccessDeniedRoute =
+  AppAuthenticatedAccessDeniedRouteImport.update({
     id: '/access-denied',
     path: '/access-denied',
-    getParentRoute: () => AuthenticatedRouteRoute,
+    getParentRoute: () => AppAuthenticatedRouteRoute,
   } as any)
-const AuthenticatedActivityRoute = AuthenticatedActivityRouteImport.update({
-  id: '/activity',
-  path: '/activity',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedAppointmentsRoute =
-  AuthenticatedAppointmentsRouteImport.update({
+const AppAuthenticatedActivityRoute =
+  AppAuthenticatedActivityRouteImport.update({
+    id: '/activity',
+    path: '/activity',
+    getParentRoute: () => AppAuthenticatedRouteRoute,
+  } as any)
+const AppAuthenticatedAppointmentsRoute =
+  AppAuthenticatedAppointmentsRouteImport.update({
     id: '/appointments',
     path: '/appointments',
-    getParentRoute: () => AuthenticatedRouteRoute,
+    getParentRoute: () => AppAuthenticatedRouteRoute,
   } as any)
-const AuthenticatedAutomationsRoute =
-  AuthenticatedAutomationsRouteImport.update({
+const AppAuthenticatedAutomationsRoute =
+  AppAuthenticatedAutomationsRouteImport.update({
     id: '/automations',
     path: '/automations',
-    getParentRoute: () => AuthenticatedRouteRoute,
+    getParentRoute: () => AppAuthenticatedRouteRoute,
   } as any)
-const AuthenticatedBillingRoute = AuthenticatedBillingRouteImport.update({
+const AppAuthenticatedBillingRoute = AppAuthenticatedBillingRouteImport.update({
   id: '/billing',
   path: '/billing',
-  getParentRoute: () => AuthenticatedRouteRoute,
+  getParentRoute: () => AppAuthenticatedRouteRoute,
 } as any)
-const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
-  id: '/dashboard',
-  path: '/dashboard',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedInboxRoute = AuthenticatedInboxRouteImport.update({
+const AppAuthenticatedDashboardRoute =
+  AppAuthenticatedDashboardRouteImport.update({
+    id: '/dashboard',
+    path: '/dashboard',
+    getParentRoute: () => AppAuthenticatedRouteRoute,
+  } as any)
+const AppAuthenticatedInboxRoute = AppAuthenticatedInboxRouteImport.update({
   id: '/inbox',
   path: '/inbox',
-  getParentRoute: () => AuthenticatedRouteRoute,
+  getParentRoute: () => AppAuthenticatedRouteRoute,
 } as any)
-const AuthenticatedLeadsRoute = AuthenticatedLeadsRouteImport.update({
+const AppAuthenticatedLeadsRoute = AppAuthenticatedLeadsRouteImport.update({
   id: '/leads',
   path: '/leads',
-  getParentRoute: () => AuthenticatedRouteRoute,
+  getParentRoute: () => AppAuthenticatedRouteRoute,
 } as any)
-const AuthenticatedRecallsRoute = AuthenticatedRecallsRouteImport.update({
+const AppAuthenticatedRecallsRoute = AppAuthenticatedRecallsRouteImport.update({
   id: '/recalls',
   path: '/recalls',
-  getParentRoute: () => AuthenticatedRouteRoute,
+  getParentRoute: () => AppAuthenticatedRouteRoute,
 } as any)
-const AuthenticatedReportsRoute = AuthenticatedReportsRouteImport.update({
+const AppAuthenticatedReportsRoute = AppAuthenticatedReportsRouteImport.update({
   id: '/reports',
   path: '/reports',
-  getParentRoute: () => AuthenticatedRouteRoute,
+  getParentRoute: () => AppAuthenticatedRouteRoute,
 } as any)
-const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
-  id: '/settings',
-  path: '/settings',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const PTokenRoute = PTokenRouteImport.update({
-  id: '/p/$token',
-  path: '/p/$token',
+const AppAuthenticatedSettingsRoute =
+  AppAuthenticatedSettingsRouteImport.update({
+    id: '/settings',
+    path: '/settings',
+    getParentRoute: () => AppAuthenticatedRouteRoute,
+  } as any)
+const AppPTokenRoute = AppPTokenRouteImport.update({
+  id: '/app/p/$token',
+  path: '/app/p/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthenticatedPatientsIndexRoute =
-  AuthenticatedPatientsIndexRouteImport.update({
-    id: '/patients/',
-    path: '/patients/',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedPatientsPatientIdRoute =
-  AuthenticatedPatientsPatientIdRouteImport.update({
-    id: '/patients/$patientId',
-    path: '/patients/$patientId',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
 const ApiPublicHooksCashfreeRoute = ApiPublicHooksCashfreeRouteImport.update({
   id: '/api/public/hooks/cashfree',
   path: '/api/public/hooks/cashfree',
@@ -179,27 +183,40 @@ const ApiPublicHooksWhatsappRoute = ApiPublicHooksWhatsappRouteImport.update({
   path: '/api/public/hooks/whatsapp',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AppAuthenticatedPatientsIndexRoute =
+  AppAuthenticatedPatientsIndexRouteImport.update({
+    id: '/patients/',
+    path: '/patients/',
+    getParentRoute: () => AppAuthenticatedRouteRoute,
+  } as any)
+const AppAuthenticatedPatientsPatientIdRoute =
+  AppAuthenticatedPatientsPatientIdRouteImport.update({
+    id: '/patients/$patientId',
+    path: '/patients/$patientId',
+    getParentRoute: () => AppAuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/auth': typeof AuthRoute
-  '/book': typeof BookRoute
-  '/join': typeof JoinRoute
-  '/onboarding': typeof OnboardingRoute
-  '/access-denied': typeof AuthenticatedAccessDeniedRoute
-  '/activity': typeof AuthenticatedActivityRoute
-  '/appointments': typeof AuthenticatedAppointmentsRoute
-  '/automations': typeof AuthenticatedAutomationsRoute
-  '/billing': typeof AuthenticatedBillingRoute
-  '/dashboard': typeof AuthenticatedDashboardRoute
-  '/inbox': typeof AuthenticatedInboxRoute
-  '/leads': typeof AuthenticatedLeadsRoute
-  '/recalls': typeof AuthenticatedRecallsRoute
-  '/reports': typeof AuthenticatedReportsRoute
-  '/settings': typeof AuthenticatedSettingsRoute
-  '/p/$token': typeof PTokenRoute
-  '/patients/$patientId': typeof AuthenticatedPatientsPatientIdRoute
-  '/patients/': typeof AuthenticatedPatientsIndexRoute
+  '/$': typeof SplatRoute
+  '/app': typeof AppAuthenticatedRouteRouteWithChildren
+  '/app/auth': typeof AppAuthRoute
+  '/app/book': typeof AppBookRoute
+  '/app/join': typeof AppJoinRoute
+  '/app/onboarding': typeof AppOnboardingRoute
+  '/app/': typeof AppIndexRoute
+  '/app/access-denied': typeof AppAuthenticatedAccessDeniedRoute
+  '/app/activity': typeof AppAuthenticatedActivityRoute
+  '/app/appointments': typeof AppAuthenticatedAppointmentsRoute
+  '/app/automations': typeof AppAuthenticatedAutomationsRoute
+  '/app/billing': typeof AppAuthenticatedBillingRoute
+  '/app/dashboard': typeof AppAuthenticatedDashboardRoute
+  '/app/inbox': typeof AppAuthenticatedInboxRoute
+  '/app/leads': typeof AppAuthenticatedLeadsRoute
+  '/app/recalls': typeof AppAuthenticatedRecallsRoute
+  '/app/reports': typeof AppAuthenticatedReportsRoute
+  '/app/settings': typeof AppAuthenticatedSettingsRoute
+  '/app/p/$token': typeof AppPTokenRoute
   '/api/public/hooks/cashfree': typeof ApiPublicHooksCashfreeRoute
   '/api/public/hooks/meta-leads': typeof ApiPublicHooksMetaLeadsRoute
   '/api/public/hooks/meta-messages': typeof ApiPublicHooksMetaMessagesRoute
@@ -207,27 +224,29 @@ export interface FileRoutesByFullPath {
   '/api/public/hooks/razorpay': typeof ApiPublicHooksRazorpayRoute
   '/api/public/hooks/run-reminders': typeof ApiPublicHooksRunRemindersRoute
   '/api/public/hooks/whatsapp': typeof ApiPublicHooksWhatsappRoute
+  '/app/patients/$patientId': typeof AppAuthenticatedPatientsPatientIdRoute
+  '/app/patients/': typeof AppAuthenticatedPatientsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/auth': typeof AuthRoute
-  '/book': typeof BookRoute
-  '/join': typeof JoinRoute
-  '/onboarding': typeof OnboardingRoute
-  '/access-denied': typeof AuthenticatedAccessDeniedRoute
-  '/activity': typeof AuthenticatedActivityRoute
-  '/appointments': typeof AuthenticatedAppointmentsRoute
-  '/automations': typeof AuthenticatedAutomationsRoute
-  '/billing': typeof AuthenticatedBillingRoute
-  '/dashboard': typeof AuthenticatedDashboardRoute
-  '/inbox': typeof AuthenticatedInboxRoute
-  '/leads': typeof AuthenticatedLeadsRoute
-  '/recalls': typeof AuthenticatedRecallsRoute
-  '/reports': typeof AuthenticatedReportsRoute
-  '/settings': typeof AuthenticatedSettingsRoute
-  '/p/$token': typeof PTokenRoute
-  '/patients/$patientId': typeof AuthenticatedPatientsPatientIdRoute
-  '/patients': typeof AuthenticatedPatientsIndexRoute
+  '/$': typeof SplatRoute
+  '/app': typeof AppIndexRoute
+  '/app/auth': typeof AppAuthRoute
+  '/app/book': typeof AppBookRoute
+  '/app/join': typeof AppJoinRoute
+  '/app/onboarding': typeof AppOnboardingRoute
+  '/app/access-denied': typeof AppAuthenticatedAccessDeniedRoute
+  '/app/activity': typeof AppAuthenticatedActivityRoute
+  '/app/appointments': typeof AppAuthenticatedAppointmentsRoute
+  '/app/automations': typeof AppAuthenticatedAutomationsRoute
+  '/app/billing': typeof AppAuthenticatedBillingRoute
+  '/app/dashboard': typeof AppAuthenticatedDashboardRoute
+  '/app/inbox': typeof AppAuthenticatedInboxRoute
+  '/app/leads': typeof AppAuthenticatedLeadsRoute
+  '/app/recalls': typeof AppAuthenticatedRecallsRoute
+  '/app/reports': typeof AppAuthenticatedReportsRoute
+  '/app/settings': typeof AppAuthenticatedSettingsRoute
+  '/app/p/$token': typeof AppPTokenRoute
   '/api/public/hooks/cashfree': typeof ApiPublicHooksCashfreeRoute
   '/api/public/hooks/meta-leads': typeof ApiPublicHooksMetaLeadsRoute
   '/api/public/hooks/meta-messages': typeof ApiPublicHooksMetaMessagesRoute
@@ -235,29 +254,31 @@ export interface FileRoutesByTo {
   '/api/public/hooks/razorpay': typeof ApiPublicHooksRazorpayRoute
   '/api/public/hooks/run-reminders': typeof ApiPublicHooksRunRemindersRoute
   '/api/public/hooks/whatsapp': typeof ApiPublicHooksWhatsappRoute
+  '/app/patients/$patientId': typeof AppAuthenticatedPatientsPatientIdRoute
+  '/app/patients': typeof AppAuthenticatedPatientsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
-  '/auth': typeof AuthRoute
-  '/book': typeof BookRoute
-  '/join': typeof JoinRoute
-  '/onboarding': typeof OnboardingRoute
-  '/_authenticated/access-denied': typeof AuthenticatedAccessDeniedRoute
-  '/_authenticated/activity': typeof AuthenticatedActivityRoute
-  '/_authenticated/appointments': typeof AuthenticatedAppointmentsRoute
-  '/_authenticated/automations': typeof AuthenticatedAutomationsRoute
-  '/_authenticated/billing': typeof AuthenticatedBillingRoute
-  '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
-  '/_authenticated/inbox': typeof AuthenticatedInboxRoute
-  '/_authenticated/leads': typeof AuthenticatedLeadsRoute
-  '/_authenticated/recalls': typeof AuthenticatedRecallsRoute
-  '/_authenticated/reports': typeof AuthenticatedReportsRoute
-  '/_authenticated/settings': typeof AuthenticatedSettingsRoute
-  '/p/$token': typeof PTokenRoute
-  '/_authenticated/patients/$patientId': typeof AuthenticatedPatientsPatientIdRoute
-  '/_authenticated/patients/': typeof AuthenticatedPatientsIndexRoute
+  '/$': typeof SplatRoute
+  '/app/_authenticated': typeof AppAuthenticatedRouteRouteWithChildren
+  '/app/auth': typeof AppAuthRoute
+  '/app/book': typeof AppBookRoute
+  '/app/join': typeof AppJoinRoute
+  '/app/onboarding': typeof AppOnboardingRoute
+  '/app/': typeof AppIndexRoute
+  '/app/_authenticated/access-denied': typeof AppAuthenticatedAccessDeniedRoute
+  '/app/_authenticated/activity': typeof AppAuthenticatedActivityRoute
+  '/app/_authenticated/appointments': typeof AppAuthenticatedAppointmentsRoute
+  '/app/_authenticated/automations': typeof AppAuthenticatedAutomationsRoute
+  '/app/_authenticated/billing': typeof AppAuthenticatedBillingRoute
+  '/app/_authenticated/dashboard': typeof AppAuthenticatedDashboardRoute
+  '/app/_authenticated/inbox': typeof AppAuthenticatedInboxRoute
+  '/app/_authenticated/leads': typeof AppAuthenticatedLeadsRoute
+  '/app/_authenticated/recalls': typeof AppAuthenticatedRecallsRoute
+  '/app/_authenticated/reports': typeof AppAuthenticatedReportsRoute
+  '/app/_authenticated/settings': typeof AppAuthenticatedSettingsRoute
+  '/app/p/$token': typeof AppPTokenRoute
   '/api/public/hooks/cashfree': typeof ApiPublicHooksCashfreeRoute
   '/api/public/hooks/meta-leads': typeof ApiPublicHooksMetaLeadsRoute
   '/api/public/hooks/meta-messages': typeof ApiPublicHooksMetaMessagesRoute
@@ -265,29 +286,32 @@ export interface FileRoutesById {
   '/api/public/hooks/razorpay': typeof ApiPublicHooksRazorpayRoute
   '/api/public/hooks/run-reminders': typeof ApiPublicHooksRunRemindersRoute
   '/api/public/hooks/whatsapp': typeof ApiPublicHooksWhatsappRoute
+  '/app/_authenticated/patients/$patientId': typeof AppAuthenticatedPatientsPatientIdRoute
+  '/app/_authenticated/patients/': typeof AppAuthenticatedPatientsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/auth'
-    | '/book'
-    | '/join'
-    | '/onboarding'
-    | '/access-denied'
-    | '/activity'
-    | '/appointments'
-    | '/automations'
-    | '/billing'
-    | '/dashboard'
-    | '/inbox'
-    | '/leads'
-    | '/recalls'
-    | '/reports'
-    | '/settings'
-    | '/p/$token'
-    | '/patients/$patientId'
-    | '/patients/'
+    | '/$'
+    | '/app'
+    | '/app/auth'
+    | '/app/book'
+    | '/app/join'
+    | '/app/onboarding'
+    | '/app/'
+    | '/app/access-denied'
+    | '/app/activity'
+    | '/app/appointments'
+    | '/app/automations'
+    | '/app/billing'
+    | '/app/dashboard'
+    | '/app/inbox'
+    | '/app/leads'
+    | '/app/recalls'
+    | '/app/reports'
+    | '/app/settings'
+    | '/app/p/$token'
     | '/api/public/hooks/cashfree'
     | '/api/public/hooks/meta-leads'
     | '/api/public/hooks/meta-messages'
@@ -295,27 +319,29 @@ export interface FileRouteTypes {
     | '/api/public/hooks/razorpay'
     | '/api/public/hooks/run-reminders'
     | '/api/public/hooks/whatsapp'
+    | '/app/patients/$patientId'
+    | '/app/patients/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/auth'
-    | '/book'
-    | '/join'
-    | '/onboarding'
-    | '/access-denied'
-    | '/activity'
-    | '/appointments'
-    | '/automations'
-    | '/billing'
-    | '/dashboard'
-    | '/inbox'
-    | '/leads'
-    | '/recalls'
-    | '/reports'
-    | '/settings'
-    | '/p/$token'
-    | '/patients/$patientId'
-    | '/patients'
+    | '/$'
+    | '/app'
+    | '/app/auth'
+    | '/app/book'
+    | '/app/join'
+    | '/app/onboarding'
+    | '/app/access-denied'
+    | '/app/activity'
+    | '/app/appointments'
+    | '/app/automations'
+    | '/app/billing'
+    | '/app/dashboard'
+    | '/app/inbox'
+    | '/app/leads'
+    | '/app/recalls'
+    | '/app/reports'
+    | '/app/settings'
+    | '/app/p/$token'
     | '/api/public/hooks/cashfree'
     | '/api/public/hooks/meta-leads'
     | '/api/public/hooks/meta-messages'
@@ -323,28 +349,30 @@ export interface FileRouteTypes {
     | '/api/public/hooks/razorpay'
     | '/api/public/hooks/run-reminders'
     | '/api/public/hooks/whatsapp'
+    | '/app/patients/$patientId'
+    | '/app/patients'
   id:
     | '__root__'
     | '/'
-    | '/_authenticated'
-    | '/auth'
-    | '/book'
-    | '/join'
-    | '/onboarding'
-    | '/_authenticated/access-denied'
-    | '/_authenticated/activity'
-    | '/_authenticated/appointments'
-    | '/_authenticated/automations'
-    | '/_authenticated/billing'
-    | '/_authenticated/dashboard'
-    | '/_authenticated/inbox'
-    | '/_authenticated/leads'
-    | '/_authenticated/recalls'
-    | '/_authenticated/reports'
-    | '/_authenticated/settings'
-    | '/p/$token'
-    | '/_authenticated/patients/$patientId'
-    | '/_authenticated/patients/'
+    | '/$'
+    | '/app/_authenticated'
+    | '/app/auth'
+    | '/app/book'
+    | '/app/join'
+    | '/app/onboarding'
+    | '/app/'
+    | '/app/_authenticated/access-denied'
+    | '/app/_authenticated/activity'
+    | '/app/_authenticated/appointments'
+    | '/app/_authenticated/automations'
+    | '/app/_authenticated/billing'
+    | '/app/_authenticated/dashboard'
+    | '/app/_authenticated/inbox'
+    | '/app/_authenticated/leads'
+    | '/app/_authenticated/recalls'
+    | '/app/_authenticated/reports'
+    | '/app/_authenticated/settings'
+    | '/app/p/$token'
     | '/api/public/hooks/cashfree'
     | '/api/public/hooks/meta-leads'
     | '/api/public/hooks/meta-messages'
@@ -352,16 +380,20 @@ export interface FileRouteTypes {
     | '/api/public/hooks/razorpay'
     | '/api/public/hooks/run-reminders'
     | '/api/public/hooks/whatsapp'
+    | '/app/_authenticated/patients/$patientId'
+    | '/app/_authenticated/patients/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
-  AuthRoute: typeof AuthRoute
-  BookRoute: typeof BookRoute
-  JoinRoute: typeof JoinRoute
-  OnboardingRoute: typeof OnboardingRoute
-  PTokenRoute: typeof PTokenRoute
+  SplatRoute: typeof SplatRoute
+  AppAuthenticatedRouteRoute: typeof AppAuthenticatedRouteRouteWithChildren
+  AppAuthRoute: typeof AppAuthRoute
+  AppBookRoute: typeof AppBookRoute
+  AppJoinRoute: typeof AppJoinRoute
+  AppOnboardingRoute: typeof AppOnboardingRoute
+  AppIndexRoute: typeof AppIndexRoute
+  AppPTokenRoute: typeof AppPTokenRoute
   ApiPublicHooksCashfreeRoute: typeof ApiPublicHooksCashfreeRoute
   ApiPublicHooksMetaLeadsRoute: typeof ApiPublicHooksMetaLeadsRoute
   ApiPublicHooksMetaMessagesRoute: typeof ApiPublicHooksMetaMessagesRoute
@@ -380,138 +412,138 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_authenticated': {
-      id: '/_authenticated'
-      path: ''
-      fullPath: '/'
-      preLoaderRoute: typeof AuthenticatedRouteRouteImport
+    '/$': {
+      id: '/$'
+      path: '/$'
+      fullPath: '/$'
+      preLoaderRoute: typeof SplatRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/auth': {
-      id: '/auth'
-      path: '/auth'
-      fullPath: '/auth'
-      preLoaderRoute: typeof AuthRouteImport
+    '/app/': {
+      id: '/app/'
+      path: '/app'
+      fullPath: '/app/'
+      preLoaderRoute: typeof AppIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/book': {
-      id: '/book'
-      path: '/book'
-      fullPath: '/book'
-      preLoaderRoute: typeof BookRouteImport
+    '/app/_authenticated': {
+      id: '/app/_authenticated'
+      path: '/app'
+      fullPath: '/app'
+      preLoaderRoute: typeof AppAuthenticatedRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/join': {
-      id: '/join'
-      path: '/join'
-      fullPath: '/join'
-      preLoaderRoute: typeof JoinRouteImport
+    '/app/auth': {
+      id: '/app/auth'
+      path: '/app/auth'
+      fullPath: '/app/auth'
+      preLoaderRoute: typeof AppAuthRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/onboarding': {
-      id: '/onboarding'
-      path: '/onboarding'
-      fullPath: '/onboarding'
-      preLoaderRoute: typeof OnboardingRouteImport
+    '/app/book': {
+      id: '/app/book'
+      path: '/app/book'
+      fullPath: '/app/book'
+      preLoaderRoute: typeof AppBookRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/access-denied': {
-      id: '/_authenticated/access-denied'
+    '/app/join': {
+      id: '/app/join'
+      path: '/app/join'
+      fullPath: '/app/join'
+      preLoaderRoute: typeof AppJoinRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/app/onboarding': {
+      id: '/app/onboarding'
+      path: '/app/onboarding'
+      fullPath: '/app/onboarding'
+      preLoaderRoute: typeof AppOnboardingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/app/_authenticated/access-denied': {
+      id: '/app/_authenticated/access-denied'
       path: '/access-denied'
-      fullPath: '/access-denied'
-      preLoaderRoute: typeof AuthenticatedAccessDeniedRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
+      fullPath: '/app/access-denied'
+      preLoaderRoute: typeof AppAuthenticatedAccessDeniedRouteImport
+      parentRoute: typeof AppAuthenticatedRouteRoute
     }
-    '/_authenticated/activity': {
-      id: '/_authenticated/activity'
+    '/app/_authenticated/activity': {
+      id: '/app/_authenticated/activity'
       path: '/activity'
-      fullPath: '/activity'
-      preLoaderRoute: typeof AuthenticatedActivityRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
+      fullPath: '/app/activity'
+      preLoaderRoute: typeof AppAuthenticatedActivityRouteImport
+      parentRoute: typeof AppAuthenticatedRouteRoute
     }
-    '/_authenticated/appointments': {
-      id: '/_authenticated/appointments'
+    '/app/_authenticated/appointments': {
+      id: '/app/_authenticated/appointments'
       path: '/appointments'
-      fullPath: '/appointments'
-      preLoaderRoute: typeof AuthenticatedAppointmentsRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
+      fullPath: '/app/appointments'
+      preLoaderRoute: typeof AppAuthenticatedAppointmentsRouteImport
+      parentRoute: typeof AppAuthenticatedRouteRoute
     }
-    '/_authenticated/automations': {
-      id: '/_authenticated/automations'
+    '/app/_authenticated/automations': {
+      id: '/app/_authenticated/automations'
       path: '/automations'
-      fullPath: '/automations'
-      preLoaderRoute: typeof AuthenticatedAutomationsRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
+      fullPath: '/app/automations'
+      preLoaderRoute: typeof AppAuthenticatedAutomationsRouteImport
+      parentRoute: typeof AppAuthenticatedRouteRoute
     }
-    '/_authenticated/billing': {
-      id: '/_authenticated/billing'
+    '/app/_authenticated/billing': {
+      id: '/app/_authenticated/billing'
       path: '/billing'
-      fullPath: '/billing'
-      preLoaderRoute: typeof AuthenticatedBillingRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
+      fullPath: '/app/billing'
+      preLoaderRoute: typeof AppAuthenticatedBillingRouteImport
+      parentRoute: typeof AppAuthenticatedRouteRoute
     }
-    '/_authenticated/dashboard': {
-      id: '/_authenticated/dashboard'
+    '/app/_authenticated/dashboard': {
+      id: '/app/_authenticated/dashboard'
       path: '/dashboard'
-      fullPath: '/dashboard'
-      preLoaderRoute: typeof AuthenticatedDashboardRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
+      fullPath: '/app/dashboard'
+      preLoaderRoute: typeof AppAuthenticatedDashboardRouteImport
+      parentRoute: typeof AppAuthenticatedRouteRoute
     }
-    '/_authenticated/inbox': {
-      id: '/_authenticated/inbox'
+    '/app/_authenticated/inbox': {
+      id: '/app/_authenticated/inbox'
       path: '/inbox'
-      fullPath: '/inbox'
-      preLoaderRoute: typeof AuthenticatedInboxRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
+      fullPath: '/app/inbox'
+      preLoaderRoute: typeof AppAuthenticatedInboxRouteImport
+      parentRoute: typeof AppAuthenticatedRouteRoute
     }
-    '/_authenticated/leads': {
-      id: '/_authenticated/leads'
+    '/app/_authenticated/leads': {
+      id: '/app/_authenticated/leads'
       path: '/leads'
-      fullPath: '/leads'
-      preLoaderRoute: typeof AuthenticatedLeadsRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
+      fullPath: '/app/leads'
+      preLoaderRoute: typeof AppAuthenticatedLeadsRouteImport
+      parentRoute: typeof AppAuthenticatedRouteRoute
     }
-    '/_authenticated/recalls': {
-      id: '/_authenticated/recalls'
+    '/app/_authenticated/recalls': {
+      id: '/app/_authenticated/recalls'
       path: '/recalls'
-      fullPath: '/recalls'
-      preLoaderRoute: typeof AuthenticatedRecallsRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
+      fullPath: '/app/recalls'
+      preLoaderRoute: typeof AppAuthenticatedRecallsRouteImport
+      parentRoute: typeof AppAuthenticatedRouteRoute
     }
-    '/_authenticated/reports': {
-      id: '/_authenticated/reports'
+    '/app/_authenticated/reports': {
+      id: '/app/_authenticated/reports'
       path: '/reports'
-      fullPath: '/reports'
-      preLoaderRoute: typeof AuthenticatedReportsRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
+      fullPath: '/app/reports'
+      preLoaderRoute: typeof AppAuthenticatedReportsRouteImport
+      parentRoute: typeof AppAuthenticatedRouteRoute
     }
-    '/_authenticated/settings': {
-      id: '/_authenticated/settings'
+    '/app/_authenticated/settings': {
+      id: '/app/_authenticated/settings'
       path: '/settings'
-      fullPath: '/settings'
-      preLoaderRoute: typeof AuthenticatedSettingsRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
+      fullPath: '/app/settings'
+      preLoaderRoute: typeof AppAuthenticatedSettingsRouteImport
+      parentRoute: typeof AppAuthenticatedRouteRoute
     }
-    '/p/$token': {
-      id: '/p/$token'
-      path: '/p/$token'
-      fullPath: '/p/$token'
-      preLoaderRoute: typeof PTokenRouteImport
+    '/app/p/$token': {
+      id: '/app/p/$token'
+      path: '/app/p/$token'
+      fullPath: '/app/p/$token'
+      preLoaderRoute: typeof AppPTokenRouteImport
       parentRoute: typeof rootRouteImport
-    }
-    '/_authenticated/patients/': {
-      id: '/_authenticated/patients/'
-      path: '/patients'
-      fullPath: '/patients/'
-      preLoaderRoute: typeof AuthenticatedPatientsIndexRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/patients/$patientId': {
-      id: '/_authenticated/patients/$patientId'
-      path: '/patients/$patientId'
-      fullPath: '/patients/$patientId'
-      preLoaderRoute: typeof AuthenticatedPatientsPatientIdRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/api/public/hooks/cashfree': {
       id: '/api/public/hooks/cashfree'
@@ -562,52 +594,71 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksWhatsappRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/app/_authenticated/patients/': {
+      id: '/app/_authenticated/patients/'
+      path: '/patients'
+      fullPath: '/app/patients/'
+      preLoaderRoute: typeof AppAuthenticatedPatientsIndexRouteImport
+      parentRoute: typeof AppAuthenticatedRouteRoute
+    }
+    '/app/_authenticated/patients/$patientId': {
+      id: '/app/_authenticated/patients/$patientId'
+      path: '/patients/$patientId'
+      fullPath: '/app/patients/$patientId'
+      preLoaderRoute: typeof AppAuthenticatedPatientsPatientIdRouteImport
+      parentRoute: typeof AppAuthenticatedRouteRoute
+    }
   }
 }
 
-interface AuthenticatedRouteRouteChildren {
-  AuthenticatedAccessDeniedRoute: typeof AuthenticatedAccessDeniedRoute
-  AuthenticatedActivityRoute: typeof AuthenticatedActivityRoute
-  AuthenticatedAppointmentsRoute: typeof AuthenticatedAppointmentsRoute
-  AuthenticatedAutomationsRoute: typeof AuthenticatedAutomationsRoute
-  AuthenticatedBillingRoute: typeof AuthenticatedBillingRoute
-  AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
-  AuthenticatedInboxRoute: typeof AuthenticatedInboxRoute
-  AuthenticatedLeadsRoute: typeof AuthenticatedLeadsRoute
-  AuthenticatedRecallsRoute: typeof AuthenticatedRecallsRoute
-  AuthenticatedReportsRoute: typeof AuthenticatedReportsRoute
-  AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
-  AuthenticatedPatientsPatientIdRoute: typeof AuthenticatedPatientsPatientIdRoute
-  AuthenticatedPatientsIndexRoute: typeof AuthenticatedPatientsIndexRoute
+interface AppAuthenticatedRouteRouteChildren {
+  AppAuthenticatedAccessDeniedRoute: typeof AppAuthenticatedAccessDeniedRoute
+  AppAuthenticatedActivityRoute: typeof AppAuthenticatedActivityRoute
+  AppAuthenticatedAppointmentsRoute: typeof AppAuthenticatedAppointmentsRoute
+  AppAuthenticatedAutomationsRoute: typeof AppAuthenticatedAutomationsRoute
+  AppAuthenticatedBillingRoute: typeof AppAuthenticatedBillingRoute
+  AppAuthenticatedDashboardRoute: typeof AppAuthenticatedDashboardRoute
+  AppAuthenticatedInboxRoute: typeof AppAuthenticatedInboxRoute
+  AppAuthenticatedLeadsRoute: typeof AppAuthenticatedLeadsRoute
+  AppAuthenticatedRecallsRoute: typeof AppAuthenticatedRecallsRoute
+  AppAuthenticatedReportsRoute: typeof AppAuthenticatedReportsRoute
+  AppAuthenticatedSettingsRoute: typeof AppAuthenticatedSettingsRoute
+  AppAuthenticatedPatientsPatientIdRoute: typeof AppAuthenticatedPatientsPatientIdRoute
+  AppAuthenticatedPatientsIndexRoute: typeof AppAuthenticatedPatientsIndexRoute
 }
 
-const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
-  AuthenticatedAccessDeniedRoute: AuthenticatedAccessDeniedRoute,
-  AuthenticatedActivityRoute: AuthenticatedActivityRoute,
-  AuthenticatedAppointmentsRoute: AuthenticatedAppointmentsRoute,
-  AuthenticatedAutomationsRoute: AuthenticatedAutomationsRoute,
-  AuthenticatedBillingRoute: AuthenticatedBillingRoute,
-  AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
-  AuthenticatedInboxRoute: AuthenticatedInboxRoute,
-  AuthenticatedLeadsRoute: AuthenticatedLeadsRoute,
-  AuthenticatedRecallsRoute: AuthenticatedRecallsRoute,
-  AuthenticatedReportsRoute: AuthenticatedReportsRoute,
-  AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
-  AuthenticatedPatientsPatientIdRoute: AuthenticatedPatientsPatientIdRoute,
-  AuthenticatedPatientsIndexRoute: AuthenticatedPatientsIndexRoute,
+const AppAuthenticatedRouteRouteChildren: AppAuthenticatedRouteRouteChildren = {
+  AppAuthenticatedAccessDeniedRoute: AppAuthenticatedAccessDeniedRoute,
+  AppAuthenticatedActivityRoute: AppAuthenticatedActivityRoute,
+  AppAuthenticatedAppointmentsRoute: AppAuthenticatedAppointmentsRoute,
+  AppAuthenticatedAutomationsRoute: AppAuthenticatedAutomationsRoute,
+  AppAuthenticatedBillingRoute: AppAuthenticatedBillingRoute,
+  AppAuthenticatedDashboardRoute: AppAuthenticatedDashboardRoute,
+  AppAuthenticatedInboxRoute: AppAuthenticatedInboxRoute,
+  AppAuthenticatedLeadsRoute: AppAuthenticatedLeadsRoute,
+  AppAuthenticatedRecallsRoute: AppAuthenticatedRecallsRoute,
+  AppAuthenticatedReportsRoute: AppAuthenticatedReportsRoute,
+  AppAuthenticatedSettingsRoute: AppAuthenticatedSettingsRoute,
+  AppAuthenticatedPatientsPatientIdRoute:
+    AppAuthenticatedPatientsPatientIdRoute,
+  AppAuthenticatedPatientsIndexRoute: AppAuthenticatedPatientsIndexRoute,
 }
 
-const AuthenticatedRouteRouteWithChildren =
-  AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
+const AppAuthenticatedRouteRouteWithChildren =
+  AppAuthenticatedRouteRoute._addFileChildren(
+    AppAuthenticatedRouteRouteChildren,
+  )
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
-  AuthRoute: AuthRoute,
-  BookRoute: BookRoute,
-  JoinRoute: JoinRoute,
-  OnboardingRoute: OnboardingRoute,
-  PTokenRoute: PTokenRoute,
+  SplatRoute: SplatRoute,
+  AppAuthenticatedRouteRoute: AppAuthenticatedRouteRouteWithChildren,
+  AppAuthRoute: AppAuthRoute,
+  AppBookRoute: AppBookRoute,
+  AppJoinRoute: AppJoinRoute,
+  AppOnboardingRoute: AppOnboardingRoute,
+  AppIndexRoute: AppIndexRoute,
+  AppPTokenRoute: AppPTokenRoute,
   ApiPublicHooksCashfreeRoute: ApiPublicHooksCashfreeRoute,
   ApiPublicHooksMetaLeadsRoute: ApiPublicHooksMetaLeadsRoute,
   ApiPublicHooksMetaMessagesRoute: ApiPublicHooksMetaMessagesRoute,

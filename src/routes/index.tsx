@@ -44,7 +44,7 @@ function Landing() {
       }
       const pending = sessionStorage.getItem("pending_invite_token");
       if (pending) {
-        navigate({ to: "/join", search: { token: pending }, replace: true });
+        navigate({ to: "/app/join", search: { token: pending }, replace: true });
         return;
       }
       const { data: membership } = await supabase
@@ -54,7 +54,7 @@ function Landing() {
         .eq("status", "active")
         .limit(1)
         .maybeSingle();
-      navigate({ to: membership ? "/dashboard" : "/onboarding", replace: true });
+      navigate({ to: membership ? "/app/dashboard" : "/app/onboarding", replace: true });
     })();
     return () => {
       cancelled = true;
@@ -74,7 +74,7 @@ function Landing() {
         </p>
         <div className="mt-8 flex justify-center gap-3">
           <Link
-            to="/auth"
+            to="/app/auth"
             className="inline-flex h-9 items-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
           >
             {checking ? "Loading…" : "Sign in"}

@@ -12,7 +12,7 @@ import { money, toLocalInputValue } from "@/data/clinic";
 import { validateAppointmentTime } from "@/lib/clinic-hours";
 import { TimePickerSelector } from "@/components/clinic/TimePickerSelector";
 
-export const Route = createFileRoute("/book")({
+export const Route = createFileRoute("/app/book")({
   validateSearch: z.object({ c: z.string().uuid().optional() }),
   head: () => ({
     meta: [

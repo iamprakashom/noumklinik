@@ -57,7 +57,7 @@ import {
   useUpdate,
 } from "@/lib/clinic-data";
 
-export const Route = createFileRoute("/_authenticated/patients/$patientId")({
+export const Route = createFileRoute("/app/_authenticated/patients/$patientId")({
   head: () => ({
     meta: [
       { title: "Patient chart — Noum Klinik" },
@@ -77,7 +77,7 @@ export const Route = createFileRoute("/_authenticated/patients/$patientId")({
 });
 
 function PatientDetail() {
-  const { patientId } = useParams({ from: "/_authenticated/patients/$patientId" });
+  const { patientId } = useParams({ from: "/app/_authenticated/patients/$patientId" });
   const patients = usePatients();
   const appointments = useAppointments();
   const records = useTreatmentRecords();
@@ -108,7 +108,7 @@ function PatientDetail() {
       const res = await makeLink({
         data: { patient_id: patientId, kind, consent_template_id: consentTemplateId ?? null },
       });
-      const url = `${window.location.origin}/p/${res.token}`;
+      const url = `${window.location.origin}/app/p/${res.token}`;
       await navigator.clipboard.writeText(url).catch(() => undefined);
       toast.success("Patient link copied", { description: url });
     } catch (e) {
@@ -130,7 +130,7 @@ function PatientDetail() {
       <AppShell title="Patient not found">
         <EmptyState>
           This patient no longer exists.{" "}
-          <Link to="/patients" className="text-primary hover:underline">
+          <Link to="/app/patients" className="text-primary hover:underline">
             Back to patients
           </Link>
         </EmptyState>
@@ -179,7 +179,7 @@ function PatientDetail() {
       title={patientName(patient)}
       subtitle={`${age(patient.birth_date) ? `${age(patient.birth_date)} yrs · ` : ""}${patient.source} · prefers ${patient.preferred_channel}`}
       actions={
-        <Link to="/patients" className={ghostButton}>
+        <Link to="/app/patients" className={ghostButton}>
           <ArrowLeft className="size-3.5" /> All patients
         </Link>
       }

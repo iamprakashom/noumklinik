@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { acceptInvite, createClinic, getMyWorkspace } from "@/lib/team.functions";
 
-export const Route = createFileRoute("/onboarding")({
+export const Route = createFileRoute("/app/onboarding")({
   ssr: false,
   head: () => ({
     meta: [
@@ -40,7 +40,7 @@ function OnboardingPage() {
 
   const done = () => {
     void qc.invalidateQueries();
-    navigate({ to: "/dashboard", replace: true });
+    navigate({ to: "/app/dashboard", replace: true });
   };
 
   const create = useMutation({

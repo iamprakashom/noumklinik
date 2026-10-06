@@ -2,11 +2,11 @@ import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { can, PATH_PERMISSION, type ClinicRole } from "@/lib/permissions";
 
-export const Route = createFileRoute("/_authenticated")({
+export const Route = createFileRoute("/app/_authenticated")({
   ssr: false,
   beforeLoad: async ({ location }) => {
     const { data, error } = await supabase.auth.getUser();
-    if (error || !data.user) throw redirect({ to: "/auth" });
+    if (error || !data.user) throw redirect({ to: "/app/auth" });
 
     const { data: preference } = await supabase
       .from("user_clinic_preferences")
@@ -22,11 +22,11 @@ export const Route = createFileRoute("/_authenticated")({
     if (preference?.clinic_id) membershipQuery = membershipQuery.eq("clinic_id", preference.clinic_id);
     const { data: selected } = await membershipQuery.limit(1).maybeSingle();
     const membership = selected ?? (await supabase.from("clinic_members").select("clinic_id, role, provider_id, clinics(name, active, organization_id, organizations(name))").eq("user_id", data.user.id).eq("status", "active").limit(1).maybeSingle()).data;
-    if (!membership) throw redirect({ to: "/onboarding" });
+    if (!membership) throw redirect({ to: "/app/onboarding" });
 
     const permission = Object.entries(PATH_PERMISSION).find(([path]) => location.pathname.startsWith(path))?.[1];
     if (permission && !can(membership.role as ClinicRole, permission)) {
-      throw redirect({ to: "/access-denied" });
+      throw redirect({ to: "/app/access-denied" });
     }
 
     const { data: memberships } = await supabase

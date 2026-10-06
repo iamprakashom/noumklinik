@@ -31,7 +31,7 @@ import {
 } from "@/lib/billing-math";
 import { toast } from "sonner";
 
-export const Route = createFileRoute("/_authenticated/reports")({
+export const Route = createFileRoute("/app/_authenticated/reports")({
   head: () => ({
     meta: [
       { title: "Reports — Noum Klinik" },

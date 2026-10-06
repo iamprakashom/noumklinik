@@ -10,3 +10,4 @@
 <!-- LOVABLE:END -->
 
 - Route every invoice payment through database payment functions so balance caps, invoice status, and gateway idempotency are enforced atomically.
+- All application pages live under `/app` (src/routes/app); `/` is the public landing page, and a root splat route redirects legacy paths so old links keep working.

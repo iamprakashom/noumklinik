@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
 
-export const Route = createFileRoute("/auth")({
+export const Route = createFileRoute("/app/auth")({
   ssr: false,
   head: () => ({
     meta: [
@@ -37,7 +37,7 @@ function AuthPage() {
   const goAfterAuth = async (userId: string) => {
     const pending = sessionStorage.getItem("pending_invite_token");
     if (pending) {
-      navigate({ to: "/join", search: { token: pending }, replace: true });
+      navigate({ to: "/app/join", search: { token: pending }, replace: true });
       return;
     }
     const { data: membership } = await supabase
@@ -47,7 +47,7 @@ function AuthPage() {
       .eq("status", "active")
       .limit(1)
       .maybeSingle();
-    navigate({ to: membership ? "/dashboard" : "/onboarding", replace: true });
+    navigate({ to: membership ? "/app/dashboard" : "/app/onboarding", replace: true });
   };
 
   useEffect(() => {

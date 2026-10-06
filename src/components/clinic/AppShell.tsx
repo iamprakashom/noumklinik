@@ -27,18 +27,18 @@ import { can, type ClinicRole, type Permission } from "@/lib/permissions";
 
 
 const NAV = [
-  { to: "/dashboard", label: "Today", icon: LayoutDashboard, permission: "appointments" },
-  { to: "/appointments", label: "Appointments", icon: CalendarDays, permission: "appointments" },
-  { to: "/recalls", label: "Recalls", icon: RotateCcw, permission: "appointments" },
+  { to: "/app/dashboard", label: "Today", icon: LayoutDashboard, permission: "appointments" },
+  { to: "/app/appointments", label: "Appointments", icon: CalendarDays, permission: "appointments" },
+  { to: "/app/recalls", label: "Recalls", icon: RotateCcw, permission: "appointments" },
 
-  { to: "/patients", label: "Patients", icon: Users, permission: "patients" },
-  { to: "/leads", label: "Leads", icon: UserPlus, permission: "leads" },
-  { to: "/inbox", label: "Inbox", icon: MessageSquare, permission: "inbox" },
-  { to: "/billing", label: "Billing", icon: CreditCard, permission: "billing" },
-  { to: "/reports", label: "Reports", icon: BarChart3, permission: "reports" },
-  { to: "/automations", label: "Follow-ups", icon: Sparkles, permission: "settings" },
-  { to: "/settings", label: "Settings", icon: Settings, permission: "settings" },
-  { to: "/activity", label: "Activity", icon: ClipboardList, permission: "settings" },
+  { to: "/app/patients", label: "Patients", icon: Users, permission: "patients" },
+  { to: "/app/leads", label: "Leads", icon: UserPlus, permission: "leads" },
+  { to: "/app/inbox", label: "Inbox", icon: MessageSquare, permission: "inbox" },
+  { to: "/app/billing", label: "Billing", icon: CreditCard, permission: "billing" },
+  { to: "/app/reports", label: "Reports", icon: BarChart3, permission: "reports" },
+  { to: "/app/automations", label: "Follow-ups", icon: Sparkles, permission: "settings" },
+  { to: "/app/settings", label: "Settings", icon: Settings, permission: "settings" },
+  { to: "/app/activity", label: "Activity", icon: ClipboardList, permission: "settings" },
 ] as const;
 
 export function AppShell({
@@ -55,7 +55,7 @@ export function AppShell({
   const pathname = useRouterState({ select: (r) => r.location.pathname });
   const navigate = useNavigate();
   const router = useRouter();
-  const workspace = useRouteContext({ from: "/_authenticated" });
+  const workspace = useRouteContext({ from: "/app/_authenticated" });
   const queryClient = useQueryClient();
   const [mobileNav, setMobileNav] = useState(false);
 
@@ -67,7 +67,7 @@ export function AppShell({
     await queryClient.cancelQueries();
     queryClient.clear();
     await supabase.auth.signOut();
-    navigate({ to: "/auth", replace: true });
+    navigate({ to: "/app/auth", replace: true });
   }
 
   const navList = (
@@ -160,7 +160,7 @@ export function AppShell({
                     await supabase.from("user_clinic_preferences").upsert({ user_id: workspace.user.id, clinic_id: event.target.value, updated_at: new Date().toISOString() });
                     queryClient.clear();
                     await router.invalidate();
-                    navigate({ to: "/dashboard", replace: true });
+                    navigate({ to: "/app/dashboard", replace: true });
                   }}
                 >
                   {workspace.memberships.map((clinic) => <option key={clinic.clinicId} value={clinic.clinicId}>{clinic.clinicName}</option>)}
