@@ -18,6 +18,7 @@
 - [x] Add shared organization patient identity foundation
 - [x] Add branch-labelled patient history
 - [x] Add central catalog, doctor assignments, and branch overrides
+- [x] Run the application under /app with legacy redirects
 - [ ] Add organization team administration and branch-aware invitations
 - [x] Add branch-aware settings, booking, and integrations
 - [x] Add consolidated owner reporting (branch comparison)
